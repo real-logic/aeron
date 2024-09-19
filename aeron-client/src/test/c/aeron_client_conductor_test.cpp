@@ -372,6 +372,24 @@ public:
         }
     }
 
+    void transmitOnStaticCounter(aeron_async_add_counter_t *async, int32_t counter_id)
+    {
+        char response_buffer[sizeof(aeron_static_counter_response_t)];
+        auto response = reinterpret_cast<aeron_static_counter_response_t *>(response_buffer);
+
+        response->correlation_id = async->registration_id;
+        response->counter_id = counter_id;
+
+        if (aeron_broadcast_transmitter_transmit(
+            &m_to_clients,
+            AERON_RESPONSE_ON_STATIC_COUNTER,
+            response_buffer,
+            sizeof(aeron_static_counter_response_t)) < 0)
+        {
+            throw std::runtime_error("error transmitting ON_STATIC_COUNTER: " + std::string(aeron_errmsg()));
+        }
+    }
+
 protected:
     aeron_context_t *m_context = nullptr;
     aeron_client_conductor_t m_conductor = {};
@@ -1185,4 +1203,34 @@ TEST_F(ClientConductorTest, shouldAddClientInfoToTheHeartbeatCounterLabelUpToMax
     ASSERT_EQ(
         label + std::string(" name=test").append(366, 'p'),
         std::string(counterLabel));
+}
+
+TEST_F(ClientConductorTest, shouldAddStaticCounterSuccessfully)
+{
+    aeron_async_add_counter_t *async = nullptr;
+    aeron_counter_t *counter = nullptr;
+
+    const char *label = "first static counter from C";
+    const size_t label_length = strlen(label);
+    const int registration_id = 42;
+    ASSERT_EQ(aeron_client_conductor_async_add_static_counter(
+        &async, &m_conductor, COUNTER_TYPE_ID, nullptr, 0, label, label_length, registration_id), 0);
+    ASSERT_EQ(registration_id, async->counter.registration_id);
+    ASSERT_EQ(label_length, async->counter.label_buffer_length);
+    doWork();
+
+    ASSERT_EQ(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr == counter);
+
+    const int32_t counter_id = 777;
+    transmitOnStaticCounter(async, counter_id);
+    doWork();
+
+    ASSERT_GT(aeron_async_add_counter_poll(&counter, async), 0) << aeron_errmsg();
+    ASSERT_TRUE(nullptr != counter);
+    ASSERT_EQ(registration_id, counter->registration_id);
+    ASSERT_EQ(counter_id, counter->counter_id);
+
+    ASSERT_EQ(aeron_counter_close(counter, nullptr, nullptr), 0);
+    doWork();
 }

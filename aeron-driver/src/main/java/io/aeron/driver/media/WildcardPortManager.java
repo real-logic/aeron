@@ -27,6 +27,9 @@ import java.net.InetSocketAddress;
  */
 public class WildcardPortManager implements PortManager
 {
+    /**
+     * Placeholder to represent an empty port range.
+     */
     public static final int[] EMPTY_PORT_RANGE = new int[2];
 
     final IntHashSet portSet = new IntHashSet();

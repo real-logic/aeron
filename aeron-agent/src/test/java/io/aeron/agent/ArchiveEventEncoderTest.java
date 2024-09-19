@@ -34,6 +34,11 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class ArchiveEventEncoderTest
 {
+    enum State
+    {
+        ALPHA, BETA
+    }
+
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
 
     @Test
@@ -104,11 +109,6 @@ class ArchiveEventEncoderTest
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
         assertEquals(catalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH));
         assertEquals(newCatalogLength, buffer.getLong(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG));
-    }
-
-    enum State
-    {
-        ALPHA, BETA;
     }
 
     @Test

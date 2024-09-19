@@ -19,10 +19,6 @@ import io.aeron.test.NullOutputStream;
 import org.agrona.CloseHelper;
 
 import java.io.*;
-import java.lang.invoke.MethodHandle;
-import java.lang.invoke.MethodHandles;
-import java.lang.invoke.MethodType;
-import java.lang.reflect.Field;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
@@ -37,50 +33,6 @@ public class RemoteLaunchServer
 {
     private final ServerSocketChannel serverChannel;
     private final Collection<Connection> connections = new ConcurrentLinkedDeque<>();
-    private static final MethodHandle PID_HANDLE;
-    private static final MethodHandle UNIX_PROCESS_PID_HANDLE;
-
-    static
-    {
-        MethodHandle methodHandle;
-        MethodHandle unixProcessHandle = null;
-        final MethodHandles.Lookup lookup = MethodHandles.lookup();
-        try
-        {
-            methodHandle = lookup.findVirtual(Process.class, "pid", MethodType.methodType(Long.TYPE));
-        }
-        catch (final Exception ex)
-        {
-            try
-            {
-                final String unixProcessClassName = "java.lang.UNIXProcess";
-                final Class<?> unixProcessClass = Class.forName(unixProcessClassName);
-                final Field pidField = unixProcessClass.getDeclaredField("pid");
-                pidField.setAccessible(true);
-                unixProcessHandle = lookup.unreflectGetter(pidField);
-                methodHandle = lookup.findStatic(
-                    RemoteLaunchServer.class, "getPidFallback", MethodType.methodType(long.class, Process.class));
-            }
-            catch (final Exception ex2)
-            {
-                methodHandle = null;
-                unixProcessHandle = null;
-            }
-        }
-
-        PID_HANDLE = methodHandle;
-        UNIX_PROCESS_PID_HANDLE = unixProcessHandle;
-    }
-
-    private static long getPidFallback(final Process process) throws Throwable
-    {
-        if ("java.lang.UNIXProcess".equals(process.getClass().getName()))
-        {
-            return (long)UNIX_PROCESS_PID_HANDLE.invoke(process);
-        }
-
-        return 0L;
-    }
 
     public static void main(final String[] args) throws IOException
     {
@@ -315,19 +267,7 @@ public class RemoteLaunchServer
 
         private long pid()
         {
-            if (null != process && null != PID_HANDLE)
-            {
-                try
-                {
-                    return (long)PID_HANDLE.invoke(process);
-                }
-                catch (final Throwable t)
-                {
-                    return 0;
-                }
-            }
-
-            return 0;
+            return ProcessHandle.current().pid();
         }
 
         private State startProcess(final String[] command) throws IOException

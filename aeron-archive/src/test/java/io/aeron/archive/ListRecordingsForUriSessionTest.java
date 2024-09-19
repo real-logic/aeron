@@ -91,7 +91,7 @@ class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        assertEquals(3, session.doWork());
+        assertEquals(5, session.doWork());
         verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
@@ -115,7 +115,7 @@ class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        assertEquals(2, session.doWork());
+        assertEquals(4, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
     }
 
@@ -136,7 +136,7 @@ class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy))).thenReturn(0);
-        assertEquals(0, session.doWork());
+        assertEquals(1, session.doWork());
         verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
 
         final MutableLong counter = new MutableLong(fromRecordingId);
@@ -166,7 +166,7 @@ class ListRecordingsForUriSessionTest
         when(controlSession.sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy)))
             .then(verifySendDescriptor(counter));
 
-        assertEquals(2, session.doWork());
+        assertEquals(4, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlResponseProxy));
     }
@@ -186,7 +186,7 @@ class ListRecordingsForUriSessionTest
             descriptorBuffer,
             recordingDescriptorDecoder);
 
-        assertEquals(0, session.doWork());
+        assertEquals(4, session.doWork());
 
         verify(controlSession, never()).sendDescriptor(eq(correlationId), any(), eq(controlResponseProxy));
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(5L), eq(controlResponseProxy));

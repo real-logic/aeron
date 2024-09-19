@@ -24,6 +24,7 @@ import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.LogBufferUnblocker;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.SetupFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
@@ -250,7 +251,6 @@ public final class NetworkPublication
         final long nowNs = cachedNanoClock.nanoTime();
         timeOfLastDataOrHeartbeatNs = nowNs - PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
         timeOfLastSetupNs = nowNs - PUBLICATION_SETUP_TIMEOUT_NS - 1;
-        timeOfLastStatusMessageNs = nowNs;
 
         positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
         this.termWindowLength = termWindowLength;
@@ -478,6 +478,36 @@ public final class NetworkPublication
         {
             LogBufferDescriptor.isConnected(metaDataBuffer, true);
             isConnected = true;
+        }
+    }
+
+    /**
+     * Process an error message from a receiver.
+     *
+     * @param msg                       flyweight over the network packet.
+     * @param srcAddress                that the setup message has come from.
+     * @param destinationRegistrationId registrationId of the relevant MDC destination or {@link Aeron#NULL_VALUE}
+     * @param conductorProxy            to send messages back to the conductor.
+     */
+    public void onError(
+        final ErrorFlyweight msg,
+        final InetSocketAddress srcAddress,
+        final long destinationRegistrationId,
+        final DriverConductorProxy conductorProxy)
+    {
+        flowControl.onError(msg, srcAddress, cachedNanoClock.nanoTime());
+        if (livenessTracker.onRemoteClose(msg.receiverId()))
+        {
+            conductorProxy.onPublicationError(
+                registrationId,
+                destinationRegistrationId,
+                msg.sessionId(),
+                msg.streamId(),
+                msg.receiverId(),
+                msg.groupTag(),
+                srcAddress,
+                msg.errorCode(),
+                msg.errorMessage());
         }
     }
 
@@ -800,8 +830,9 @@ public final class NetworkPublication
         {
             timeOfLastSetupNs = nowNs;
 
-            final short flags = (!isResponse && Aeron.NULL_VALUE != responseCorrelationId) ?
-                SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0;
+            final int flags =
+                (isSendResponseSetupFlag() ? SetupFlyweight.SEND_RESPONSE_SETUP_FLAG : 0) |
+                (hasGroupSemantics() ? SetupFlyweight.GROUP_FLAG : 0);
 
             setupBuffer.clear();
             setupHeader
@@ -813,7 +844,7 @@ public final class NetworkPublication
                 .termLength(termBufferLength)
                 .mtuLength(mtuLength)
                 .ttl(channelEndpoint.multicastTtl())
-                .flags(flags);
+                .flags((short)(flags & 0xFFFF));
 
             if (isSetupElicited)
             {
@@ -1136,5 +1167,15 @@ public final class NetworkPublication
     long consumerPosition()
     {
         return senderPosition.getVolatile();
+    }
+
+    private boolean isSendResponseSetupFlag()
+    {
+        return !isResponse && Aeron.NULL_VALUE != responseCorrelationId;
+    }
+
+    private boolean hasGroupSemantics()
+    {
+        return channelEndpoint().udpChannel().hasGroupSemantics();
     }
 }

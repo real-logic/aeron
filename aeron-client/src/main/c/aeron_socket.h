@@ -35,10 +35,10 @@ typedef int aeron_socket_t;
 
 #elif defined(AERON_COMPILER_MSVC)
 
-#include <winsock2.h>
-#include <windows.h>
+#include <WinSock2.h>
+#include <Windows.h>
 #include <ws2ipdef.h>
-#include <wS2tcpip.h>
+#include <WS2tcpip.h>
 #include <iphlpapi.h>
 
 // SOCKET is uint64_t but we need a signed type to match the Linux version

@@ -33,6 +33,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.SelectionKey;
+import java.util.function.Consumer;
 
 import static io.aeron.logbuffer.FrameDescriptor.frameType;
 import static io.aeron.protocol.HeaderFlyweight.*;
@@ -51,6 +52,8 @@ public final class DataTransportPoller extends UdpTransportPoller
     private final DataHeaderFlyweight dataMessage = new DataHeaderFlyweight(unsafeBuffer);
     private final SetupFlyweight setupMessage = new SetupFlyweight(unsafeBuffer);
     private final RttMeasurementFlyweight rttMeasurement = new RttMeasurementFlyweight(unsafeBuffer);
+    private final Consumer<SelectionKey> selectorPoller =
+        (selectionKey) -> poll((ChannelAndTransport)selectionKey.attachment());
     private ChannelAndTransport[] channelAndTransports = EMPTY_TRANSPORTS;
 
     /**
@@ -95,15 +98,7 @@ public final class DataTransportPoller extends UdpTransportPoller
             }
             else
             {
-                selector.selectNow();
-
-                final SelectionKey[] keys = selectedKeySet.keys();
-                for (int i = 0, length = selectedKeySet.size(); i < length; i++)
-                {
-                    bytesReceived += poll((ChannelAndTransport)keys[i].attachment());
-                }
-
-                selectedKeySet.reset();
+                selector.selectNow(selectorPoller);
             }
         }
         catch (final IOException ex)

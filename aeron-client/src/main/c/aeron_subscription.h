@@ -31,7 +31,7 @@ typedef struct aeron_image_list_stct
 }
 aeron_image_list_t;
 
-#define AERON_IMAGE_LIST_ALLOC_SIZE(l) (sizeof(aeron_image_list_t) + (l * sizeof(aeron_image_t *)))
+#define AERON_IMAGE_LIST_ALLOC_SIZE(l) (sizeof(aeron_image_list_t) + ((l) * sizeof(aeron_image_t *)))
 
 typedef struct aeron_subscription_stct
 {
@@ -132,5 +132,8 @@ inline void aeron_subscription_propose_last_image_change_number(
         AERON_PUT_ORDERED(subscription->last_image_list_change_number, change_number);
     }
 }
+
+int aeron_subscription_reject_image(
+    aeron_subscription_t *subscription, int64_t image_correlation_id, int64_t position, const char *reason);
 
 #endif //AERON_C_SUBSCRIPTION_H

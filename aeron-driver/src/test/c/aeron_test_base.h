@@ -31,7 +31,7 @@ public:
     using poll_handler_t = std::function<void(const uint8_t *, size_t, aeron_header_t *)>;
     using image_handler_t = std::function<void(aeron_subscription_t *, aeron_image_t *)>;
 
-    CSystemTestBase(
+    explicit CSystemTestBase(
         std::vector<std::pair<std::string, std::string>> environment = {},
         std::function<void(aeron_driver_context_t *)> setContextFunc = [](aeron_driver_context_t *) {}) :
         m_driver(setContextFunc)
@@ -147,6 +147,23 @@ public:
     }
 
     static aeron_counter_t *awaitCounterOrError(aeron_async_add_counter_t *async)
+    {
+        aeron_counter_t *counter = nullptr;
+
+        do
+        {
+            std::this_thread::yield();
+            if (aeron_async_add_counter_poll(&counter, async) < 0)
+            {
+                return nullptr;
+            }
+        }
+        while (!counter);
+
+        return counter;
+    }
+
+    static aeron_counter_t *awaitStaticCounterOrError(aeron_async_add_counter_t *async)
     {
         aeron_counter_t *counter = nullptr;
 

@@ -100,7 +100,13 @@ public class ArchiveException extends AeronException
 
     private static final long serialVersionUID = 386758252787901080L;
 
+    /**
+     * Error code.
+     */
     private final int errorCode;
+    /**
+     * Command correlation id.
+     */
     private final long correlationId;
 
     /**

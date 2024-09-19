@@ -19,8 +19,9 @@
 #define _GNU_SOURCE
 #endif
 
-#include "errno.h"
-#include "inttypes.h"
+#include <errno.h>
+#include <inttypes.h>
+#include <stdlib.h>
 #include "aeron_alloc.h"
 #include "concurrent/aeron_thread.h"
 #include "util/aeron_error.h"
@@ -28,7 +29,7 @@
 #if !defined(_WIN32)
 #include <unistd.h>
 #else
-#include <windows.h>
+#include <Windows.h>
 #include <mmsystem.h>
 #pragma comment(lib, "winmm.lib")
 

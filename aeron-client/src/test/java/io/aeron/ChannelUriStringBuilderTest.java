@@ -279,4 +279,17 @@ class ChannelUriStringBuilderTest
         assertEquals(1000000L, new ChannelUriStringBuilder()
             .untetheredRestingTimeout("1ms").untetheredRestingTimeoutNs());
     }
+
+    @Test
+    void shouldHandleMaxRetransmits()
+    {
+        assertEquals(20, new ChannelUriStringBuilder()
+            .maxResend(20)
+            .maxResend());
+        assertTrue(new ChannelUriStringBuilder().maxResend(20).build()
+            .contains(CommonContext.MAX_RESEND_PARAM_NAME + "=20"));
+        assertEquals(30, new ChannelUriStringBuilder()
+            .maxResend(ChannelUri.parse(new ChannelUriStringBuilder().maxResend(30).build()))
+            .maxResend());
+    }
 }

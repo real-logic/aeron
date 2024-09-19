@@ -39,7 +39,8 @@ typedef struct aeron_retransmit_action_stct
 }
 aeron_retransmit_action_t;
 
-#define AERON_RETRANSMIT_HANDLER_MAX_RETRANSMITS (16)
+#define AERON_RETRANSMIT_HANDLER_MAX_RESEND (16)
+#define AERON_RETRANSMIT_HANDLER_MAX_RESEND_MAX (256)
 
 typedef int (*aeron_retransmit_handler_resend_func_t)(
     void *clientd, int32_t term_id, int32_t term_offset, size_t length);
@@ -54,7 +55,7 @@ typedef struct aeron_retransmit_handler_stct
 
     int active_retransmit_count;
 
-    bool is_multicast;
+    bool has_group_semantics;
     size_t max_retransmits;
     int64_t *retransmit_overflow_counter;
 }
@@ -65,7 +66,8 @@ int aeron_retransmit_handler_init(
     int64_t *invalid_packets_counter,
     uint64_t delay_timeout_ns,
     uint64_t linger_timeout_ns,
-    bool is_multicast,
+    bool has_group_semantics,
+    uint32_t max_retransmits,
     int64_t *retransmit_overflow_counter);
 
 void aeron_retransmit_handler_close(aeron_retransmit_handler_t *handler);

@@ -34,6 +34,9 @@
 #define AERON_COMMAND_ADD_RCV_DESTINATION (0x0C)
 #define AERON_COMMAND_REMOVE_RCV_DESTINATION (0x0D)
 #define AERON_COMMAND_TERMINATE_DRIVER (0x0E)
+#define AERON_COMMAND_ADD_STATIC_COUNTER (0x0F)
+#define AERON_COMMAND_REJECT_IMAGE (0x10)
+#define AERON_COMMAND_REMOVE_DESTINATION_BY_ID (0x11)
 
 #define AERON_RESPONSE_ON_ERROR (0x0F01)
 #define AERON_RESPONSE_ON_AVAILABLE_IMAGE (0x0F02)
@@ -45,6 +48,8 @@
 #define AERON_RESPONSE_ON_COUNTER_READY (0x0F08)
 #define AERON_RESPONSE_ON_UNAVAILABLE_COUNTER (0x0F09)
 #define AERON_RESPONSE_ON_CLIENT_TIMEOUT (0x0F0A)
+#define AERON_RESPONSE_ON_STATIC_COUNTER (0x0F0B)
+#define AERON_RESPONSE_ON_PUBLICATION_ERROR (0x0F0C)
 
 /* error codes */
 #define AERON_ERROR_CODE_UNKNOWN_CODE_VALUE (-1)
@@ -155,6 +160,14 @@ typedef struct aeron_destination_command_stct
 }
 aeron_destination_command_t;
 
+typedef struct aeron_destination_by_id_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t resource_registration_id;
+    int64_t destination_registration_id;
+}
+aeron_destination_by_id_command_t;
+
 typedef struct aeron_counter_command_stct
 {
     aeron_correlated_command_t correlated;
@@ -169,6 +182,21 @@ typedef struct aeron_counter_update_stct
 }
 aeron_counter_update_t;
 
+typedef struct aeron_static_counter_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t registration_id;
+    int32_t type_id;
+}
+aeron_static_counter_command_t;
+
+typedef struct aeron_static_counter_response_stct
+{
+    int64_t correlation_id;
+    int32_t counter_id;
+}
+aeron_static_counter_response_t;
+
 typedef struct aeron_client_timeout_stct
 {
     int64_t client_id;
@@ -181,6 +209,33 @@ typedef struct aeron_terminate_driver_command_stct
     int32_t token_length;
 }
 aeron_terminate_driver_command_t;
+
+typedef struct aeron_reject_image_command_stct
+{
+    aeron_correlated_command_t correlated;
+    int64_t image_correlation_id;
+    int64_t position;
+    int32_t reason_length;
+    uint8_t reason_text[1];
+}
+aeron_reject_image_command_t;
+
+struct aeron_publication_error_stct
+{
+    int64_t registration_id;
+    int64_t destination_registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int16_t address_type;
+    uint16_t source_port;
+    uint8_t source_address[16];
+    int32_t error_code;
+    int32_t error_message_length;
+    uint8_t error_message[1];
+};
+typedef struct aeron_publication_error_stct aeron_publication_error_t;
 
 #pragma pack(pop)
 

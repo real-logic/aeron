@@ -132,6 +132,7 @@ const static long NULL_TIMEOUT = -1;
 const static long DEFAULT_MEDIA_DRIVER_TIMEOUT_MS = 10000;
 const static long DEFAULT_RESOURCE_LINGER_MS = 5000;
 const static long DEFAULT_IDLE_SLEEP_DURATION_MS = 16;
+const static int MAX_CLIENT_NAME_LENGTH = 100;
 
 /**
  * The Default handler for Aeron runtime exceptions.
@@ -204,6 +205,11 @@ public:
     /// @cond HIDDEN_SYMBOLS
     this_t &conclude()
     {
+        if (clientName().length() > MAX_CLIENT_NAME_LENGTH)
+        {
+            throw util::IllegalArgumentException("clientName length must <= 100", SOURCEINFO);
+        }
+
         if (!m_isOnNewExclusivePublicationHandlerSet)
         {
             m_onNewExclusivePublicationHandler = m_onNewPublicationHandler;

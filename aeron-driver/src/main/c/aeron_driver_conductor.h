@@ -418,6 +418,9 @@ void aeron_driver_conductor_on_unavailable_counter(
 
 void aeron_driver_conductor_on_client_timeout(aeron_driver_conductor_t *conductor, int64_t correlation_id);
 
+void aeron_driver_conductor_on_static_counter(
+    aeron_driver_conductor_t *conductor, int64_t correlation_id, int32_t counter_id);
+
 void aeron_driver_conductor_cleanup_spies(
     aeron_driver_conductor_t *conductor, aeron_network_publication_t *publication);
 
@@ -477,6 +480,9 @@ int aeron_driver_conductor_on_add_send_destination(
 int aeron_driver_conductor_on_remove_send_destination(
     aeron_driver_conductor_t *conductor, aeron_destination_command_t *command);
 
+int aeron_driver_conductor_on_remove_receive_send_destination_by_id(
+    aeron_driver_conductor_t *conductor, aeron_destination_by_id_command_t *command);
+
 int aeron_driver_conductor_on_add_receive_ipc_destination(
     aeron_driver_conductor_t *conductor,
     aeron_destination_command_t *command);
@@ -509,10 +515,15 @@ int aeron_driver_conductor_on_add_counter(aeron_driver_conductor_t *conductor, a
 
 int aeron_driver_conductor_on_remove_counter(aeron_driver_conductor_t *conductor, aeron_remove_command_t *command);
 
+int aeron_driver_conductor_on_add_static_counter(aeron_driver_conductor_t *conductor, aeron_static_counter_command_t *command);
+
 int aeron_driver_conductor_on_client_close(aeron_driver_conductor_t *conductor, aeron_correlated_command_t *command);
 
 int aeron_driver_conductor_on_terminate_driver(
     aeron_driver_conductor_t *conductor, aeron_terminate_driver_command_t *command);
+
+int aeron_driver_conductor_on_invalidate_image(
+    aeron_driver_conductor_t *conductor, aeron_reject_image_command_t *command);
 
 void aeron_driver_conductor_on_create_publication_image(void *clientd, void *item);
 
@@ -525,6 +536,8 @@ void aeron_driver_conductor_on_receive_endpoint_removed(void *clientd, void *ite
 void aeron_driver_conductor_on_response_setup(void *clientd, void *item);
 
 void aeron_driver_conductor_on_response_connected(void *clientd, void *item);
+
+void aeron_driver_conductor_on_publication_error(void *clientd, void *item);
 
 void aeron_driver_conductor_on_release_resource(void *clientd, void *item);
 

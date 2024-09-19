@@ -48,6 +48,38 @@ int aeron_uri_get_term_length_param(aeron_uri_params_t *uri_params, aeron_driver
     return 0;
 }
 
+int aeron_uri_get_max_resend_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
+{
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_MAX_RESEND_KEY)) != NULL)
+    {
+        uint64_t value;
+
+        if (-1 == aeron_parse_size64(value_str, &value))
+        {
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", AERON_URI_MAX_RESEND_KEY, value_str);
+            return -1;
+        }
+
+        if (value < 1 || value > AERON_RETRANSMIT_HANDLER_MAX_RESEND_MAX)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "invalid %s=%" PRIu64 ", must be > 0 and <= %i",
+                AERON_URI_MAX_RESEND_KEY,
+                value,
+                AERON_RETRANSMIT_HANDLER_MAX_RESEND_MAX);
+            return -1;
+        }
+
+        params->max_resend = (uint32_t)value;
+        params->has_max_resend = true;
+    }
+
+    return 0;
+}
+
 int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
 {
     const char *value_str;
@@ -162,6 +194,8 @@ int aeron_diver_uri_publication_params(
     params->session_id = 0;
     params->entity_tag = AERON_URI_INVALID_TAG;
     params->response_correlation_id = AERON_NULL_VALUE;
+    params->has_max_resend = false;
+    params->max_resend = 0;
 
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;
@@ -192,6 +226,11 @@ int aeron_diver_uri_publication_params(
     }
 
     if (aeron_uri_get_term_length_param(uri_params, params) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_uri_get_max_resend_param(uri_params, params) < 0)
     {
         return -1;
     }

@@ -70,6 +70,9 @@ import static org.agrona.concurrent.UnsafeBuffer.ALIGNMENT;
  */
 public class NodeStateFile implements AutoCloseable
 {
+    /**
+     * File name.
+     */
     public static final String FILENAME = "node-state.dat";
     private static final int MINIMUM_FILE_LENGTH = 1 << 20;
     private final CandidateTerm candidateTerm = new CandidateTerm();

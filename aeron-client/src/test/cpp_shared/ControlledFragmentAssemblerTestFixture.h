@@ -73,8 +73,8 @@ public:
     }
 
 protected:
-    Header *m_header;
-    fragment_buffer_t m_buffer;
+    Header *m_header = nullptr;
+    fragment_buffer_t m_buffer = {};
 
 private:
     std::uint8_t headerBuffer[DataFrameHeader::LENGTH] = {};
@@ -82,7 +82,6 @@ private:
 
 TEST_P(ControlledFragmentAssemblerParameterisedTest, shouldPassThroughUnfragmentedMessage)
 {
-
     std::int32_t fragmentLength = 158;
     fillFrame(TERM_OFFSET, FrameDescriptor::UNFRAGMENTED, 0, fragmentLength, 0);
     bool isCalled = false;

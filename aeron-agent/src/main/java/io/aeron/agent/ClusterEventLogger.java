@@ -171,6 +171,7 @@ public final class ClusterEventLogger
      * @param logLeadershipTermId of the node.
      * @param appendPosition      of the node.
      * @param catchupPosition     of the node.
+     * @param reason              for the state transition to occur.
      */
     public <E extends Enum<E>> void logElectionStateChange(
         final int memberId,
@@ -182,9 +183,10 @@ public final class ClusterEventLogger
         final long logPosition,
         final long logLeadershipTermId,
         final long appendPosition,
-        final long catchupPosition)
+        final long catchupPosition,
+        final String reason)
     {
-        final int length = electionStateChangeLength(oldState, newState);
+        final int length = electionStateChangeLength(oldState, newState, reason);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
@@ -208,7 +210,8 @@ public final class ClusterEventLogger
                     logPosition,
                     logLeadershipTermId,
                     appendPosition,
-                    catchupPosition);
+                    catchupPosition,
+                    reason);
             }
             finally
             {

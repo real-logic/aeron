@@ -123,6 +123,13 @@ int aeron_send_channel_endpoint_on_status_message(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_send_channel_endpoint_on_error(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr);
+
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr);
 
@@ -156,16 +163,27 @@ inline bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_e
 }
 
 inline int aeron_send_channel_endpoint_add_destination(
-    aeron_send_channel_endpoint_t *endpoint, aeron_uri_t *uri, struct sockaddr_storage *addr)
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_uri_t *uri,
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id)
 {
     const int64_t now_ns = aeron_clock_cached_nano_time(endpoint->destination_tracker->cached_clock);
-    return aeron_udp_destination_tracker_manual_add_destination(endpoint->destination_tracker, now_ns, uri, addr);
+    return aeron_udp_destination_tracker_manual_add_destination(
+        endpoint->destination_tracker, now_ns, uri, addr, destination_registration_id);
 }
 
 inline int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint, struct sockaddr_storage *addr, aeron_uri_t **removed_uri)
 {
     return aeron_udp_destination_tracker_remove_destination(endpoint->destination_tracker, addr, removed_uri);
+}
+
+inline int aeron_send_channel_endpoint_remove_destination_by_id(
+    aeron_send_channel_endpoint_t *endpoint, int64_t registration_destination_id, aeron_uri_t **removed_uri)
+{
+    return aeron_udp_destination_tracker_remove_destination_by_id(
+        endpoint->destination_tracker, registration_destination_id, removed_uri);
 }
 
 inline int aeron_send_channel_endpoint_bind_addr_and_port(

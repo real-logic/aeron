@@ -112,7 +112,6 @@ public final class TestCluster implements AutoCloseable
     static final long CATALOG_CAPACITY = 128 * 1024;
 
     static final String LOG_CHANNEL = "aeron:udp?term-length=512k|alias=raft";
-    static final String REPLICATION_CHANNEL = "aeron:udp?endpoint=localhost:0";
     static final String ARCHIVE_LOCAL_CONTROL_CHANNEL = "aeron:ipc";
     static final String EGRESS_CHANNEL = "aeron:udp?term-length=128k|endpoint=localhost:0|alias=egress";
     static final String INGRESS_CHANNEL = "aeron:udp?term-length=128k|alias=ingress";
@@ -207,14 +206,6 @@ public final class TestCluster implements AutoCloseable
     {
         Tests.sleep(delayMs);
         ClusterTests.failOnClusterError();
-    }
-
-    public static void awaitLossOfLeadership(final TestNode.TestService leaderService)
-    {
-        while (leaderService.roleChangedTo() != FOLLOWER)
-        {
-            Tests.sleep(100);
-        }
     }
 
     private static void await(final int delayMs, final Supplier<String> message)
@@ -365,6 +356,15 @@ public final class TestCluster implements AutoCloseable
         final CredentialsSupplier credentialsSupplier,
         final ClusterBackup.SourceType sourceType)
     {
+        return startClusterBackupNode(cleanStart, credentialsSupplier, sourceType, 0);
+    }
+
+    public TestBackupNode startClusterBackupNode(
+        final boolean cleanStart,
+        final CredentialsSupplier credentialsSupplier,
+        final ClusterBackup.SourceType sourceType,
+        final int catchupEndpointPort)
+    {
         final int index = staticMemberCount;
         final String baseDirName = clusterBaseDir + "-" + index;
         final String aeronDirName = CommonContext.getAeronDirectoryName() + "-" + index + "-driver";
@@ -406,17 +406,17 @@ public final class TestCluster implements AutoCloseable
             .clusterConsensusEndpoints(clusterConsensusEndpoints)
             .consensusChannel(consensusChannelUri.toString())
             .clusterBackupCoolDownIntervalNs(TimeUnit.SECONDS.toNanos(1))
-            .catchupEndpoint(hostname(index) + ":0")
+            .catchupEndpoint(hostname(index) + ":" + catchupEndpointPort)
             .archiveContext(new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirName)
-                .controlRequestChannel(context.archiveContext.localControlChannel())
-                .controlRequestStreamId(context.archiveContext.localControlStreamId())
-                .controlResponseChannel("aeron:ipc?alias=backup-archive-local-resp")
-                .controlResponseStreamId(9090909 + index))
+            .aeronDirectoryName(aeronDirName)
+            .controlRequestChannel(context.archiveContext.localControlChannel())
+            .controlRequestStreamId(context.archiveContext.localControlStreamId())
+            .controlResponseChannel("aeron:ipc?alias=backup-archive-local-resp")
+            .controlResponseStreamId(9090909 + index))
             .clusterArchiveContext(new AeronArchive.Context()
-                .aeronDirectoryName(aeronDirName)
-                .controlRequestChannel(context.archiveContext.controlChannel())
-                .controlResponseChannel(archiveControlResponseChannel(index)))
+            .aeronDirectoryName(aeronDirName)
+            .controlRequestChannel(context.archiveContext.controlChannel())
+            .controlResponseChannel(archiveControlResponseChannel(index)))
             .clusterDir(new File(baseDirName, "cluster-backup"))
             .credentialsSupplier(credentialsSupplier)
             .sourceType(sourceType)
@@ -921,6 +921,23 @@ public final class TestCluster implements AutoCloseable
         {
             await(1);
             pollClient();
+        }
+    }
+
+    public void awaitLossOfLeadership(final TestNode.TestService leaderService)
+    {
+        if (null != client)
+        {
+            clientKeepAlive.init();
+        }
+
+        while (leaderService.roleChangedTo() != FOLLOWER)
+        {
+            Tests.sleep(100);
+            if (null != client)
+            {
+                clientKeepAlive.run();
+            }
         }
     }
 

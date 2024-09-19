@@ -67,7 +67,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
         messageHeaderDecoder.wrap(buffer, offset);
 
         final int schemaId = messageHeaderDecoder.schemaId();
-        if (schemaId != MessageHeaderDecoder.SCHEMA_ID)
+        if (MessageHeaderDecoder.SCHEMA_ID != schemaId)
         {
             throw new ClusterException("expected schemaId=" + MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
         }
@@ -92,7 +92,7 @@ class ConsensusModuleSnapshotAdapter implements ControlledFragmentHandler
                     messageHeaderDecoder.version());
 
                 final long typeId = snapshotMarkerDecoder.typeId();
-                if (typeId != SNAPSHOT_TYPE_ID)
+                if (SNAPSHOT_TYPE_ID != typeId)
                 {
                     throw new ClusterException("unexpected snapshot type: " + typeId);
                 }

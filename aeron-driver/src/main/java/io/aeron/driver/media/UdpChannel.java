@@ -1009,7 +1009,7 @@ public final class UdpChannel
             {
                 throw new UnknownHostException(
                     "unresolved - " + ENDPOINT_PARAM_NAME + "=" + endpointValue +
-                    ", name-resolver=" + nameResolver.getClass().getName());
+                    ", name-resolver=" + nameResolver.name());
             }
         }
 

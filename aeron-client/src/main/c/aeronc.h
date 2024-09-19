@@ -34,6 +34,9 @@ extern "C"
 #define AERON_CLIENT_ERROR_BUFFER_FULL (-1003)
 #define AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN (64)
 
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV4 (0x1)
+#define AERON_RESPONSE_ADDRESS_TYPE_IPV6 (0x2)
+
 typedef struct aeron_context_stct aeron_context_t;
 typedef struct aeron_stct aeron_t;
 typedef struct aeron_buffer_claim_stct aeron_buffer_claim_t;
@@ -64,6 +67,23 @@ typedef struct aeron_header_values_stct
     size_t position_bits_to_shift;
 }
 aeron_header_values_t;
+
+struct aeron_publication_error_values_stct
+{
+    int64_t registration_id;
+    int64_t destination_registration_id;
+    int32_t session_id;
+    int32_t stream_id;
+    int64_t receiver_id;
+    int64_t group_tag;
+    int16_t address_type;
+    uint16_t source_port;
+    uint8_t source_address[16];
+    int32_t error_code;
+    int32_t error_message_length;
+    uint8_t error_message[1];
+};
+typedef struct aeron_publication_error_values_stct aeron_publication_error_values_t;
 #pragma pack(pop)
 
 typedef struct aeron_subscription_stct aeron_subscription_t;
@@ -78,11 +98,13 @@ typedef struct aeron_client_registering_resource_stct aeron_async_add_exclusive_
 typedef struct aeron_client_registering_resource_stct aeron_async_add_subscription_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_add_counter_t;
 typedef struct aeron_client_registering_resource_stct aeron_async_destination_t;
+typedef struct aeron_client_registering_resource_stct aeron_async_destination_by_id_t;
 
 typedef struct aeron_image_fragment_assembler_stct aeron_image_fragment_assembler_t;
 typedef struct aeron_image_controlled_fragment_assembler_stct aeron_image_controlled_fragment_assembler_t;
 typedef struct aeron_fragment_assembler_stct aeron_fragment_assembler_t;
 typedef struct aeron_controlled_fragment_assembler_stct aeron_controlled_fragment_assembler_t;
+
 
 /**
  * Environment variables and functions used for setting values of an aeron_context_t.
@@ -130,6 +152,30 @@ const char *aeron_context_get_client_name(aeron_context_t *context);
 typedef void (*aeron_error_handler_t)(void *clientd, int errcode, const char *message);
 
 /**
+ * The error frame handler to be called when the driver notifies the client about an error frame being received.
+ * The data passed to this callback will only be valid for the lifetime of the callback. The user should use
+ * <code>aeron_publication_error_values_copy</code> if they require the data to live longer than that.
+ */
+typedef void (*aeron_publication_error_frame_handler_t)(void *clientd, aeron_publication_error_values_t *error_frame);
+
+/**
+ * Copy an existing aeron_publication_error_values_t to the supplied pointer. The caller is responsible for freeing the
+ * allocated memory using aeron_publication_error_values_delete when the copy is not longer required.
+ *
+ * @param dst to copy the values to.
+ * @param src to copy the values from.
+ * @return 0 if this is successful, -1 otherwise. Will set aeron_errcode() and aeron_errmsg() on failure.
+ */
+int aeron_publication_error_values_copy(aeron_publication_error_values_t **dst, aeron_publication_error_values_t *src);
+
+/**
+ * Delete a instance of aeron_publication_error_values_t that was created when making a copy
+ * (aeron_publication_error_values_copy). This should not be use on the pointer received via the aeron_frame_handler_t.
+ * @param to_delete to be deleted.
+ */
+void aeron_publication_error_values_delete(aeron_publication_error_values_t *to_delete);
+
+/**
  * Generalised notification callback.
  */
 typedef void (*aeron_notification_t)(void *clientd);
@@ -137,6 +183,10 @@ typedef void (*aeron_notification_t)(void *clientd);
 int aeron_context_set_error_handler(aeron_context_t *context, aeron_error_handler_t handler, void *clientd);
 aeron_error_handler_t aeron_context_get_error_handler(aeron_context_t *context);
 void *aeron_context_get_error_handler_clientd(aeron_context_t *context);
+
+int aeron_context_set_publication_error_frame_handler(aeron_context_t *context, aeron_publication_error_frame_handler_t handler, void *clientd);
+aeron_publication_error_frame_handler_t aeron_context_get_publication_error_frame_handler(aeron_context_t *context);
+void *aeron_context_get_publication_error_frame_handler_clientd(aeron_context_t *context);
 
 /**
  * Function called by aeron_client_t to deliver notification that the media driver has added an aeron_publication_t
@@ -491,13 +541,38 @@ int aeron_async_add_counter(
     size_t label_buffer_length);
 
 /**
- * Poll the completion of the aeron_async_add_counter call.
+ * Poll the completion of the <code>aeron_async_add_counter</code> or <code>aeron_async_add_static_counter</code> calls.
  *
  * @param counter to set if completed successfully.
  * @param async to check for completion.
  * @return 0 for not complete (try again), 1 for completed successfully, or -1 for an error.
  */
 int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_counter_t *async);
+
+/**
+ * Asynchronously allocates or returns an existing static counter instance using specified <code>type_id</code> and
+ * <code>registration_id</code>. Such counter cannot be deleted and its lifecycle is decoupled from the client that created it.
+ * Returns an object to use to determine when the counter is available.
+ *
+ * @param async object to use for polling completion.
+ * @param client to add the counter to.
+ * @param type_id for the counter.
+ * @param key_buffer for the counter.
+ * @param key_buffer_length for the counter.
+ * @param label_buffer for the counter.
+ * @param label_buffer_length for the counter.
+ * @param registration_id that uniquely identifies the counter.
+ * @return 0 for success or -1 for an error.
+ */
+int aeron_async_add_static_counter(
+    aeron_async_add_counter_t **async,
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id);
 
 typedef struct aeron_on_available_counter_pair_stct
 {
@@ -629,6 +704,7 @@ aeron_counter_metadata_descriptor_t;
 
 #define AERON_COUNTER_MAX_LABEL_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->label)
 #define AERON_COUNTER_MAX_KEY_LENGTH sizeof(((aeron_counter_metadata_descriptor_t *)NULL)->key)
+#define AERON_COUNTER_MAX_CLIENT_NAME_LENGTH (100)
 
 #define AERON_COUNTER_RECORD_UNUSED (0)
 #define AERON_COUNTER_RECORD_ALLOCATED (1)
@@ -690,6 +766,17 @@ typedef void (*aeron_counters_reader_foreach_counter_func_t)(
  */
 void aeron_counters_reader_foreach_counter(
     aeron_counters_reader_t *counters_reader, aeron_counters_reader_foreach_counter_func_t func, void *clientd);
+
+/**
+ * Iterate over allocated counters and find the first matching a given type id and registration id.
+ *
+ * @param counters_reader
+ * @param type_id to find.
+ * @param registration_id to find.
+ * @return the counter id if found otherwise AERON_NULL_COUNTER_ID.
+ */
+int32_t aeron_counters_reader_find_by_type_id_and_registration_id(
+    aeron_counters_reader_t *counters_reader, int32_t type_id, int64_t registration_id);
 
 /**
  * Get the current max counter id.
@@ -1098,6 +1185,20 @@ int aeron_publication_async_remove_destination(
     aeron_async_destination_t **async, aeron_t *client, aeron_publication_t *publication, const char *uri);
 
 /**
+ * Remove a destination manually from a multi-destination-cast publication.
+ *
+ * @param async object to use for polling completion.
+ * @param publication to remove destination from.
+ * @param destination_registration_id for the destination to remove.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_publication_t *publication,
+    int64_t destination_registration_id);
+
+/**
  * Poll the completion of the add/remove of a destination to/from a publication.
  *
  * @param async to check for completion.
@@ -1132,6 +1233,20 @@ int aeron_exclusive_publication_async_remove_destination(
     aeron_t *client,
     aeron_exclusive_publication_t *publication,
     const char *uri);
+
+/**
+ * Remove a destination manually from a multi-destination-cast publication.
+ *
+ * @param async object to use for polling completion.
+ * @param publication to remove destination from.
+ * @param destination_registration_id for the destination to remove.
+ * @return 0 for success and -1 for error.
+ */
+int aeron_exclusive_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_exclusive_publication_t *publication,
+    int64_t destination_registration_id);
 
 /**
  * Poll the completion of the add/remove of a destination to/from an exclusive publication.
@@ -1745,7 +1860,7 @@ int aeron_subscription_resolved_endpoint(aeron_subscription_t *subscription, con
 
 /**
  * Retrieves the channel URI for this subscription with any wildcard ports filled in. If the channel is not UDP or
- * does not have a wildcard port (`0`), then it will return the original URI.
+ * does not have a wildcard port (<code>0</code>), then it will return the original URI.
  *
  * @param subscription to query
  * @param uri buffer to hold the resolved uri
@@ -1995,6 +2110,14 @@ int aeron_image_block_poll(
     aeron_image_t *image, aeron_block_handler_t handler, void *clientd, size_t block_length_limit);
 
 bool aeron_image_is_closed(aeron_image_t *image);
+
+/**
+ * Force the driver to disconnect this image from the remote publication.
+ *
+ * @param image to be rejected.
+ * @param reason an error message to be forwarded back to the publication.
+ */
+int aeron_image_reject(aeron_image_t *image, const char *reason);
 
 /**
  * A fragment handler that sits in a chain-of-responsibility pattern that reassembles fragmented messages
@@ -2320,7 +2443,7 @@ const char *aeron_errmsg(void);
  *
  * @param path buffer to store the path.
  * @param path_length space available in the buffer
- * @return -1 if there is an issue or the number of bytes written to path excluding the terminator `\0`. If this
+ * @return -1 if there is an issue or the number of bytes written to path excluding the terminator <code>\0</code>. If this
  * is equal to or greater than the path_length then the path has been truncated.
  */
 int aeron_default_path(char *path, size_t path_length);

@@ -165,7 +165,7 @@ final class ArchiveMigrationUtils
             LangUtil.rethrowUnchecked(ex);
         }
 
-        return new Catalog(archiveDir, epochClock, MIN_CAPACITY, true, null, (version) -> {}, false);
+        return new Catalog(archiveDir, epochClock, MIN_CAPACITY, true, null, (version) -> {});
     }
 
     private static int totalMarkFileLengthInVersion2(

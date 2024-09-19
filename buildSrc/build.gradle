@@ -2,21 +2,9 @@ repositories {
     mavenCentral()
 }
 
-def asciidoctorjVersion = '2.5.10'
-def jgitVersion = '5.13.2.202306221912-r'
-def asmVersion = '9.6'
-
-configurations.configureEach {
-    resolutionStrategy.eachDependency { details ->
-        if (details.requested.group == 'org.ow2.asm' ) {
-            details.useVersion "${asmVersion}"
-        }
-    }
-}
-
 dependencies {
-    implementation "org.asciidoctor:asciidoctorj:${asciidoctorjVersion}"
-    implementation "org.eclipse.jgit:org.eclipse.jgit:${jgitVersion}"
+    implementation libs.asciidoctorj
+    implementation libs.jgit
 }
 
 tasks.withType(JavaCompile).configureEach {

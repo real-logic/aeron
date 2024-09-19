@@ -414,6 +414,18 @@ void aeron_send_channel_endpoint_dispatch(
             }
             break;
 
+        case AERON_HDR_TYPE_ERR:
+            if (length >= sizeof(aeron_error_t) && length >= (size_t)frame_header->frame_length)
+            {
+                result = aeron_send_channel_endpoint_on_error(endpoint, conductor_proxy, buffer, length, addr);
+                aeron_counter_ordered_increment(sender->error_messages_received_counter, 1);
+            }
+            else
+            {
+                aeron_counter_increment(sender->invalid_frames_counter, 1);
+            }
+            break;
+
         case AERON_HDR_TYPE_RSP_SETUP:
             if (length >= sizeof(aeron_response_setup_header_t))
             {
@@ -512,6 +524,36 @@ int aeron_send_channel_endpoint_on_status_message(
     return result;
 }
 
+int aeron_send_channel_endpoint_on_error(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_driver_conductor_proxy_t *conductor_proxy,
+    uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *addr)
+{
+    aeron_error_t *error = (aeron_error_t *)buffer;
+
+    int64_t destination_registration_id = AERON_NULL_VALUE;
+    if (NULL != endpoint->destination_tracker)
+    {
+        destination_registration_id = aeron_udp_destination_tracker_find_registration_id(
+            endpoint->destination_tracker, buffer, length, addr);
+    }
+
+    int64_t key_value = aeron_map_compound_key(error->stream_id, error->session_id);
+    aeron_network_publication_t *publication = aeron_int64_to_ptr_hash_map_get(
+        &endpoint->publication_dispatch_map, key_value);
+    int result = 0;
+
+    if (NULL != publication)
+    {
+        aeron_network_publication_on_error(
+            publication, destination_registration_id, buffer, length, addr, conductor_proxy);
+    }
+
+    return result;
+}
+
 void aeron_send_channel_endpoint_on_rttm(
     aeron_send_channel_endpoint_t *endpoint, uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
@@ -603,12 +645,16 @@ extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_e
 extern int aeron_send_channel_endpoint_add_destination(
     aeron_send_channel_endpoint_t *endpoint,
     aeron_uri_t *uri,
-    struct sockaddr_storage *addr);
+    struct sockaddr_storage *addr,
+    int64_t destination_registration_id);
 
 extern int aeron_send_channel_endpoint_remove_destination(
     aeron_send_channel_endpoint_t *endpoint,
     struct sockaddr_storage *addr,
     aeron_uri_t **removed_uri);
+
+extern int aeron_send_channel_endpoint_remove_destination_by_id(
+    aeron_send_channel_endpoint_t *endpoint, int64_t registration_destination_id, aeron_uri_t **removed_uri);
 
 extern bool aeron_send_channel_endpoint_tags_match(
     aeron_send_channel_endpoint_t *endpoint, aeron_udp_channel_t *channel);

@@ -32,11 +32,11 @@ import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Int2ObjectHashMap;
 import org.agrona.concurrent.*;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 
 import static io.aeron.Aeron.NULL_VALUE;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
@@ -257,7 +257,6 @@ public final class AeronCluster implements AutoCloseable
     /**
      * Close session and release associated resources.
      */
-    @Override
     public void close()
     {
         if (null != publication && publication.isConnected() && !isClosed)
@@ -1283,13 +1282,20 @@ public final class AeronCluster implements AutoCloseable
      */
     public static final class Context implements Cloneable
     {
-        /**
-         * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
-         */
-        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
-            Context.class, "isConcluded");
-        private volatile int isConcluded;
+        private static final VarHandle IS_CONCLUDED_VH;
+        static
+        {
+            try
+            {
+                IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isConcluded", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
+        private volatile boolean isConcluded;
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String ingressEndpoints = Configuration.ingressEndpoints();
         private String ingressChannel = Configuration.ingressChannel();
@@ -1313,7 +1319,6 @@ public final class AeronCluster implements AutoCloseable
          *
          * @return a shallow copy of the object.
          */
-        @Override
         public Context clone()
         {
             try
@@ -1331,7 +1336,7 @@ public final class AeronCluster implements AutoCloseable
          */
         public void conclude()
         {
-            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
             {
                 throw new ConcurrentConcludeException();
             }
@@ -1403,7 +1408,7 @@ public final class AeronCluster implements AutoCloseable
          */
         public boolean isConcluded()
         {
-            return 1 == isConcluded;
+            return isConcluded;
         }
 
         /**
@@ -1849,7 +1854,6 @@ public final class AeronCluster implements AutoCloseable
         /**
          * {@inheritDoc}
          */
-        @Override
         public String toString()
         {
             return "AeronCluster.Context" +
@@ -1887,12 +1891,33 @@ public final class AeronCluster implements AutoCloseable
          */
         public enum State
         {
+            /**
+             * Create egress subscription.
+             */
             CREATE_EGRESS_SUBSCRIPTION(-1),
+            /**
+             * Create ingress publication.
+             */
             CREATE_INGRESS_PUBLICATIONS(0),
+            /**
+             * Await ingress publication connected.
+             */
             AWAIT_PUBLICATION_CONNECTED(1),
+            /**
+             * Send message to Cluster.
+             */
             SEND_MESSAGE(2),
+            /**
+             * Poll for Cluster response.
+             */
             POLL_RESPONSE(3),
+            /**
+             * Initialize internal state.
+             */
             CONCLUDE_CONNECT(4),
+            /**
+             * Connection established.
+             */
             DONE(5);
 
             private static final State[] STATES = values();
@@ -1947,7 +1972,6 @@ public final class AeronCluster implements AutoCloseable
         /**
          * Close allocated resources. Must be called on error. On success this is a no op.
          */
-        @Override
         public void close()
         {
             if (State.DONE != state)
@@ -2359,7 +2383,6 @@ public final class AeronCluster implements AutoCloseable
             this.endpoint = endpoint;
         }
 
-        @Override
         public void close()
         {
             if (null != publication)
@@ -2374,7 +2397,6 @@ public final class AeronCluster implements AutoCloseable
             publication = null;
         }
 
-        @Override
         public String toString()
         {
             return "MemberIngress{" +

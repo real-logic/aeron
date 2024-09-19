@@ -20,10 +20,12 @@ import io.aeron.cluster.client.ClusterException;
 import java.util.ArrayDeque;
 
 /**
- * State holder for ACKs from each of the services.
+ * State holder for ACKs from each of the {@link io.aeron.cluster.service.ClusteredService}s.
  */
 final class ServiceAck
 {
+    static final ServiceAck[] EMPTY_SERVICE_ACKS = new ServiceAck[0];
+
     private final long ackId;
     private final long logPosition;
     private final long relevantId;
@@ -55,7 +57,6 @@ final class ServiceAck
         for (int serviceId = 0, serviceCount = queues.length; serviceId < serviceCount; serviceId++)
         {
             final ServiceAck serviceAck = queues[serviceId].peek();
-
             if (null == serviceAck)
             {
                 return false;

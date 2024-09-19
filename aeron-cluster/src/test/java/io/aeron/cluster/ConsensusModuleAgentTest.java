@@ -29,6 +29,7 @@ import static org.mockito.Mockito.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
+import io.aeron.cluster.client.ClusterEvent;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.CountedErrorHandler;
@@ -45,7 +46,6 @@ import org.mockito.Mockito;
 
 import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.CloseReason;
 import io.aeron.cluster.codecs.ClusterAction;
 import io.aeron.cluster.codecs.EventCode;
@@ -396,7 +396,7 @@ class ConsensusModuleAgentTest
         inOrder.verify(mockLogPublisher).appendClusterAction(
             anyLong(), anyLong(), eq(ClusterAction.SNAPSHOT), eq(CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT));
 
-        agent.onReplayClusterAction(-1, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
+        agent.onReplayClusterAction(-1, 2048, 0, ClusterAction.SNAPSHOT, CLUSTER_ACTION_FLAGS_STANDBY_SNAPSHOT);
         assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
     }
 
@@ -473,11 +473,42 @@ class ConsensusModuleAgentTest
     void shouldThrowExceptionOnUnknownSchemaAndNoAdapter()
     {
         final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
-        ctx.epochClock(clock).clusterClock(clock);
+        final CountedErrorHandler mockErrorHandler = mock(CountedErrorHandler.class);
+        ctx.countedErrorHandler(mockErrorHandler)
+            .epochClock(clock)
+            .clusterClock(clock);
 
         final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
 
-        assertThrows(ClusterException.class,
-            () -> agent.onExtensionMessage(0, 0, SCHEMA_ID, 0, null, 0, 0, null));
+        agent.onExtensionMessage(0, 0, SCHEMA_ID, 0, null, 0, 0, null);
+        verify(mockErrorHandler).onError(any(ClusterEvent.class));
+    }
+
+    @Test
+    void shouldHandlePaddingMessageAtEndOfTerm()
+    {
+        final TestClusterClock clock = new TestClusterClock(TimeUnit.MILLISECONDS);
+        final Counter stateCounter = newCounter("state counter", CLUSTER_CONSENSUS_MODULE_STATE_TYPE_ID);
+        final Counter controlToggle = newCounter("control toggle", CLUSTER_CONTROL_TOGGLE_TYPE_ID);
+
+        controlToggle.set(NEUTRAL.code());
+
+        ctx.moduleStateCounter(stateCounter)
+            .controlToggleCounter(controlToggle)
+            .epochClock(clock)
+            .clusterClock(clock);
+
+        final ConsensusModuleAgent agent = new ConsensusModuleAgent(ctx);
+        Tests.setField(agent, "appendPosition", mock(ReadableCounter.class));
+
+        assertEquals(ConsensusModule.State.INIT.code(), stateCounter.get());
+
+        agent.state(ConsensusModule.State.ACTIVE);
+        agent.role(Cluster.Role.LEADER);
+        assertEquals(ConsensusModule.State.ACTIVE.code(), stateCounter.get());
+
+        final LogAdapter mockLogAdapter = mock(LogAdapter.class);
+
+        agent.replayLogPoll(mockLogAdapter, 65536);
     }
 }

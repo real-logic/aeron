@@ -28,7 +28,7 @@ import java.lang.annotation.Target;
 public @interface AeronCounter
 {
     /**
-     * @return whether or not this counter exists in the C code
+     * @return whether this counter exists in the C code
      */
     boolean existsInC() default true;
 

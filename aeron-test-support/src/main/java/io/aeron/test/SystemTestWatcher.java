@@ -49,7 +49,6 @@ import java.nio.MappedByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.attribute.BasicFileAttributes;
 import java.text.SimpleDateFormat;
 import java.util.*;
 import java.util.function.Predicate;
@@ -469,6 +468,11 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         for (final Path path : paths)
         {
             final File cncFile = path.toFile();
+            if (!cncFile.exists() || 0 == cncFile.length())
+            {
+                System.out.printf("%n%nCommand `n Control file %s was not created!%n", cncFile);
+                continue;
+            }
             System.out.printf("%n%nCommand `n Control file %s, length=%d%n", cncFile, cncFile.length());
             System.out.println("---------------------------------------------------------------------------------");
             final MappedByteBuffer mappedByteBuffer = SamplesUtil.mapExistingFileReadOnly(cncFile);
@@ -559,7 +563,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
         Throwable printErrors(List<Path> paths, ErrorConsumer errorConsumer);
 
-        boolean isRelevantFile(Path path, BasicFileAttributes basicFileAttributes);
+        boolean isRelevantFile(File file);
 
         void filterErrors(List<Path> paths, MutableInteger count, StringBuilder errors, Predicate<String> logFilter)
             throws IOException;
@@ -572,9 +576,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             return ArchiveMarkFile.FILENAME;
         }
 
-        public boolean isRelevantFile(final Path path, final BasicFileAttributes basicFileAttributes)
+        public boolean isRelevantFile(final File file)
         {
-            return ArchiveMarkFile.isArchiveMarkFile(path, basicFileAttributes);
+            return ArchiveMarkFile.FILENAME.equals(file.getName());
         }
 
         public Throwable printErrors(final List<Path> paths, final ErrorConsumer errorConsumer)
@@ -582,17 +586,20 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             Throwable error = null;
             for (final Path path : paths)
             {
-                try (ArchiveMarkFile archiveFile = openArchiveMarkFile(path))
+                if (Files.exists(path) && path.toFile().length() > 0)
                 {
-                    final AtomicBuffer buffer = archiveFile.errorBuffer();
+                    try (ArchiveMarkFile archiveFile = openArchiveMarkFile(path))
+                    {
+                        final AtomicBuffer buffer = archiveFile.errorBuffer();
 
-                    System.out.printf("%n%n%s file %s%n", "Archive Errors", path);
-                    final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
-                    System.out.format("%d distinct errors observed.%n", distinctErrorCount);
-                }
-                catch (final Throwable t)
-                {
-                    error = Tests.setOrUpdateError(error, t);
+                        System.out.printf("%n%n%s file %s%n", "Archive Errors", path);
+                        final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
+                        System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+                    }
+                    catch (final Throwable t)
+                    {
+                        error = Tests.setOrUpdateError(error, t);
+                    }
                 }
             }
 
@@ -626,17 +633,20 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             Throwable error = null;
             for (final Path path : paths)
             {
-                try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+                if (Files.exists(path) && path.toFile().length() > 0)
                 {
-                    final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
+                    try (ClusterMarkFile clusterMarkFile = openClusterMarkFile(path))
+                    {
+                        final AtomicBuffer buffer = clusterMarkFile.errorBuffer();
 
-                    System.out.printf("%n%n%s file %s%n", fileDescription(), path);
-                    final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
-                    System.out.format("%d distinct errors observed.%n", distinctErrorCount);
-                }
-                catch (final Throwable t)
-                {
-                    error = Tests.setOrUpdateError(error, t);
+                        System.out.printf("%n%n%s file %s%n", fileDescription(), path);
+                        final int distinctErrorCount = ErrorLogReader.read(buffer, errorConsumer);
+                        System.out.format("%d distinct errors observed.%n", distinctErrorCount);
+                    }
+                    catch (final Throwable t)
+                    {
+                        error = Tests.setOrUpdateError(error, t);
+                    }
                 }
             }
             return error;
@@ -671,9 +681,9 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             return ClusterMarkFile.FILENAME;
         }
 
-        public boolean isRelevantFile(final Path path, final BasicFileAttributes basicFileAttributes)
+        public boolean isRelevantFile(final File file)
         {
-            return ClusterMarkFile.isConsensusModuleMarkFile(path, basicFileAttributes);
+            return ClusterMarkFile.FILENAME.equals(file.getName());
         }
 
         protected String fileDescription()
@@ -689,9 +699,11 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
             return ClusterMarkFile.SERVICE_FILENAME_PREFIX + "X" + ClusterMarkFile.FILE_EXTENSION;
         }
 
-        public boolean isRelevantFile(final Path path, final BasicFileAttributes basicFileAttributes)
+        public boolean isRelevantFile(final File file)
         {
-            return ClusterMarkFile.isServiceMarkFile(path, basicFileAttributes);
+            final String name = file.getName();
+            return name.startsWith(ClusterMarkFile.SERVICE_FILENAME_PREFIX) &&
+                name.endsWith(ClusterMarkFile.FILE_EXTENSION);
         }
 
         protected String fileDescription()

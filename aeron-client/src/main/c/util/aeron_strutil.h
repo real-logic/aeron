@@ -115,4 +115,9 @@ inline bool aeron_str_length(const char *str, size_t length_bound, size_t *lengt
     return result;
 }
 
+inline void aeron_str_null_terminate(uint8_t *text, int index)
+{
+    text[index] = '\0';
+}
+
 #endif //AERON_STRUTIL_H

@@ -85,4 +85,14 @@ public interface NameResolver
     {
         return 0;
     }
+
+    /**
+     * Gets the name of the resolver, used for logging and debugging.
+     *
+     * @return name of the resolver, defaults to the qualified class name.
+     */
+    default String name()
+    {
+        return this.getClass().getName();
+    }
 }

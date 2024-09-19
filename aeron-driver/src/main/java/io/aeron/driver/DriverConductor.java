@@ -29,9 +29,12 @@ import io.aeron.driver.media.SendChannelEndpoint;
 import io.aeron.driver.media.UdpChannel;
 import io.aeron.driver.status.*;
 import io.aeron.exceptions.AeronEvent;
+import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.ControlProtocolException;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
+import io.aeron.protocol.SetupFlyweight;
+import io.aeron.protocol.ErrorFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
@@ -50,10 +53,12 @@ import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersManager;
+import org.agrona.concurrent.status.CountersReader;
 import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -323,8 +328,6 @@ public final class DriverConductor implements Agent
                 hwmPos = ReceiverHwm.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
                 rcvPos = ReceiverPos.allocate(tempBuffer, countersManager, registrationId, sessionId, streamId, uri);
 
-                final boolean isMulticastSemantics = subscription.group() == INFER ?
-                    channelEndpoint.udpChannel(transportIndex).isMulticast() : subscription.group() == FORCE_TRUE;
                 final String sourceIdentity = Configuration.sourceIdentity(sourceAddress);
 
                 final PublicationImage image = new PublicationImage(
@@ -340,7 +343,7 @@ public final class DriverConductor implements Agent
                     initialTermOffset,
                     flags,
                     rawLog,
-                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), isMulticastSemantics),
+                    resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), subscription.group(), flags),
                     subscriberPositions,
                     hwmPos,
                     rcvPos,
@@ -384,6 +387,30 @@ public final class DriverConductor implements Agent
         clientProxy.onError(statusIndicatorId, CHANNEL_ENDPOINT_ERROR, errorMessage);
     }
 
+    void onPublicationError(
+        final long registrationId,
+        final long destinationRegistrationId,
+        final int sessionId,
+        final int streamId,
+        final long receiverId,
+        final Long groupId,
+        final InetSocketAddress srcAddress,
+        final int errorCode,
+        final String errorMessage)
+    {
+        recordError(new AeronException(errorMessage, AeronException.Category.WARN));
+        clientProxy.onPublicationErrorFrame(
+            registrationId,
+            destinationRegistrationId,
+            sessionId,
+            streamId,
+            receiverId,
+            groupId,
+            srcAddress,
+            errorCode,
+            errorMessage);
+    }
+
     void onReResolveEndpoint(
         final String endpoint, final SendChannelEndpoint channelEndpoint, final InetSocketAddress address)
     {
@@ -396,8 +423,7 @@ public final class DriverConductor implements Agent
                     final InetSocketAddress newAddress = asyncResult.get();
                     if (newAddress.isUnresolved())
                     {
-                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
-                        errorCounter.increment();
+                        recordError(new AeronEvent("could not re-resolve: endpoint=" + endpoint));
                     }
                     else if (!address.equals(newAddress))
                     {
@@ -406,8 +432,7 @@ public final class DriverConductor implements Agent
                 }
                 catch (final Exception ex)
                 {
-                    ctx.errorHandler().onError(ex);
-                    errorCounter.increment();
+                    recordError(ex);
                 }
             });
     }
@@ -427,8 +452,7 @@ public final class DriverConductor implements Agent
                     final InetSocketAddress newAddress = asyncResult.get();
                     if (newAddress.isUnresolved())
                     {
-                        ctx.errorHandler().onError(new AeronEvent("could not re-resolve: control=" + control));
-                        errorCounter.increment();
+                        recordError(new AeronEvent("could not re-resolve: control=" + control));
                     }
                     else if (!address.equals(newAddress))
                     {
@@ -437,8 +461,7 @@ public final class DriverConductor implements Agent
                 }
                 catch (final Exception ex)
                 {
-                    ctx.errorHandler().onError(ex);
-                    errorCounter.increment();
+                    recordError(ex);
                 }
             });
     }
@@ -608,6 +631,19 @@ public final class DriverConductor implements Agent
         }
 
         throw new IllegalArgumentException("image.correlationId=" + params.responseCorrelationId + " not found");
+    }
+
+    private PublicationImage findPublicationImage(final long correlationId)
+    {
+        for (final PublicationImage publicationImage : publicationImages)
+        {
+            if (correlationId == publicationImage.correlationId())
+            {
+                return publicationImage;
+            }
+        }
+
+        return null;
     }
 
     void responseSetup(final long responseCorrelationId, final int responseSessionId)
@@ -943,7 +979,7 @@ public final class DriverConductor implements Agent
         sendChannelEndpoint.validateAllowsManualControl();
 
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
-        senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress);
+        senderProxy.addDestination(sendChannelEndpoint, channelUri, dstAddress, correlationId);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -972,6 +1008,34 @@ public final class DriverConductor implements Agent
         final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.removeDestination(sendChannelEndpoint, channelUri, dstAddress);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
+    void onRemoveSendDestination(
+        final long publicationRegistrationId, final long destinationRegistrationId, final long correlationId)
+    {
+        SendChannelEndpoint sendChannelEndpoint = null;
+
+        for (int i = 0, size = networkPublications.size(); i < size; i++)
+        {
+            final NetworkPublication publication = networkPublications.get(i);
+
+            if (publicationRegistrationId == publication.registrationId())
+            {
+                sendChannelEndpoint = publication.channelEndpoint();
+                break;
+            }
+        }
+
+        if (null == sendChannelEndpoint)
+        {
+            throw new ControlProtocolException(
+                UNKNOWN_PUBLICATION, "unknown publication: " + publicationRegistrationId);
+        }
+
+        sendChannelEndpoint.validateAllowsManualControl();
+
+        senderProxy.removeDestination(sendChannelEndpoint, destinationRegistrationId);
         clientProxy.operationSucceeded(correlationId);
     }
 
@@ -1148,6 +1212,45 @@ public final class DriverConductor implements Agent
         countersManager.setCounterRegistrationId(counter.id(), correlationId);
         counterLinks.add(new CounterLink(counter, correlationId, client));
         clientProxy.onCounterReady(correlationId, counter.id());
+    }
+
+    void onAddStaticCounter(
+        final int typeId,
+        final DirectBuffer keyBuffer,
+        final int keyOffset,
+        final int keyLength,
+        final DirectBuffer labelBuffer,
+        final int labelOffset,
+        final int labelLength,
+        final long registrationId,
+        final long correlationId,
+        final long clientId)
+    {
+        getOrAddClient(clientId);
+
+        final int counterId = countersManager.findByTypeIdAndRegistrationId(typeId, registrationId);
+        if (CountersReader.NULL_COUNTER_ID != counterId)
+        {
+            if (Aeron.NULL_VALUE != countersManager.getCounterOwnerId(counterId))
+            {
+                clientProxy.onError(correlationId, GENERIC_ERROR, "cannot add static counter, because a " +
+                    "non-static counter exists (counterId=" + counterId + ") for typeId=" + typeId + " and " +
+                    "registrationId=" + registrationId);
+            }
+            else
+            {
+                clientProxy.onStaticCounter(correlationId, counterId);
+            }
+        }
+        else
+        {
+            final AtomicCounter counter = countersManager.newCounter(
+                typeId, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            countersManager.setCounterRegistrationId(counter.id(), registrationId);
+            countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
+            clientProxy.onStaticCounter(correlationId, counter.id());
+        }
     }
 
     void onRemoveCounter(final long registrationId, final long correlationId)
@@ -1391,6 +1494,29 @@ public final class DriverConductor implements Agent
         }
     }
 
+    void onRejectImage(
+        final long correlationId,
+        final long imageCorrelationId,
+        final long position,
+        final String reason)
+    {
+        if (ErrorFlyweight.MAX_ERROR_MESSAGE_LENGTH < reason.getBytes(StandardCharsets.UTF_8).length)
+        {
+            throw new ControlProtocolException(GENERIC_ERROR, "Invalidation reason must be 1023 bytes or less");
+        }
+
+        final PublicationImage publicationImage = findPublicationImage(imageCorrelationId);
+
+        if (null == publicationImage)
+        {
+            throw new ControlProtocolException(
+                GENERIC_ERROR, "Unable to resolve image for correlationId=" + imageCorrelationId);
+        }
+
+        receiverProxy.rejectImage(imageCorrelationId, position, reason);
+        clientProxy.operationSucceeded(correlationId);
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = cachedEpochClock.time();
@@ -1601,6 +1727,7 @@ public final class DriverConductor implements Agent
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator(),
                 udpChannel.hasGroupSemantics(),
+                params.hasMaxResend ? params.maxResend : ctx.maxResend(),
                 retransmitOverflowCounter);
 
             final NetworkPublication publication = new NetworkPublication(
@@ -2549,6 +2676,19 @@ public final class DriverConductor implements Agent
         }
     }
 
+    static FeedbackDelayGenerator resolveDelayGenerator(
+        final Context ctx,
+        final UdpChannel channel,
+        final InferableBoolean receiverGroupConsideration,
+        final short flags)
+    {
+        final boolean isGroupFromFlag = (flags & SetupFlyweight.GROUP_FLAG) == SetupFlyweight.GROUP_FLAG;
+        final boolean isMulticastSemantics = receiverGroupConsideration == INFER ?
+            channel.isMulticast() || isGroupFromFlag : receiverGroupConsideration == FORCE_TRUE;
+
+        return resolveDelayGenerator(ctx, channel, isMulticastSemantics);
+    }
+
     private interface AsyncResult<T> extends Supplier<T>
     {
         T get();
@@ -2569,5 +2709,11 @@ public final class DriverConductor implements Agent
                 };
             }
         }
+    }
+
+    private void recordError(final Exception ex)
+    {
+        ctx.errorHandler().onError(ex);
+        errorCounter.increment();
     }
 }

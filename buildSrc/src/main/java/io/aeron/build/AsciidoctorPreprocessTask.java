@@ -49,7 +49,8 @@ public class AsciidoctorPreprocessTask extends DefaultTask
 
     private final File source = new File(sampleBaseDir, "/src/docs/asciidoc");
 
-    private final File target = new File(getProject().getBuildDir(), "/asciidoc/asciidoc");
+    private final File target = new File(
+        getProject().getLayout().getBuildDirectory().getAsFile().get(), "/asciidoc/asciidoc");
 
     // Has a slightly silly name to avoid name clashes in the build script.
     private String versionText;

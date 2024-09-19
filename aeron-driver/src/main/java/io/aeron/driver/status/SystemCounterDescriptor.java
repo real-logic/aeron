@@ -15,6 +15,7 @@
  */
 package io.aeron.driver.status;
 
+import io.aeron.Aeron;
 import io.aeron.AeronCounters;
 import io.aeron.driver.MediaDriverVersion;
 import org.agrona.collections.Int2ObjectHashMap;
@@ -220,7 +221,17 @@ public enum SystemCounterDescriptor
     /**
      * A count of the number of times that the retransmit pool has been overflowed.
      */
-    RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count");
+    RETRANSMIT_OVERFLOW(37, "Retransmit Pool Overflow count"),
+
+    /**
+     * A count of the number of error frames received by this driver.
+     */
+    ERROR_FRAMES_RECEIVED(38, "Error Frames received"),
+
+    /**
+     * A count of the number of error frames sent by this driver.
+     */
+    ERROR_FRAMES_SENT(39, "Error Frames sent");
 
     /**
      * All system counters have the same type id, i.e. system counters are the same type. Other types can exist.
@@ -288,6 +299,10 @@ public enum SystemCounterDescriptor
      */
     public AtomicCounter newCounter(final CountersManager countersManager)
     {
-        return countersManager.newCounter(label, SYSTEM_COUNTER_TYPE_ID, (buffer) -> buffer.putInt(0, id));
+        final AtomicCounter counter =
+            countersManager.newCounter(label, SYSTEM_COUNTER_TYPE_ID, (buffer) -> buffer.putInt(0, id));
+        countersManager.setCounterRegistrationId(counter.id(), id);
+        countersManager.setCounterOwnerId(counter.id(), Aeron.NULL_VALUE);
+        return counter;
     }
 }

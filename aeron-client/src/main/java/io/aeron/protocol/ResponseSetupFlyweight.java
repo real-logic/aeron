@@ -29,6 +29,9 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  */
 public class ResponseSetupFlyweight extends HeaderFlyweight
 {
+    /**
+     * Header length in bytes.
+     */
     public static final int HEADER_LENGTH = 20;
 
     /**

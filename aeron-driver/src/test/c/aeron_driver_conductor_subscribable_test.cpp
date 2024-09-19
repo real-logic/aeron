@@ -36,7 +36,7 @@ class DriverConductorSubscribableTest : public DriverConductorTest, public testi
 protected:
     aeron_subscribable_t m_subscribable = {};
 
-    virtual void TearDown()
+    void TearDown() override
     {
         aeron_free(m_subscribable.array);
     }

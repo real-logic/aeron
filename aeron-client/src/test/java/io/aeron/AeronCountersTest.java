@@ -175,7 +175,7 @@ class AeronCountersTest
 
         final IllegalArgumentException exception = assertThrowsExactly(
             IllegalArgumentException.class, () -> AeronCounters.appendToLabel(metaDataBuffer, counterId, "test"));
-        assertEquals("counter id 1 state != RECORD_ALLOCATED", exception.getMessage());
+        assertEquals("counter id 1 is not allocated, state: " + state, exception.getMessage());
     }
 
     @Test

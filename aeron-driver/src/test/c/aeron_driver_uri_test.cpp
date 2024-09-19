@@ -328,6 +328,61 @@ TEST_F(DriverUriTest, shouldParseAndDefaultResponseCorrelationId)
     EXPECT_EQ(INT64_C(-1), params.response_correlation_id);
 }
 
+TEST_F(DriverUriTest, shouldNotHaveMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_FALSE(params.has_max_resend);
+}
+
+TEST_F(DriverUriTest, shouldHaveMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|max-resend=100", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), 0);
+    EXPECT_TRUE(params.has_max_resend);
+    EXPECT_EQ(INT64_C(100), params.max_resend);
+}
+
+TEST_F(DriverUriTest, shouldFailWithNegativeMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|max-resend=-1234", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_THAT(std::string(aeron_errmsg()), ::testing::HasSubstr("could not parse max-resend"));
+}
+
+TEST_F(DriverUriTest, shouldFailWithZeroMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|max-resend=0", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_THAT(std::string(aeron_errmsg()), ::testing::HasSubstr("must be > 0"));
+}
+
+TEST_F(DriverUriTest, shouldFailWithTooBigMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|max-resend=10000", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_THAT(std::string(aeron_errmsg()), ::testing::HasSubstr("and <="));
+}
+
+TEST_F(DriverUriTest, shouldFailWithInvalidMaxRetransmits)
+{
+    aeron_driver_uri_publication_params_t params;
+
+    EXPECT_EQ(AERON_URI_PARSE("aeron:udp?endpoint=224.10.9.8|max-resend=notanumber", &m_uri), 0);
+    EXPECT_EQ(aeron_diver_uri_publication_params(&m_uri, &params, &m_conductor, false), -1);
+    EXPECT_THAT(std::string(aeron_errmsg()), ::testing::HasSubstr("could not parse max-resend"));
+}
+
 class UriResolverTest : public testing::Test
 {
 public:
@@ -340,7 +395,7 @@ public:
 
     static bool ipv4_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
-        struct sockaddr_in addr1, addr2;
+        struct sockaddr_in addr1{}, addr2{};
 
         if (inet_pton(AF_INET, addr1_str, &addr1.sin_addr) != 1 || inet_pton(AF_INET, addr2_str, &addr2.sin_addr) != 1)
         {
@@ -352,7 +407,7 @@ public:
 
     static bool ipv6_match(const char *addr1_str, const char *addr2_str, size_t prefixlen)
     {
-        struct sockaddr_in6 addr1, addr2;
+        struct sockaddr_in6 addr1{}, addr2{};
 
         if (inet_pton(AF_INET6, addr1_str, &addr1.sin6_addr) != 1 ||
             inet_pton(AF_INET6, addr2_str, &addr2.sin6_addr) != 1)
@@ -365,7 +420,7 @@ public:
 
     static size_t ipv6_prefixlen(const char *aadr_str)
     {
-        struct sockaddr_in6 addr;
+        struct sockaddr_in6 addr{};
 
         if (inet_pton(AF_INET6, aadr_str, &addr.sin6_addr) != 1)
         {
@@ -377,7 +432,7 @@ public:
 
     static size_t ipv4_prefixlen(const char *addr_str)
     {
-        struct sockaddr_in addr;
+        struct sockaddr_in addr{};
 
         if (inet_pton(AF_INET, addr_str, &addr.sin_addr) != 1)
         {

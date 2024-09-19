@@ -15,9 +15,9 @@
  */
 package io.aeron.logbuffer;
 
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import java.lang.invoke.VarHandle;
 import java.nio.ByteOrder;
 
 import static java.lang.Integer.reverseBytes;
@@ -82,14 +82,14 @@ public class HeaderWriter
     public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
         termBuffer.putLongOrdered(offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((-length) & 0xFFFF_FFFFL));
-        UnsafeAccess.UNSAFE.storeFence();
+        VarHandle.storeStoreFence();
 
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | offset);
         termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, (((long)termId) << 32) | streamId);
     }
 }
 
-class NativeBigEndianHeaderWriter extends HeaderWriter
+final class NativeBigEndianHeaderWriter extends HeaderWriter
 {
     NativeBigEndianHeaderWriter(final UnsafeBuffer defaultHeader)
     {
@@ -103,7 +103,7 @@ class NativeBigEndianHeaderWriter extends HeaderWriter
     {
         termBuffer.putLongOrdered(
             offset + FRAME_LENGTH_FIELD_OFFSET, ((((long)reverseBytes(-length))) << 32) | versionFlagsType);
-        UnsafeAccess.UNSAFE.storeFence();
+        VarHandle.storeStoreFence();
 
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, ((((long)reverseBytes(offset))) << 32) | sessionId);
         termBuffer.putLong(offset + STREAM_ID_FIELD_OFFSET, streamId | (reverseBytes(termId) & 0xFFFF_FFFFL));

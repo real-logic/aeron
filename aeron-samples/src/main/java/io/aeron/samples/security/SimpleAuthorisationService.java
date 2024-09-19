@@ -112,12 +112,12 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for a specific principal that is scope to a protocolId, actionId, and type.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
-         * @param type              a parameter of the message can be used to narrow the scope of the authorisation
-         *                          rule. This is message dependent.
-         * @param encodedPrincipal  The principal encoded as byte array.
-         * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId         <code>sbe:message@id</code> value that the rule applies to.
+         * @param type             a parameter of the message can be used to narrow the scope of the authorisation
+         *                         rule. This is message dependent.
+         * @param encodedPrincipal The principal encoded as byte array.
+         * @param isAllowed        If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addPrincipalRule(
@@ -130,8 +130,8 @@ public final class SimpleAuthorisationService implements AuthorisationService
             final Principal principal = principalByKeyMap.computeIfAbsent(
                 new ByteArrayAsKey(encodedPrincipal), (key) -> new Principal(key.data));
 
-            final BiInt2ObjectMap<Set<Object>> byTypeMap = isAllowed ? principal.byProtocolActionTypeAllowed :
-                principal.byProtocolActionTypeDenied;
+            final BiInt2ObjectMap<Set<Object>> byTypeMap = isAllowed ?
+                principal.byProtocolActionTypeAllowed : principal.byProtocolActionTypeDenied;
 
             byTypeMap.computeIfAbsent(protocolId, actionId, (a, b) -> new HashSet<>()).add(type);
 
@@ -141,10 +141,10 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for a specific principal that is scope to a protocolId and actionId.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
-         * @param encodedPrincipal  The principal encoded as byte array.
-         * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId         <code>sbe:message@id</code> value that the rule applies to.
+         * @param encodedPrincipal The principal encoded as byte array.
+         * @param isAllowed        If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addPrincipalRule(
@@ -163,9 +163,9 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for a specific principal that is scope to a protocolId.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param encodedPrincipal  The principal encoded as byte array.
-         * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param encodedPrincipal The principal encoded as byte array.
+         * @param isAllowed        If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addPrincipalRule(
@@ -183,11 +183,11 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for all principals that is scoped to a protocolId, actionId and type.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
-         * @param type              a parameter of the message can be used to narrow the scope of the authorisation
-         *                          rule. This is message dependent.
-         * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId   <code>sbe:message@id</code> value that the rule applies to.
+         * @param type       a parameter of the message can be used to narrow the scope of the authorisation
+         *                   rule. This is message dependent.
+         * @param isAllowed  If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addGeneralRule(
@@ -196,8 +196,8 @@ public final class SimpleAuthorisationService implements AuthorisationService
             final Object type,
             final boolean isAllowed)
         {
-            final BiInt2ObjectMap<Set<Object>> byTypeMap = isAllowed ? defaultPrincipal.byProtocolActionTypeAllowed :
-                defaultPrincipal.byProtocolActionTypeDenied;
+            final BiInt2ObjectMap<Set<Object>> byTypeMap = isAllowed ?
+                defaultPrincipal.byProtocolActionTypeAllowed : defaultPrincipal.byProtocolActionTypeDenied;
             byTypeMap.computeIfAbsent(protocolId, actionId, (a, b) -> new HashSet<>()).add(type);
 
             return this;
@@ -206,9 +206,9 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for all principals that is scoped to a protocolId and actionId.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param actionId          <code>sbe:message@id</code> value that the rule applies to.
-        * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param actionId   <code>sbe:message@id</code> value that the rule applies to.
+         * @param isAllowed  If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addGeneralRule(final int protocolId, final int actionId, final boolean isAllowed)
@@ -220,8 +220,8 @@ public final class SimpleAuthorisationService implements AuthorisationService
         /**
          * Add rule for all principals that is scoped to a protocolId.
          *
-         * @param protocolId        <code>sbe:messageSchema@id</code> value that the rule applies to.
-         * @param isAllowed         If the rule should allow or deny access.
+         * @param protocolId <code>sbe:messageSchema@id</code> value that the rule applies to.
+         * @param isAllowed  If the rule should allow or deny access.
          * @return this for a fluent API.
          */
         public Builder addGeneralRule(final int protocolId, final boolean isAllowed)

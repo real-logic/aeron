@@ -20,6 +20,7 @@ import io.aeron.samples.archive.SampleAuthenticator;
 import io.aeron.samples.archive.SampleAuthorisationService;
 import io.aeron.security.AuthenticatorSupplier;
 import io.aeron.security.AuthorisationServiceSupplier;
+import io.aeron.security.NullCredentialsSupplier;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -37,6 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import static io.aeron.cluster.ClusterBackup.Configuration.ReplayStart.LATEST_SNAPSHOT;
 import static io.aeron.test.SystemTestWatcher.UNKNOWN_HOST_FILTER;
@@ -625,6 +627,36 @@ class ClusterBackupTest
         final TestNode node = cluster.startStaticNodeFromBackup();
         cluster.awaitLeader();
         cluster.awaitServiceMessageCount(node, 200);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = { 0, 8833 })
+    @InterruptAfter(60)
+    void shouldResumeBackupIfStopped(final int catchupPort)
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        cluster.connectClient();
+        final int initialMessageCount = 100_000; // minimum number of messages to trigger the bug
+        cluster.sendMessages(initialMessageCount);
+        cluster.awaitServicesMessageCount(initialMessageCount);
+
+        final TestBackupNode backupNode = cluster.startClusterBackupNode(
+            true, new NullCredentialsSupplier(), ClusterBackup.SourceType.FOLLOWER, catchupPort);
+        cluster.awaitBackupLiveLogPosition(1);
+        backupNode.close();
+
+        final int delta = 1000;
+        cluster.sendMessages(delta);
+
+        cluster.awaitServicesMessageCount(initialMessageCount + delta);
+        cluster.awaitResponseMessageCount(initialMessageCount + delta);
+
+        cluster.startClusterBackupNode(
+            false, new NullCredentialsSupplier(), ClusterBackup.SourceType.FOLLOWER, catchupPort);
+        cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
+        cluster.awaitBackupLiveLogPosition(cluster.findLeader().service().cluster().logPosition());
     }
 
     private static void awaitErrorLogged(final TestBackupNode testBackupNode, final String expectedErrorMessage)

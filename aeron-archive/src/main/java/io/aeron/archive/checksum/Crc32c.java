@@ -19,6 +19,7 @@ import org.agrona.LangUtil;
 
 import java.lang.invoke.MethodHandle;
 import java.lang.reflect.Method;
+import java.util.zip.CRC32C;
 
 import static java.lang.invoke.MethodHandles.*;
 import static java.lang.invoke.MethodType.methodType;
@@ -31,16 +32,15 @@ import static java.lang.invoke.MethodType.methodType;
  */
 final class Crc32c implements Checksum
 {
+    public static final Crc32c INSTANCE = new Crc32c();
     private static final MethodHandle UPDATE_DIRECT_BYTE_BUFFER;
-    public static final Crc32c INSTANCE;
 
     static
     {
-        MethodHandle methodHandle = null;
+        MethodHandle methodHandle;
         try
         {
-            final Class<?> klass = Class.forName("java.util.zip.CRC32C");
-            final Method method = klass.getDeclaredMethod(
+            final Method method = CRC32C.class.getDeclaredMethod(
                 "updateDirectByteBuffer", int.class, long.class, int.class, int.class);
             method.setAccessible(true);
             final Lookup lookup = lookup();
@@ -52,17 +52,12 @@ final class Crc32c implements Checksum
             // Always compute bitwise complement on the result value
             methodHandle = filterReturnValue(methodHandle, bitwiseComplement);
         }
-        catch (final ClassNotFoundException ex)
+        catch (final Exception ex)
         {
-            // Expected case when executed on JDK 8
-        }
-        catch (final NoSuchMethodException | IllegalAccessException ex)
-        {
-            throw new Error("Failed to acquire method handle", ex);
+            throw new Error(ex);
         }
 
         UPDATE_DIRECT_BYTE_BUFFER = methodHandle;
-        INSTANCE = null != methodHandle ? new Crc32c() : null;
     }
 
     private static int bitwiseComplement(final int value)

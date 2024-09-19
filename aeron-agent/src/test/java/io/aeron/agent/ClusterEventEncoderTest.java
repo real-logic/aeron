@@ -162,9 +162,11 @@ class ClusterEventEncoderTest
         final TimeUnit from = TimeUnit.DAYS;
         final TimeUnit to = TimeUnit.MICROSECONDS;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
+        final String reason = "this state transition occured in a test";
 
-        assertEquals((2 * SIZE_OF_INT) + (6 * SIZE_OF_LONG) + SIZE_OF_INT + payload.length(),
-            electionStateChangeLength(from, to));
+        assertEquals((2 * SIZE_OF_INT) + (6 * SIZE_OF_LONG) + SIZE_OF_INT + payload.length() +
+            SIZE_OF_INT + reason.length(),
+            electionStateChangeLength(from, to, reason));
     }
 
     @Test
@@ -180,7 +182,8 @@ class ClusterEventEncoderTest
         final long logLeadershipTermId = 1L;
         final long appendPosition = 998L;
         final long catchupPosition = 200L;
-        final int captureLength = captureLength(electionStateChangeLength(null, to));
+        final String reason = "test";
+        final int captureLength = captureLength(electionStateChangeLength(null, to, reason));
         final int length = encodedLength(captureLength);
 
         final int encodedLength = encodeElectionStateChange(
@@ -197,7 +200,8 @@ class ClusterEventEncoderTest
             logPosition,
             logLeadershipTermId,
             appendPosition,
-            catchupPosition);
+            catchupPosition,
+            reason);
 
         assertEquals(length, encodedLength);
 

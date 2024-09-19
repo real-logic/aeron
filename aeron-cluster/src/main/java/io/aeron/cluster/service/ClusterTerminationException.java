@@ -24,6 +24,9 @@ public class ClusterTerminationException extends AgentTerminationException
 {
     private static final long serialVersionUID = -2705156056823180407L;
 
+    /**
+     * Is expected termination?
+     */
     private final boolean isExpected;
 
     /**

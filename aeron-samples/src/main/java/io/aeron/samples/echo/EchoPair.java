@@ -28,7 +28,7 @@ import org.agrona.DirectBuffer;
  */
 public class EchoPair implements ControlledFragmentHandler, AutoCloseable
 {
-    public static final int FRAGMENT_LIMIT = 10;
+    private static final int FRAGMENT_LIMIT = 10;
 
     private final long correlationId;
     private final Subscription subscription;

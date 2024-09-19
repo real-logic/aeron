@@ -449,7 +449,7 @@ int aeron_async_add_exclusive_publication_poll(
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_exclusive_publication no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -549,7 +549,7 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_subscription no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -646,7 +646,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
         case AERON_CLIENT_TIMEOUT_MEDIA_DRIVER:
         {
             AERON_SET_ERR(
-                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_publication no response from media driver");
+                AERON_CLIENT_ERROR_DRIVER_TIMEOUT, "%s", "async_add_counter no response from media driver");
             aeron_async_cmd_free(async);
             return -1;
         }
@@ -658,6 +658,37 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
             return -1;
         }
     }
+}
+
+int aeron_async_add_static_counter(
+    aeron_async_add_counter_t **async,
+    aeron_t *client,
+    int32_t type_id,
+    const uint8_t *key_buffer,
+    size_t key_buffer_length,
+    const char *label_buffer,
+    size_t label_buffer_length,
+    int64_t registration_id)
+{
+    if (NULL == async || NULL == client)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s",
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client));
+        return -1;
+    }
+
+    return aeron_client_conductor_async_add_static_counter(
+        async,
+        &client->conductor,
+        type_id,
+        key_buffer,
+        key_buffer_length,
+        label_buffer,
+        label_buffer_length,
+        registration_id);
 }
 
 static int aeron_async_destination_poll(aeron_async_destination_t *async)
@@ -768,6 +799,28 @@ int aeron_publication_async_remove_destination(
     return aeron_client_conductor_async_remove_publication_destination(async, &client->conductor, publication, uri);
 }
 
+int aeron_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_publication_t *publication,
+    int64_t destination_registration_id)
+{
+    if (NULL == async || NULL == client || NULL == publication)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s, publication: %s, destination_registration_id: %" PRId64,
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            destination_registration_id);
+        return -1;
+    }
+
+    return aeron_client_conductor_async_remove_publication_destination_by_id(
+        async, &client->conductor, publication, destination_registration_id);
+}
+
 int aeron_subscription_async_add_destination(
     aeron_async_destination_t **async, aeron_t *client, aeron_subscription_t *subscription, const char *uri)
 {
@@ -859,6 +912,28 @@ int aeron_exclusive_publication_async_remove_destination(
 
     return aeron_client_conductor_async_remove_exclusive_publication_destination(
         async, &client->conductor, publication, uri);
+}
+
+int aeron_exclusive_publication_async_remove_destination_by_id(
+    aeron_async_destination_t **async,
+    aeron_t *client,
+    aeron_exclusive_publication_t *publication,
+    int64_t destination_registration_id)
+{
+    if (NULL == async || NULL == client || NULL == publication)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "Parameters must not be null, async: %s, client: %s, publication: %s, destination_registration_id: %" PRId64,
+            AERON_NULL_STR(async),
+            AERON_NULL_STR(client),
+            AERON_NULL_STR(publication),
+            destination_registration_id);
+        return -1;
+    }
+
+    return aeron_client_conductor_async_remove_exclusive_publication_destination_by_id(
+        async, &client->conductor, publication, destination_registration_id);
 }
 
 int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd, uint64_t timeout_ms)

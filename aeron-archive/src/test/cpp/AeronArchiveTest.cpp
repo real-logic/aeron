@@ -296,7 +296,7 @@ public:
         EXPECT_EQ(counterId, RecordingPos::findCounterIdByRecordingId(countersReader, recordingId));
         EXPECT_EQ("aeron:ipc", RecordingPos::getSourceIdentity(countersReader, counterId));
 
-        std::int64_t halfCount = messageCount / 2;
+        std::size_t halfCount = messageCount / 2;
         offerMessages(*publication, halfCount, prefix);
         std::int64_t halfwayPosition = publication->position();
         offerMessages(*publication, halfCount, prefix, halfCount);

@@ -916,7 +916,7 @@ final class ClusteredServiceAgent extends ClusteredServiceAgentRhsPadding implem
                 break;
             }
 
-            if (fragments == 0)
+            if (0 == fragments)
             {
                 archive.checkForErrorResponse();
                 if (image.isClosed())

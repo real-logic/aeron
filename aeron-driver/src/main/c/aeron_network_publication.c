@@ -40,11 +40,12 @@ struct mmsghdr
 };
 #endif
 
-static inline void aeron_network_publication_liveness_on_remote_close(
+static inline bool aeron_network_publication_liveness_on_remote_close(
     aeron_network_publication_t *publication,
     int64_t receiver_id)
 {
-    aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
+    int64_t missing_value = publication->receiver_liveness_tracker.initial_value;
+    return missing_value != aeron_int64_counter_map_remove(&publication->receiver_liveness_tracker, receiver_id);
 }
 
 static inline int aeron_network_publication_liveness_on_status_message(
@@ -149,7 +150,8 @@ int aeron_network_publication_create(
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
-        endpoint->conductor_fields.udp_channel->is_multicast,
+        aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel),
+        params->has_max_resend ? params->max_resend : context->max_resend,
         retransmit_overflow_counter) < 0)
     {
         aeron_free(_pub->log_file_name);
@@ -273,8 +275,8 @@ int aeron_network_publication_create(
     _pub->term_window_length = (int64_t)aeron_producer_window_length(
         context->publication_window_length, params->term_length);
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
-    _pub->untethered_window_limit_timeout_ns = params->untethered_window_limit_timeout_ns;
-    _pub->untethered_resting_timeout_ns = params->untethered_resting_timeout_ns;
+    _pub->untethered_window_limit_timeout_ns = (int64_t)params->untethered_window_limit_timeout_ns;
+    _pub->untethered_resting_timeout_ns = (int64_t)params->untethered_resting_timeout_ns;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->connection_timeout_ns = (int64_t)context->publication_connection_timeout_ns;
     _pub->time_of_last_data_or_heartbeat_ns = now_ns - AERON_NETWORK_PUBLICATION_HEARTBEAT_TIMEOUT_NS - 1;
@@ -310,7 +312,7 @@ int aeron_network_publication_create(
     _pub->is_response = AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == endpoint->conductor_fields.udp_channel->control_mode;
     _pub->response_correlation_id = params->response_correlation_id;
 
-    aeron_int64_counter_map_init(&_pub->receiver_liveness_tracker, AERON_NULL_VALUE, 16, 0.6);
+    aeron_int64_counter_map_init(&_pub->receiver_liveness_tracker, AERON_NULL_VALUE, 16, 0.6f);
 
     *publication = _pub;
 
@@ -401,14 +403,15 @@ int aeron_network_publication_setup_message_check(
         aeron_setup_header_t *setup_header = (aeron_setup_header_t *)setup_buffer;
         struct iovec iov;
 
+        uint8_t send_response_flag = (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
+            AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
+        uint8_t group_flag = publication->retransmit_handler.has_group_semantics ? AERON_SETUP_HEADER_GROUP_FLAG : 0;
+
         setup_header->frame_header.frame_length = sizeof(aeron_setup_header_t);
         setup_header->frame_header.version = AERON_FRAME_HEADER_VERSION;
         setup_header->frame_header.flags = 0;
         setup_header->frame_header.type = AERON_HDR_TYPE_SETUP;
-        setup_header->frame_header.flags =
-            (!publication->is_response && AERON_NULL_VALUE != publication->response_correlation_id) ?
-                AERON_SETUP_HEADER_SEND_RESPONSE_FLAG : 0;
-
+        setup_header->frame_header.flags = send_response_flag | group_flag;
         setup_header->term_offset = term_offset;
         setup_header->session_id = publication->session_id;
         setup_header->stream_id = publication->stream_id;
@@ -829,6 +832,36 @@ void aeron_network_publication_on_status_message(
         aeron_network_publication_has_required_receivers(publication));
 }
 
+void aeron_network_publication_on_error(
+    aeron_network_publication_t *publication,
+    int64_t destination_registration_id,
+    const uint8_t *buffer,
+    size_t length,
+    struct sockaddr_storage *src_address,
+    aeron_driver_conductor_proxy_t *conductor_proxy)
+{
+    aeron_error_t *error = (aeron_error_t *)buffer;
+    const uint8_t *error_text = (const uint8_t *)(error + 1);
+    const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
+    publication->flow_control->on_error(publication->flow_control->state, buffer, length, src_address, time_ns);
+    if (aeron_network_publication_liveness_on_remote_close(publication, error->receiver_id))
+    {
+        const int64_t registration_id = aeron_network_publication_registration_id(publication);
+        aeron_driver_conductor_proxy_on_publication_error(
+            conductor_proxy,
+            registration_id,
+            destination_registration_id,
+            error->session_id,
+            error->stream_id,
+            error->receiver_id,
+            AERON_ERROR_HAS_GROUP_TAG_FLAG & error->frame_header.flags ? error->group_tag : AERON_NULL_VALUE,
+            src_address,
+            error->error_code,
+            error->error_length,
+            error_text);
+    }
+}
+
 void aeron_network_publication_on_rttm(
     aeron_network_publication_t *publication, const uint8_t *buffer, size_t length, struct sockaddr_storage *addr)
 {
@@ -1231,3 +1264,5 @@ extern bool aeron_network_publication_has_sender_released(aeron_network_publicat
 extern int64_t aeron_network_publication_max_spy_position(aeron_network_publication_t *publication, int64_t snd_pos);
 
 extern bool aeron_network_publication_is_accepting_subscriptions(aeron_network_publication_t *publication);
+
+extern inline int64_t aeron_network_publication_registration_id(aeron_network_publication_t *publication);

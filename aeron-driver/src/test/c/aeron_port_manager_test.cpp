@@ -87,10 +87,10 @@ protected:
 
     aeron_wildcard_port_manager_t m_port_manager = {};
     aeron_name_resolver_t m_resolver = {};
-    aeron_udp_channel_t *m_dynamic_endpoint_channel;
-    aeron_udp_channel_t *m_dynamic_control_channel;
-    struct sockaddr_storage m_bind_addr;
-    struct sockaddr_storage m_bind_addr_out;
+    aeron_udp_channel_t *m_dynamic_endpoint_channel = nullptr;
+    aeron_udp_channel_t *m_dynamic_control_channel = nullptr;
+    struct sockaddr_storage m_bind_addr = {};
+    struct sockaddr_storage m_bind_addr_out = {};
 
 private:
     void parse_udp_channel(const char *channel, aeron_udp_channel_t **out)

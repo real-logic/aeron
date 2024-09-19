@@ -40,7 +40,6 @@ import static io.aeron.archive.Archive.Configuration.RECORDING_SEGMENT_SUFFIX;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
 import static io.aeron.archive.client.AeronArchive.NULL_TIMESTAMP;
 import static io.aeron.archive.codecs.RecordingDescriptorDecoder.*;
-import static io.aeron.archive.codecs.RecordingState.INVALID;
 import static io.aeron.archive.codecs.RecordingState.VALID;
 import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
@@ -129,7 +128,6 @@ final class Catalog implements AutoCloseable
 
     private final boolean forceWrites;
     private final boolean forceMetadata;
-    private boolean indexInvalid;
     private boolean isClosed;
     private final File catalogFile;
     private final File archiveDir;
@@ -240,7 +238,7 @@ final class Catalog implements AutoCloseable
 
     Catalog(final File archiveDir, final EpochClock epochClock)
     {
-        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null, false);
+        this(archiveDir, epochClock, MIN_CAPACITY, false, null, null);
     }
 
     Catalog(
@@ -249,13 +247,11 @@ final class Catalog implements AutoCloseable
         final long catalogCapacity,
         final boolean writable,
         final Checksum checksum,
-        final IntConsumer versionCheck,
-        final boolean indexInvalid)
+        final IntConsumer versionCheck)
     {
         this.archiveDir = archiveDir;
         this.forceWrites = false;
         this.forceMetadata = false;
-        this.indexInvalid = indexInvalid;
         this.epochClock = epochClock;
         this.catalogChannel = null;
         this.checksum = checksum;
@@ -779,7 +775,7 @@ final class Catalog implements AutoCloseable
         return nativeOrder() == BYTE_ORDER ? stopPosition : Long.reverseBytes(stopPosition);
     }
 
-    boolean invalidateRecording(final long recordingId)
+    boolean changeState(final long recordingId, final RecordingState newState)
     {
         if (recordingId >= 0)
         {
@@ -788,7 +784,7 @@ final class Catalog implements AutoCloseable
             {
                 fieldAccessBuffer.putInt(
                     (int)offset + RecordingDescriptorHeaderEncoder.stateEncodingOffset(),
-                    INVALID.value(),
+                    newState.value(),
                     BYTE_ORDER);
 
                 forceWrites(catalogChannel);
@@ -960,7 +956,7 @@ final class Catalog implements AutoCloseable
             }
 
             recordingId = recordingId(catalogBuffer);
-            if (isValidDescriptor(catalogBuffer) || this.indexInvalid)
+            if (isValidDescriptor(catalogBuffer))
             {
                 catalogIndex.add(recordingId, offset);
             }

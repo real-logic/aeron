@@ -1,6 +1,7 @@
 name: Continuous Integration (Low Cadence)
 
 on:
+  workflow_call:
   workflow_dispatch:
   repository_dispatch:
     types: run-slow-tests
@@ -8,7 +9,7 @@ on:
     - cron: '0 0,12 * * *'
 
 concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
+  group: ci-low-cadence-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
 env:
@@ -25,8 +26,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '17', '21' ]
-        os: [ 'ubuntu-22.04', 'windows-latest', 'macos-14' ]
+        java: [ '17', '21' ]
+        os: [ 'ubuntu-24.04', 'windows-latest', 'macos-latest' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -66,11 +67,11 @@ jobs:
         run: |
           sudo sed -i bak "s/localhost/localhost $(hostname)/" /etc/hosts
           dscacheutil -flushcache
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
+          java-version: 17
       - name: Build and Run Slow Tests with Gradle
         run: ./gradlew slowTest
         env:
@@ -94,8 +95,8 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        java: [ '8', '17', '21' ]
-        os: [ 'ubuntu-22.04' ]
+        java: [ '17', '21' ]
+        os: [ 'ubuntu-24.04' ]
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -124,11 +125,11 @@ jobs:
           java -Xinternalversion
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=${{ matrix.java }}" >> $GITHUB_ENV
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
+          java-version: 17
       - name: Build and Run Javadoc
         run: ./gradlew javadoc
         env:
@@ -136,11 +137,11 @@ jobs:
 
   cpp-slow-tests-gcc:
     name: C++ Slow System Tests GCC ${{ matrix.version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -161,16 +162,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -178,7 +174,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
-        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests --no-unit-tests
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests --no-unit-tests --cxx-hide-deprecation-message
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -194,7 +190,7 @@ jobs:
 
   cpp-slow-tests-clang:
     name: C++ Slow System Tests Clang ${{ matrix.version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -219,16 +215,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -238,7 +229,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
-        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests --no-unit-tests
+        run: cppbuild/cppbuild --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --no-system-tests --no-unit-tests --cxx-hide-deprecation-message
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -275,18 +266,13 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Build
-        run: cppbuild/cppbuild.ps1 --slow-system-tests --no-system-tests --no-unit-tests
+        run: cppbuild/cppbuild.ps1 --slow-system-tests --no-system-tests --no-unit-tests --cxx-hide-deprecation-message
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -302,11 +288,11 @@ jobs:
 
   cpp-sanitize-gcc:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13' ]
+        version: [ '14' ]
     env:
       CC: gcc-${{ matrix.version }}
       CXX: g++-${{ matrix.version }}
@@ -327,16 +313,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -344,7 +325,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y g++-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
-        run: cmake --version; make --version; ldd --version; g++-${{ matrix.version }} --version; cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
+        run: cmake --version; make --version; ldd --version; g++-${{ matrix.version }} --version; cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --cxx-hide-deprecation-message
       - name: Copy test logs
         id: copy_test_logs
         if: failure()
@@ -360,7 +341,7 @@ jobs:
 
   cpp-sanitize-clang:
     name: C++ Sanitise Build Clang ${{ matrix.version }}
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     strategy:
       fail-fast: false
       matrix:
@@ -385,16 +366,11 @@ jobs:
         with:
           path: ~/.gradle/wrapper
           key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Setup java 8 to run the Gradle script
+      - name: Setup java
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 8
-      - name: Setup BUILD_JAVA_HOME & BUILD_JAVA_VERSION
-        run: |
-          java -Xinternalversion
-          echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
-          echo "BUILD_JAVA_VERSION=8" >> $GITHUB_ENV
+          java-version: 17
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -404,7 +380,7 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build
-        run: cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests
+        run: cppbuild/cppbuild --relwithdebinfo-build --sanitise-build --c-warnings-as-errors --cxx-warnings-as-errors --slow-system-tests --cxx-hide-deprecation-message
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

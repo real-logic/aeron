@@ -30,6 +30,7 @@ import static io.aeron.command.ControlProtocolEvents.*;
 class DriverEventsAdapter implements MessageHandler
 {
     private final ErrorResponseFlyweight errorResponse = new ErrorResponseFlyweight();
+    private final PublicationErrorFrameFlyweight publicationErrorFrame = new PublicationErrorFrameFlyweight();
     private final PublicationBuffersReadyFlyweight publicationReady = new PublicationBuffersReadyFlyweight();
     private final SubscriptionReadyFlyweight subscriptionReady = new SubscriptionReadyFlyweight();
     private final ImageBuffersReadyFlyweight imageReady = new ImageBuffersReadyFlyweight();
@@ -37,6 +38,7 @@ class DriverEventsAdapter implements MessageHandler
     private final ImageMessageFlyweight imageMessage = new ImageMessageFlyweight();
     private final CounterUpdateFlyweight counterUpdate = new CounterUpdateFlyweight();
     private final ClientTimeoutFlyweight clientTimeout = new ClientTimeoutFlyweight();
+    private final StaticCounterFlyweight staticCounter = new StaticCounterFlyweight();
     private final CopyBroadcastReceiver receiver;
     private final ClientConductor conductor;
     private final LongHashSet asyncCommandIdSet;
@@ -246,6 +248,28 @@ class DriverEventsAdapter implements MessageHandler
                 {
                     conductor.onClientTimeout();
                 }
+                break;
+            }
+
+            case ON_STATIC_COUNTER:
+            {
+                staticCounter.wrap(buffer, index);
+
+                final long correlationId = staticCounter.correlationId();
+                if (correlationId == activeCorrelationId)
+                {
+                    final int counterId = staticCounter.counterId();
+                    receivedCorrelationId = correlationId;
+                    conductor.onStaticCounter(correlationId, counterId);
+                }
+                break;
+            }
+
+            case ON_PUBLICATION_ERROR:
+            {
+                publicationErrorFrame.wrap(buffer, index);
+
+                conductor.onPublicationError(publicationErrorFrame);
                 break;
             }
         }

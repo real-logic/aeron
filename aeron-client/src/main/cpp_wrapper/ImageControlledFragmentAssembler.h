@@ -58,6 +58,11 @@ public:
         aeron_image_controlled_fragment_assembler_delete(m_fragment_assembler);
     }
 
+    ImageControlledFragmentAssembler(ImageControlledFragmentAssembler& other) = delete;
+    ImageControlledFragmentAssembler(ImageControlledFragmentAssembler&& other) = delete;
+    ImageControlledFragmentAssembler& operator=(ImageControlledFragmentAssembler& other) = delete;
+    ImageControlledFragmentAssembler& operator=(ImageControlledFragmentAssembler&& other) = delete;
+
     /**
      * Compose a controlled_poll_fragment_handler_t that calls the ImageControlledFragmentAssembler instance for
      * reassembly. Suitable for passing to Image::controlledPoll(controlled_poll_fragment_handler_t, int).

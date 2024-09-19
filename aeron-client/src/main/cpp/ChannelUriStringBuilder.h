@@ -73,6 +73,7 @@ public:
         m_nakDelay.reset(nullptr);
         m_untetheredWindowLimitTimeout.reset(nullptr);
         m_untetheredRestingTimeout.reset(nullptr);
+        m_maxResend.reset(nullptr);
 
         return *this;
     }
@@ -405,6 +406,12 @@ public:
         return *this;
     }
 
+    inline this_t &maxResend(std::int32_t maxResend)
+    {
+        m_maxResend.reset(new Value(maxResend));
+        return *this;
+    }
+
     std::string build()
     {
         std::ostringstream sb;
@@ -498,6 +505,7 @@ public:
         append(sb, NAK_DELAY_PARAM_NAME, m_nakDelay);
         append(sb, UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME, m_untetheredWindowLimitTimeout);
         append(sb, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, m_untetheredRestingTimeout);
+        append(sb, MAX_RESEND_PARAM_NAME, m_maxResend);
 
         std::string result = sb.str();
         const char lastChar = result.back();
@@ -554,6 +562,7 @@ private:
     std::unique_ptr<Value> m_nakDelay;
     std::unique_ptr<Value> m_untetheredWindowLimitTimeout;
     std::unique_ptr<Value> m_untetheredRestingTimeout;
+    std::unique_ptr<Value> m_maxResend;
     std::unique_ptr<std::string> m_mediaReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelReceiveTimestampOffset;
     std::unique_ptr<std::string> m_channelSendTimestampOffset;

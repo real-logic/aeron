@@ -6,4 +6,6 @@
     <suppress files=".*generated-src.*" checks="."/>
     <suppress files=".*generated-test.*" checks="."/>
     <suppress files="[\\/]test[\\/]" checks="MissingJavadoc.*"/>
+    <suppress files="[\\/]test[\\/]" checks="JavadocVariable"/>
+    <suppress files=".*package-info.java" checks="LineLength"/>
 </suppressions>

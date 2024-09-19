@@ -58,6 +58,10 @@ for ($i = 0; $i -lt $Args.count; $i++)
     {
         $CmakeExtraArgs = Add-Arg $CmakeExtraArgs "-DCXX_WARNINGS_AS_ERRORS=ON"
     }
+    elseif ($arg -eq "--cxx-hide-deprecation-message")
+    {
+        $CmakeExtraArgs = Add-Arg $CmakeExtraArgs "-DAERON_HIDE_DEPRECATION_MESSAGE=ON"
+    }
     elseif ($arg -eq "--link-samples-client-shared")
     {
         $CmakeExtraArgs = Add-Arg $CmakeExtraArgs "-DLINK_SAMPLES_CLIENT_SHARED=ON"
@@ -203,4 +207,5 @@ finally
     Pop-Location
     $env:Path = $OldPath
 }
+
 

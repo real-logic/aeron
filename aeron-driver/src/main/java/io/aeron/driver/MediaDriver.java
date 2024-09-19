@@ -44,6 +44,8 @@ import java.io.ByteArrayOutputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.net.StandardSocketOptions;
 import java.nio.ByteOrder;
 import java.nio.MappedByteBuffer;
@@ -53,7 +55,6 @@ import java.util.Arrays;
 import java.util.Date;
 import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.*;
@@ -63,7 +64,6 @@ import static io.aeron.driver.status.SystemCounterDescriptor.CONTROLLABLE_IDLE_S
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 import static org.agrona.IoUtil.mapNewFile;
 import static org.agrona.SystemUtil.loadPropertiesFiles;
@@ -144,7 +144,9 @@ public final class MediaDriver implements AutoCloseable
             {
                 case INVOKER:
                     sharedInvoker = new AgentInvoker(
-                        errorHandler, errorCounter, new CompositeAgent(sender, receiver, conductor));
+                        errorHandler,
+                        errorCounter,
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver, conductor));
                     sharedRunner = null;
                     sharedNetworkRunner = null;
                     conductorRunner = null;
@@ -157,7 +159,7 @@ public final class MediaDriver implements AutoCloseable
                         ctx.sharedIdleStrategy(),
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver, conductor));
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver, conductor));
                     sharedNetworkRunner = null;
                     conductorRunner = null;
                     receiverRunner = null;
@@ -170,7 +172,7 @@ public final class MediaDriver implements AutoCloseable
                         ctx.sharedNetworkIdleStrategy(),
                         errorHandler,
                         errorCounter,
-                        new CompositeAgent(sender, receiver));
+                        new NamedCompositeAgent(ctx.aeronDirectoryName(), sender, receiver));
                     conductorRunner = new AgentRunner(
                         ctx.conductorIdleStrategy(), errorHandler, errorCounter, conductor);
                     sharedRunner = null;
@@ -179,8 +181,8 @@ public final class MediaDriver implements AutoCloseable
                     sharedInvoker = null;
                     break;
 
-                default:
                 case DEDICATED:
+                default:
                     senderRunner = new AgentRunner(ctx.senderIdleStrategy(), errorHandler, errorCounter, sender);
                     receiverRunner = new AgentRunner(ctx.receiverIdleStrategy(), errorHandler, errorCounter, receiver);
                     conductorRunner = new AgentRunner(
@@ -421,10 +423,20 @@ public final class MediaDriver implements AutoCloseable
      */
     public static final class Context extends CommonContext
     {
-        private static final AtomicIntegerFieldUpdater<MediaDriver.Context> IS_CLOSED_UPDATER = newUpdater(
-            MediaDriver.Context.class, "isClosed");
+        private static final VarHandle IS_CLOSED_VH;
+        static
+        {
+            try
+            {
+                IS_CLOSED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isClosed", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
-        private volatile int isClosed;
+        private volatile boolean isClosed;
         private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
@@ -481,6 +493,7 @@ public final class MediaDriver implements AutoCloseable
         private int sendToStatusMessagePollRatio = Configuration.sendToStatusMessagePollRatio();
         private int resourceFreeLimit = Configuration.resourceFreeLimit();
         private int asyncTaskExecutorThreads = Configuration.asyncTaskExecutorThreads();
+        private int maxResend = Configuration.maxResend();
 
         private Long receiverGroupTag = Configuration.groupTag();
         private long flowControlGroupTag = Configuration.flowControlGroupTag();
@@ -580,7 +593,7 @@ public final class MediaDriver implements AutoCloseable
          */
         public void close()
         {
-            if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
+            if (IS_CLOSED_VH.compareAndSet(this, false, true))
             {
                 CloseHelper.close(errorHandler, logFactory);
 
@@ -2292,6 +2305,32 @@ public final class MediaDriver implements AutoCloseable
         public Context asyncTaskExecutor(final Executor asyncTaskExecutor)
         {
             this.asyncTaskExecutor = asyncTaskExecutor;
+            return this;
+        }
+
+        /**
+         * Returns the number of outstanding retransmits.
+         *
+         * @return number of outstanding retransmits.
+         * @see Configuration#MAX_RESEND_PROP_NAME
+         * @since 1.45.0
+         */
+        @Config
+        public int maxResend()
+        {
+            return maxResend;
+        }
+
+        /**
+         * Sets the number of outstanding retransmits.
+         *
+         * @param maxResend number of outstanding retransmits allowed.
+         * @return this for a fluent API.
+         * @since 1.45.0
+         */
+        public Context maxResend(final int maxResend)
+        {
+            this.maxResend = maxResend;
             return this;
         }
 
@@ -4231,7 +4270,7 @@ public final class MediaDriver implements AutoCloseable
             return "MediaDriver.Context" +
                 "\n{" +
                 "\n    isConcluded=" + isConcluded() +
-                "\n    isClosed=" + (1 == isClosed) +
+                "\n    isClosed=" + isClosed +
                 "\n    cncVersion=" + SemanticVersion.toString(CNC_VERSION) +
                 "\n    aeronDirectory=" + aeronDirectory() +
                 "\n    enabledExperimentalFeatures=" + enableExperimentalFeatures() +
@@ -4362,6 +4401,7 @@ public final class MediaDriver implements AutoCloseable
                 "\n    resourceFreeLimit=" + resourceFreeLimit +
                 "\n    asyncTaskExecutorThreads=" + asyncTaskExecutorThreads +
                 "\n    asyncTaskExecutor=" + asyncTaskExecutor +
+                "\n    maxResend=" + maxResend +
                 "\n}";
         }
     }

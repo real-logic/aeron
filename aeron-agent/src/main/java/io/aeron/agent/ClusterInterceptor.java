@@ -39,7 +39,8 @@ class ClusterInterceptor
             final long logPosition,
             final long logLeadershipTermId,
             final long appendPosition,
-            final long catchupPosition)
+            final long catchupPosition,
+            final String reason)
         {
             LOGGER.logElectionStateChange(
                 memberId,
@@ -51,7 +52,8 @@ class ClusterInterceptor
                 logPosition,
                 logLeadershipTermId,
                 appendPosition,
-                catchupPosition);
+                catchupPosition,
+                reason);
         }
     }
 

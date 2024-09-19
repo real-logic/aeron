@@ -39,13 +39,44 @@ import java.util.List;
  */
 public final class ClusterConfig
 {
+    /**
+     * Number of ports per node reserved.
+     */
     public static final int PORTS_PER_NODE = 100;
+
+    /**
+     * Offset from base port that the archive control channel is on.
+     */
     public static final int ARCHIVE_CONTROL_PORT_OFFSET = 1;
+
+    /**
+     * Offset from base port that the client facing port is on for ingress.
+     */
     public static final int CLIENT_FACING_PORT_OFFSET = 2;
+
+    /**
+     * Offset from base port that the member listens on for consensus traffic.
+     */
     public static final int MEMBER_FACING_PORT_OFFSET = 3;
+
+    /**
+     * Offset from base port that the cluster log is on.
+     */
     public static final int LOG_PORT_OFFSET = 4;
+
+    /**
+     * Offset from base port that the transfer of files is on.
+     */
     public static final int TRANSFER_PORT_OFFSET = 5;
+
+    /**
+     * Subdirectory into which archive files are stored.
+     */
     public static final String ARCHIVE_SUB_DIR = "archive";
+
+    /**
+     * Subdirectory into which cluster files are stored.
+     */
     public static final String CLUSTER_SUB_DIR = "cluster";
 
     private final int memberId;
@@ -244,7 +275,7 @@ public final class ClusterConfig
         this.archiveContext.errorHandler(errorHandler);
         this.aeronArchiveContext.errorHandler(errorHandler);
         this.consensusModuleContext.errorHandler(errorHandler);
-        this.clusteredServiceContexts.forEach(ctx -> ctx.errorHandler(errorHandler));
+        this.clusteredServiceContexts.forEach((ctx) -> ctx.errorHandler(errorHandler));
     }
 
     /**
@@ -270,7 +301,7 @@ public final class ClusterConfig
     {
         this.archiveContext.archiveDir(new File(baseDir, ARCHIVE_SUB_DIR));
         this.consensusModuleContext.clusterDir(new File(baseDir, CLUSTER_SUB_DIR));
-        this.clusteredServiceContexts.forEach(ctx -> ctx.clusterDir(new File(baseDir, CLUSTER_SUB_DIR)));
+        this.clusteredServiceContexts.forEach((ctx) -> ctx.clusterDir(new File(baseDir, CLUSTER_SUB_DIR)));
     }
 
     /**
@@ -470,7 +501,7 @@ public final class ClusterConfig
 
     /**
      * Calculates a port for use with a node based on a specific offset.  Can be used with the predefined offsets, e.g.
-     * {@link ClusterConfig#ARCHIVE_CONTROL_PORT_OFFSET} or with custom offsets.  For custom offsets select a value
+     * {@link ClusterConfig#ARCHIVE_CONTROL_PORT_OFFSET} or with custom offsets. For custom offsets select a value
      * larger than largest predefined offsets.  A value larger than the largest predefined offset, but less than
      * {@link ClusterConfig#PORTS_PER_NODE} is required.
      *

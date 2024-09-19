@@ -356,7 +356,7 @@ TEST_F(TimestampsTest, shouldPutTimestampInMessagesReservedValueWithMergedMds)
         pubAPosition,
         pubAConstants.position_bits_to_shift,
         pubAConstants.initial_term_id);
-    int32_t termOffset = (int32_t)(pubAPosition & (pubAConstants.term_buffer_length - 1));
+    auto termOffset = (int32_t)(pubAPosition & (pubAConstants.term_buffer_length - 1));
 
     std::stringstream publicationBStream;
     publicationBStream << destinationB;

@@ -26,79 +26,201 @@ import static io.aeron.agent.DriverEventDissector.*;
  */
 public enum DriverEventCode implements EventCode
 {
+    /**
+     * Incoming frame.
+     */
     FRAME_IN(1, DriverEventDissector::dissectFrame),
+    /**
+     * Outgoing frame.
+     */
     FRAME_OUT(2, DriverEventDissector::dissectFrame),
+    /**
+     * Add publication command.
+     */
     CMD_IN_ADD_PUBLICATION(3, DriverEventDissector::dissectCommand),
+    /**
+     * Remove publication command.
+     */
     CMD_IN_REMOVE_PUBLICATION(4, DriverEventDissector::dissectCommand),
+    /**
+     * Add subscription command.
+     */
     CMD_IN_ADD_SUBSCRIPTION(5, DriverEventDissector::dissectCommand),
-
+    /**
+     * Remove subscription command.
+     */
     CMD_IN_REMOVE_SUBSCRIPTION(6, DriverEventDissector::dissectCommand),
+    /**
+     * Publication ready response.
+     */
     CMD_OUT_PUBLICATION_READY(7, DriverEventDissector::dissectCommand),
+    /**
+     * On available image response.
+     */
     CMD_OUT_AVAILABLE_IMAGE(8, DriverEventDissector::dissectCommand),
-
+    /**
+     * Operation success response.
+     */
     CMD_OUT_ON_OPERATION_SUCCESS(12, DriverEventDissector::dissectCommand),
+    /**
+     * Keepalive command.
+     */
     CMD_IN_KEEPALIVE_CLIENT(13, DriverEventDissector::dissectCommand),
+    /**
+     * Cleanup publication event.
+     */
     REMOVE_PUBLICATION_CLEANUP(14,
         (code, buffer, offset, builder) -> dissectRemovePublicationCleanup(buffer, offset, builder)),
+    /**
+     * Cleanup subscription event.
+     */
     REMOVE_SUBSCRIPTION_CLEANUP(15,
         (code, buffer, offset, builder) -> dissectRemoveSubscriptionCleanup(buffer, offset, builder)),
-
+    /**
+     * Cleanup image event.
+     */
     REMOVE_IMAGE_CLEANUP(16,
         (code, buffer, offset, builder) -> dissectRemoveImageCleanup(buffer, offset, builder)),
+    /**
+     * On unavailable image response.
+     */
     CMD_OUT_ON_UNAVAILABLE_IMAGE(17, DriverEventDissector::dissectCommand),
-
+    /**
+     * Send channel creation event.
+     */
     SEND_CHANNEL_CREATION(23, DriverEventDissector::dissectString),
+    /**
+     * Receive channel creation event.
+     */
     RECEIVE_CHANNEL_CREATION(24, DriverEventDissector::dissectString),
+    /**
+     * Send channel closed event.
+     */
     SEND_CHANNEL_CLOSE(25, DriverEventDissector::dissectString),
+    /**
+     * Receive channel creation event.
+     */
     RECEIVE_CHANNEL_CLOSE(26, DriverEventDissector::dissectString),
-
+    /**
+     * Add destination command.
+     */
     CMD_IN_ADD_DESTINATION(30, DriverEventDissector::dissectCommand),
+    /**
+     * Remove destination command.
+     */
     CMD_IN_REMOVE_DESTINATION(31, DriverEventDissector::dissectCommand),
+    /**
+     * Add exclusive publication command.
+     */
     CMD_IN_ADD_EXCLUSIVE_PUBLICATION(32, DriverEventDissector::dissectCommand),
+    /**
+     * Exclusive publication ready.
+     */
     CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, DriverEventDissector::dissectCommand),
-
+    /**
+     * Error response
+     */
     CMD_OUT_ERROR(34, DriverEventDissector::dissectCommand),
-
+    /**
+     * Add counter command.
+     */
     CMD_IN_ADD_COUNTER(35, DriverEventDissector::dissectCommand),
+    /**
+     * Remove counter command.
+     */
     CMD_IN_REMOVE_COUNTER(36, DriverEventDissector::dissectCommand),
+    /**
+     * Subscription ready.
+     */
     CMD_OUT_SUBSCRIPTION_READY(37, DriverEventDissector::dissectCommand),
+    /**
+     * Counter ready.
+     */
     CMD_OUT_COUNTER_READY(38, DriverEventDissector::dissectCommand),
+    /**
+     * On unavailable counter event.
+     */
     CMD_OUT_ON_UNAVAILABLE_COUNTER(39, DriverEventDissector::dissectCommand),
-
+    /**
+     * Close client command.
+     */
     CMD_IN_CLIENT_CLOSE(40, DriverEventDissector::dissectCommand),
-
+    /**
+     * Add receive destination command.
+     */
     CMD_IN_ADD_RCV_DESTINATION(41, DriverEventDissector::dissectCommand),
+    /**
+     * Remove receive destination command.
+     */
     CMD_IN_REMOVE_RCV_DESTINATION(42, DriverEventDissector::dissectCommand),
-
+    /**
+     * On client timeout.
+     */
     CMD_OUT_ON_CLIENT_TIMEOUT(43, DriverEventDissector::dissectCommand),
+    /**
+     * Terminate driver command.
+     */
     CMD_IN_TERMINATE_DRIVER(44, DriverEventDissector::dissectCommand),
-
+    /**
+     * Untethered subscription state change.
+     */
     UNTETHERED_SUBSCRIPTION_STATE_CHANGE(45,
         (code, buffer, offset, builder) -> dissectUntetheredSubscriptionStateChange(buffer, offset, builder)),
-
+    /**
+     * Name resolution neighbor added.
+     */
     NAME_RESOLUTION_NEIGHBOR_ADDED(46, DriverEventDissector::dissectAddress),
+    /**
+     * Name resolution neighbor removed.
+     */
     NAME_RESOLUTION_NEIGHBOR_REMOVED(47, DriverEventDissector::dissectAddress),
-
+    /**
+     * Flow control receiver added.
+     */
     FLOW_CONTROL_RECEIVER_ADDED(48, DriverEventDissector::dissectFlowControlReceiver),
+    /**
+     * Flow control receiver removed.
+     */
     FLOW_CONTROL_RECEIVER_REMOVED(49, DriverEventDissector::dissectFlowControlReceiver),
-
+    /**
+     * Name resolution resolve.
+     */
     NAME_RESOLUTION_RESOLVE(50,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectResolve(buffer, offset, builder)),
-
+    /**
+     * Free text event.
+     */
     TEXT_DATA(51, DriverEventDissector::dissectString),
-
+    /**
+     * Name resolution lookup.
+     */
     NAME_RESOLUTION_LOOKUP(52,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectLookup(buffer, offset, builder)),
-
+    /**
+     * Name resolution host name.
+     */
     NAME_RESOLUTION_HOST_NAME(53,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder)),
-
+    /**
+     * Nak received.
+     */
     SEND_NAK_MESSAGE(54,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectSendNak(buffer, offset, builder)),
-
+    /**
+     * Resend data upon Nak.
+     */
     RESEND(55,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder));
+        (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder)),
 
+    /**
+     * Remove destination by id
+     */
+    CMD_IN_REMOVE_DESTINATION_BY_ID(56, DriverEventDissector::dissectCommand),
+
+    /**
+     * Reject image command received by the driver.
+     */
+    CMD_IN_REJECT_IMAGE(57, DriverEventDissector::dissectCommand);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

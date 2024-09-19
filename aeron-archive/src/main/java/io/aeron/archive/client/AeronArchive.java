@@ -39,15 +39,14 @@ import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.NoOpLock;
 
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
-import static io.aeron.archive.client.AeronArchive.Configuration.MESSAGE_TIMEOUT_DEFAULT_NS;
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
 import static io.aeron.driver.Configuration.*;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getSizeAsInt;
 
@@ -2917,13 +2916,20 @@ public final class AeronArchive implements AutoCloseable
      */
     public static final class Context implements Cloneable
     {
-        /**
-         * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
-         */
-        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
-            Context.class, "isConcluded");
-        private volatile int isConcluded;
+        private static final VarHandle IS_CONCLUDED_VH;
+        static
+        {
+            try
+            {
+                IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isConcluded", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
+        private volatile boolean isConcluded;
         private long messageTimeoutNs = Configuration.messageTimeoutNs();
         private String recordingEventsChannel = AeronArchive.Configuration.recordingEventsChannel();
         private int recordingEventsStreamId = AeronArchive.Configuration.recordingEventsStreamId();
@@ -2966,7 +2972,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public void conclude()
         {
-            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
             {
                 throw new ConcurrentConcludeException();
             }
@@ -3017,7 +3023,7 @@ public final class AeronArchive implements AutoCloseable
          */
         public boolean isConcluded()
         {
-            return 1 == isConcluded;
+            return isConcluded;
         }
 
         /**
@@ -3554,15 +3560,45 @@ public final class AeronArchive implements AutoCloseable
          */
         public enum State
         {
+            /**
+             * Initial state of adding a publication for control request channel.
+             */
             ADD_PUBLICATION(0),
+            /**
+             * Await publication being added.
+             */
             AWAIT_PUBLICATION_CONNECTED(1),
+            /**
+             * Sending {@code connect} request to the Archive.
+             */
             SEND_CONNECT_REQUEST(2),
+            /**
+             * Await response subscription connected.
+             */
             AWAIT_SUBSCRIPTION_CONNECTED(3),
+            /**
+             * Await connect response.
+             */
             AWAIT_CONNECT_RESPONSE(4),
+            /**
+             * Send {@code archive-id} request.
+             */
             SEND_ARCHIVE_ID_REQUEST(5),
+            /**
+             * Await response for the {@code archive-id} request.
+             */
             AWAIT_ARCHIVE_ID_RESPONSE(6),
+            /**
+             * Archive connection established.
+             */
             DONE(7),
+            /**
+             * Sending a challenge response.
+             */
             SEND_CHALLENGE_RESPONSE(8),
+            /**
+             * Await challenge response.
+             */
             AWAIT_CHALLENGE_RESPONSE(9);
 
             final int step;
@@ -3989,18 +4025,24 @@ public final class AeronArchive implements AutoCloseable
         {
             final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
 
-            final int pubLmtCounterId = aeron.countersReader().findByTypeIdAndRegistrationId(
-                AeronCounters.DRIVER_PUBLISHER_LIMIT_TYPE_ID, publication.registrationId());
-
             final long deadlineNs = aeron.context().nanoClock().nanoTime() + context.messageTimeoutNs();
-            while (!publication.isConnected() || 0 == aeron.countersReader().getCounterValue(pubLmtCounterId))
-            {
-                if (deadlineNs <= aeron.context().nanoClock().nanoTime())
-                {
-                    throw new ArchiveException("timed out wait for replay publication to connect");
-                }
 
-                idleStrategy.idle();
+            while (!publication.isConnected())
+            {
+                checkDeadline(
+                    idleStrategy,
+                    aeron.context().nanoClock(),
+                    deadlineNs,
+                    "timed out waiting to establish replay connection");
+            }
+
+            while (0 == publication.positionLimit())
+            {
+                checkDeadline(
+                    idleStrategy,
+                    aeron.context().nanoClock(),
+                    deadlineNs,
+                    "timed out waiting for replay connection to have available publication limit");
             }
 
             if (!responseArchiveProxy.replay(
@@ -4013,5 +4055,19 @@ public final class AeronArchive implements AutoCloseable
 
             return lastCorrelationId;
         }
+    }
+
+    private static void checkDeadline(
+        final IdleStrategy idleStrategy,
+        final NanoClock nanoClock,
+        final long deadlineNs,
+        final String msg)
+    {
+        if (deadlineNs <= nanoClock.nanoTime())
+        {
+            throw new ArchiveException(msg);
+        }
+
+        idleStrategy.idle();
     }
 }

@@ -178,4 +178,9 @@ inline bool aeron_udp_channel_is_multi_destination(const aeron_udp_channel_t *ch
         AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL == channel->control_mode;
 }
 
+inline bool aeron_udp_channel_has_group_semantics(const aeron_udp_channel_t *channel)
+{
+    return channel->is_multicast || aeron_udp_channel_is_multi_destination(channel);
+}
+
 #endif //AERON_UDP_CHANNEL_H

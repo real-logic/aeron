@@ -92,6 +92,24 @@ public class ControlProtocolEvents
      */
     public static final int TERMINATE_DRIVER = 0x0E;
 
+    /**
+     * Add or return a static Counter, i.e. the Counter that cannot be deleted and whose lifecycle is decoupled from
+     * the Aeron instance that created it.
+     *
+     * @since 1.45.0
+     */
+    public static final int ADD_STATIC_COUNTER = 0x0F;
+
+    /**
+     * Invalidate an image.
+     */
+    public static final int REJECT_IMAGE = 0x10;
+
+    /**
+     * Remove a destination by registration id.
+     */
+    public static final int REMOVE_DESTINATION_BY_ID = 0x11;
+
     // Media Driver to Clients
 
     /**
@@ -143,4 +161,17 @@ public class ControlProtocolEvents
      * Inform clients of client timeout.
      */
     public static final int ON_CLIENT_TIMEOUT = 0x0F0A;
+
+    /**
+     * A response to {@link #ADD_STATIC_COUNTER} command.
+     *
+     * @since 1.45.0
+     */
+    public static final int ON_STATIC_COUNTER = 0x0F0B;
+
+    /**
+     * Inform clients of error frame received by publication
+     * @since 1.47.0
+     */
+    public static final int ON_PUBLICATION_ERROR = 0x0F0C;
 }

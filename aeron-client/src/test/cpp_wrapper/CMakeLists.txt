@@ -18,6 +18,8 @@ set(TEST_HEADERS
     ../cpp_shared/EmbeddedMediaDriver.h
     TestUtil.h)
 
+include_directories(${AERON_CLIENT_WRAPPER_SOURCE_PATH})
+
 function(aeron_client_native_test name file)
     add_executable(${name} ${file} ${TEST_HEADERS})
     add_dependencies(${name} gmock)
@@ -57,6 +59,8 @@ if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(multiDestinationCast MultiDestinationTest.cpp)
     aeron_client_native_test(multiDestinationCast MultiDestinationTest.cpp)
 
+    aeron_client_wrapper_test(multiDestinationByIdTest MultiDestinationByIdTest.cpp)
+
     aeron_client_wrapper_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
     aeron_client_native_test(livenessTimeoutTest LivenessTimeoutTest.cpp)
 
@@ -70,5 +74,6 @@ if (AERON_UNIT_TESTS)
     aeron_client_wrapper_test(imageFragmentAssemblerTest ImageFragmentAssemblerTest.cpp)
     aeron_client_wrapper_test(controlledFragmentAssemblerTest ControlledFragmentAssemblerTest.cpp)
     aeron_client_wrapper_test(imageControlledFragmentAssemblerTest ImageControlledFragmentAssemblerTest.cpp)
+    aeron_client_wrapper_test(rejectImageTest RejectImageTest.cpp)
 
 endif ()

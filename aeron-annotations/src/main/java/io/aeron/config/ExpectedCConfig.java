@@ -24,17 +24,32 @@ public class ExpectedCConfig implements Serializable
 {
     private static final long serialVersionUID = -4549394851227986144L;
 
+    /**
+     * Whether C config exists.
+     */
     public boolean exists = true;
-
+    /**
+     * ENV var field name.
+     */
     public String envVarFieldName;
-
+    /**
+     * ENV var name.
+     */
     public String envVar;
-
+    /**
+     * Default field name.
+     */
     public String defaultFieldName;
-
+    /**
+     * Default value.
+     */
     public String defaultValue;
-
+    /**
+     * Default value type.
+     */
     public DefaultType defaultValueType;
-
+    /**
+     * Whether default value validation should be skipped.
+     */
     public boolean skipDefaultValidation = false;
 }

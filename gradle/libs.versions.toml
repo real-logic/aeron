@@ -1,0 +1,22 @@
+[versions]
+agrona = "1.23.0"
+byteBuddy = "1.15.1"
+checkstyle = "10.18.1"
+junit = "5.11.0"
+
+[libraries]
+agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.0, 2.0[", require = "1.23.0" } }
+sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.33.0" }
+mockito = { group = "org.mockito", name = "mockito-core", version = "5.13.0" }
+hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
+findbugs = { group = "com.google.code.findbugs", name = "findbugs-annotations", version = "3.0.1" }
+byteBuddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }
+byteBuddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
+hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version = "2.2.2" }
+asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version = "2.5.13" }
+jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.10.0.202406032230-r" }
+
+[plugins]
+versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
+bnd = { id = "biz.aQute.bnd.builder", version = "7.0.0" }
+shadow = { id = "com.gradleup.shadow", version = "8.3.2" }

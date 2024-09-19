@@ -41,6 +41,8 @@ import org.agrona.concurrent.status.StatusIndicator;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
@@ -48,7 +50,6 @@ import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -60,7 +61,6 @@ import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
 import static org.agrona.BitUtil.isPowerOfTwo;
 import static org.agrona.BufferUtil.allocateDirectAligned;
@@ -972,13 +972,20 @@ public final class Archive implements AutoCloseable
      */
     public static final class Context implements Cloneable
     {
-        /**
-         * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
-         */
-        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
-            Context.class, "isConcluded");
-        private volatile int isConcluded;
+        private static final VarHandle IS_CONCLUDED_VH;
+        static
+        {
+            try
+            {
+                IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isConcluded", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
+        private volatile boolean isConcluded;
         private boolean deleteArchiveOnStart = Configuration.deleteArchiveOnStart();
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
@@ -1081,7 +1088,7 @@ public final class Archive implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
-            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
             {
                 throw new ConcurrentConcludeException();
             }
@@ -1561,7 +1568,7 @@ public final class Archive implements AutoCloseable
          */
         public boolean isConcluded()
         {
-            return 1 == isConcluded;
+            return isConcluded;
         }
 
         /**

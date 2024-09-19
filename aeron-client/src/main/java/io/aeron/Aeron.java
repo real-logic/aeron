@@ -34,6 +34,8 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
@@ -41,7 +43,6 @@ import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -49,7 +50,6 @@ import static io.aeron.Aeron.Configuration.MAX_CLIENT_NAME_LENGTH;
 import static java.nio.channels.FileChannel.MapMode.READ_WRITE;
 import static java.nio.file.StandardOpenOption.READ;
 import static java.nio.file.StandardOpenOption.WRITE;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 import static org.agrona.SystemUtil.getProperty;
 
@@ -71,12 +71,20 @@ public class Aeron implements AutoCloseable
      */
     public static final int NULL_VALUE = -1;
 
-    /**
-     * Using an integer because there is no support for boolean. 1 is closed, 0 is not closed.
-     */
-    private static final AtomicIntegerFieldUpdater<Aeron> IS_CLOSED_UPDATER = newUpdater(Aeron.class, "isClosed");
+    private static final VarHandle IS_CLOSED_VH;
+    static
+    {
+        try
+        {
+            IS_CLOSED_VH = MethodHandles.lookup().findVarHandle(Aeron.class, "isClosed", boolean.class);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
 
-    private volatile int isClosed;
+    private volatile boolean isClosed;
     private final long clientId;
     private final ClientConductor conductor;
     private final RingBuffer commandBuffer;
@@ -186,7 +194,7 @@ public class Aeron implements AutoCloseable
      */
     public boolean isClosed()
     {
-        return 1 == isClosed;
+        return isClosed;
     }
 
     /**
@@ -256,7 +264,7 @@ public class Aeron implements AutoCloseable
      */
     public void close()
     {
-        if (IS_CLOSED_UPDATER.compareAndSet(this, 0, 1))
+        if (IS_CLOSED_VH.compareAndSet(this, false, true))
         {
             final ErrorHandler errorHandler = ctx.errorHandler();
             if (null != conductorRunner)
@@ -473,7 +481,7 @@ public class Aeron implements AutoCloseable
      */
     public long nextCorrelationId()
     {
-        if (1 == isClosed)
+        if (isClosed)
         {
             throw new AeronException("client is closed");
         }
@@ -488,7 +496,7 @@ public class Aeron implements AutoCloseable
      */
     public CountersReader countersReader()
     {
-        if (1 == isClosed)
+        if (isClosed)
         {
             throw new AeronException("client is closed");
         }
@@ -714,7 +722,7 @@ public class Aeron implements AutoCloseable
      */
     void internalClose()
     {
-        isClosed = 1;
+        isClosed = true;
     }
 
     /**

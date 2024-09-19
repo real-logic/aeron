@@ -30,6 +30,8 @@ import org.agrona.concurrent.errors.LoggingErrorHandler;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 
 import java.io.*;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.text.SimpleDateFormat;
@@ -38,13 +40,11 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Consumer;
 
 import static io.aeron.CncFileDescriptor.cncVersionOffset;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
@@ -449,24 +449,29 @@ public class CommonContext implements Cloneable
         }
     }
 
-    private static final PrintStream NO_OP_LOGGER = new PrintStream(new OutputStream()
-    {
-        public void write(final int b)
+    private static final PrintStream NO_OP_LOGGER = new PrintStream(
+        new OutputStream()
         {
-            // No-op
-        }
-    });
-
-    /**
-     * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
-     */
-    private static final AtomicIntegerFieldUpdater<CommonContext> IS_CONCLUDED_UPDATER = newUpdater(
-        CommonContext.class, "isConcluded");
-
+            public void write(final int b)
+            {
+                // No-op
+            }
+        });
     private static final Map<String, Boolean> DEBUG_FIELDS_SEEN = new ConcurrentHashMap<>();
+    private static final VarHandle IS_CONCLUDED_VH;
+    static
+    {
+        try
+        {
+            IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(CommonContext.class, "isConcluded", boolean.class);
+        }
+        catch (final ReflectiveOperationException ex)
+        {
+            throw new ExceptionInInitializerError(ex);
+        }
+    }
 
-    private volatile int isConcluded;
-
+    private volatile boolean isConcluded;
     private long driverTimeoutMs = DRIVER_TIMEOUT_MS;
     private String aeronDirectoryName = getAeronDirectoryName();
     private File aeronDirectory;
@@ -542,7 +547,7 @@ public class CommonContext implements Cloneable
      */
     public CommonContext conclude()
     {
-        if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+        if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
         {
             throw new ConcurrentConcludeException();
         }
@@ -561,7 +566,7 @@ public class CommonContext implements Cloneable
      */
     public boolean isConcluded()
     {
-        return 1 == isConcluded;
+        return isConcluded;
     }
 
     /**

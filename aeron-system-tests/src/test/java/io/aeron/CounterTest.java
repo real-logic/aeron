@@ -29,7 +29,6 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,7 +39,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
@@ -383,6 +381,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
+    @SuppressWarnings("indentation")
     void shouldReturnErrorIfANonStaticCounterExistsForTypeIdRegistrationId()
     {
         final Counter counter = clientA.addCounter(COUNTER_TYPE_ID, "test session-specific counter");
@@ -400,10 +399,15 @@ class CounterTest
                 0,
                 COUNTER_LABEL.length(),
                 counter.registrationId()));
-        assertThat(registrationException.getMessage(), allOf(
-            containsString("cannot add static counter, because a non-static counter exists (counterId=" +
-                counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" + counter.registrationId()),
-            containsString("errorCodeValue=11")));
+
+        assertThat(
+            registrationException.getMessage(),
+            allOf(
+                containsString("cannot add static counter, because a non-static counter exists"),
+                containsString("counterId=" + counter.id()),
+                containsString("typeId=" + COUNTER_TYPE_ID),
+                containsString("registrationId=" + counter.registrationId()),
+                containsString("errorCodeValue=11")));
     }
 
     @Test

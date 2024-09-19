@@ -694,17 +694,17 @@ class Election
 
             workCount++;
         }
+        final long deadlineNs = isExtendedCanvass ?
+            timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
+            consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.leaderHeartbeatTimeoutNs();
 
         if (isPassiveMember() ||
             (ctx.appointedLeaderId() != NULL_VALUE && ctx.appointedLeaderId() != thisMember.id()) ||
             (this.currentAppointedLeaderId != NULL_VALUE && this.currentAppointedLeaderId != thisMember.id()))
         {
+            checkAppointedLeaderTimeout(nowNs, deadlineNs);
             return workCount;
         }
-
-        final long deadlineNs = isExtendedCanvass ?
-            timeOfLastStateChangeNs + ctx.startupCanvassTimeoutNs() :
-            consensusModuleAgent.timeOfLastLeaderUpdateNs() + ctx.leaderHeartbeatTimeoutNs();
 
         if (ClusterMember.isUnanimousCandidate(clusterMembers, thisMember, gracefulClosedLeaderId) ||
             (nowNs >= deadlineNs && ClusterMember.isQuorumCandidate(clusterMembers, thisMember)))
@@ -1493,6 +1493,20 @@ class Election
         if (NULL_POSITION != lastAppendPosition)
         {
             appendPosition = lastAppendPosition;
+        }
+    }
+
+    private void checkAppointedLeaderTimeout(final long nowNs, final long deadLineNs)
+    {
+        if (this.currentAppointedLeaderId == NULL_VALUE)
+        {
+            return;
+        }
+
+        if (deadLineNs + ctx.appointedLeaderTimeoutNs() < nowNs)
+        {
+            this.currentAppointedLeaderId = NULL_VALUE;
+            return;
         }
     }
 

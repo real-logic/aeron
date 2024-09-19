@@ -948,6 +948,17 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.consensus.module.extension";
 
         /**
+         * Timeout for appointed leader status.
+         */
+        public static final String APPOINTED_LEADER_TIMEOUT_PROP_NAME = "aeron.cluster.appointedLeader.timeout";
+
+        /**
+         * Timeout for appointed leader status.
+         */
+        public static final long APPOINTED_LEADER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1430,6 +1441,17 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout for appointed leader status.
+         *
+         * @return timeout in nanoseconds to wait for canvass request
+         * @see #SESSION_TIMEOUT_PROP_NAME
+         */
+        public static long appointedLeaderTimeoutNs() {
+            return getDurationInNanos(APPOINTED_LEADER_TIMEOUT_PROP_NAME, APPOINTED_LEADER_TIMEOUT_DEFAULT_NS);
+        }
+
+
+        /**
          * Create a new {@link ConsensusModuleExtension} based on the configured
          * {@link #CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME}.
          *
@@ -1568,6 +1590,8 @@ public final class ConsensusModule implements AutoCloseable
         private boolean useAgentInvoker = false;
         private ConsensusModuleStateExport boostrapState = null;
         private boolean acceptStandbySnapshots = Configuration.acceptStandbySnapshots();
+
+        private long appointedLeaderTimeoutNs = Configuration.appointedLeaderTimeoutNs();
 
         /**
          * Perform a shallow copy of the object.
@@ -4278,6 +4302,30 @@ public final class ConsensusModule implements AutoCloseable
             this.leadershipTermId = leadershipTermId;
             return this;
         }
+
+        /**
+         * Timeout for appointed leader status.
+         *
+         * @param appointedLeaderTimeoutNs to wait for canvass request in appointed leader statuis.
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
+         */
+        public Context appointedLeaderTimeoutNs(final long appointedLeaderTimeoutNs) {
+            this.appointedLeaderTimeoutNs = appointedLeaderTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for appointed leader status.
+         *
+         * @return appointedLeaderTimeoutNs to wait for canvass request in appointed leader statuis.
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
+         */
+        public long appointedLeaderTimeoutNs() {
+            return appointedLeaderTimeoutNs;
+        }
+
 
         /**
          * Delete the cluster directory.

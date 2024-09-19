@@ -159,6 +159,7 @@ final class ConsensusModuleAgent
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
     private String localLogChannel;
     private int currentAppointedLeaderId;
+    private long appointedLeaderStartTime;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -760,6 +761,30 @@ final class ConsensusModuleAgent
         else if (AdminRequestType.APPOINT_LEADER == requestType)
         {
             final int appointedLeaderId = payload.getInt(payloadOffset);
+            if (appointedLeaderId == this.memberId)
+            {
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
+                return;
+            }
+
+            boolean illegal = true;
+            for (ClusterMember activeMember : activeMembers)
+            {
+                if (activeMember.id() == appointedLeaderId)
+                {
+                    illegal = false;
+                    break;
+                }
+            }
+
+            if (illegal)
+            {
+                final String msg = "Failed to append appoint leader memberId illegal";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
+                return;
+            }
+
+
             if (ConsensusModule.State.ACTIVE == state && appendAction(ClusterAction.APPOINT_LEADER, appointedLeaderId))
             {
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
@@ -2395,6 +2420,11 @@ final class ConsensusModuleAgent
                         closeAndTerminate();
                     }
                 }
+                else if (ConsensusModule.State.APPOINT_LEADER == state)
+                {
+                    checkAppointedLeaderTimeout(nowNs);
+                }
+
             }
             else
             {
@@ -3182,6 +3212,7 @@ final class ConsensusModuleAgent
         if (this.role == Cluster.Role.LEADER)
         {
             this.state(ConsensusModule.State.APPOINT_LEADER);
+            this.appointedLeaderStartTime = clusterClock.timeNanos();
             return;
         }
         this.enterElection(true, "appoint leader member id : " + appointedLeaderId);
@@ -3822,6 +3853,16 @@ final class ConsensusModuleAgent
         return workCount;
     }
 
+    private void checkAppointedLeaderTimeout(final long nowNs)
+    {
+        if (appointedLeaderStartTime + ctx.appointedLeaderTimeoutNs() < nowNs)
+        {
+            this.state(ConsensusModule.State.ACTIVE);
+        }
+    }
+
+
+    @Override
     public String toString()
     {
         return "ConsensusModuleAgent{" +

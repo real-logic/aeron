@@ -4324,6 +4324,7 @@ public final class ConsensusModule implements AutoCloseable
          * @param appointedLeaderTimeoutNs to wait for canvass request in appointed leader statuis.
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
          * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
+         * @return this for a fluentAPI.
          */
         public Context appointedLeaderTimeoutNs(final long appointedLeaderTimeoutNs)
         {

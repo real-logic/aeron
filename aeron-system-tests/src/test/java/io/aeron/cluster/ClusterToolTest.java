@@ -15,6 +15,7 @@
  */
 package io.aeron.cluster;
 
+import io.aeron.test.CapturingPrintStream;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptAfter;
 import io.aeron.test.InterruptingTestCallback;
@@ -38,7 +39,6 @@ import java.util.function.Consumer;
 import java.util.regex.Pattern;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
-import static java.nio.charset.StandardCharsets.US_ASCII;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -436,30 +436,5 @@ class ClusterToolTest
         // compare up to millis, because upon copy file timestamp seems to be truncated
         // e.g. expected: <2021-09-27T09:49:22.756944756Z> but was: <2021-09-27T09:49:22.756944Z>
         assertEquals(logLastModifiedTime.toMillis(), Files.getLastModifiedTime(backupLogFile).toMillis());
-    }
-
-    static class CapturingPrintStream
-    {
-        private final ByteArrayOutputStream byteArrayOutputStream = new ByteArrayOutputStream();
-        private final PrintStream printStream = new PrintStream(byteArrayOutputStream);
-
-        PrintStream resetAndGetPrintStream()
-        {
-            byteArrayOutputStream.reset();
-            return printStream;
-        }
-
-        String flushAndGetContent()
-        {
-            printStream.flush();
-            try
-            {
-                return byteArrayOutputStream.toString(US_ASCII.name());
-            }
-            catch (final UnsupportedEncodingException ex)
-            {
-                throw new RuntimeException(ex);
-            }
-        }
     }
 }

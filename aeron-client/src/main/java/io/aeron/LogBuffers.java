@@ -20,7 +20,6 @@ import org.agrona.BufferUtil;
 import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -51,8 +50,6 @@ public final class LogBuffers implements AutoCloseable
     private final ByteBuffer[] termBuffers = new ByteBuffer[PARTITION_COUNT];
     private final UnsafeBuffer logMetaDataBuffer;
     private final MappedByteBuffer[] mappedByteBuffers;
-    private final AtomicCounter mappedBytesCounter;
-    private long logLength;
 
     /**
      * Construct the log buffers for a given log file.
@@ -60,11 +57,6 @@ public final class LogBuffers implements AutoCloseable
      * @param logFileName to be mapped.
      */
     public LogBuffers(final String logFileName)
-    {
-        this(logFileName, null);
-    }
-
-    LogBuffers(final String logFileName, final AtomicCounter mappedBytesCounter)
     {
         int termLength = 0;
         FileChannel fileChannel = null;
@@ -74,7 +66,7 @@ public final class LogBuffers implements AutoCloseable
         try
         {
             fileChannel = FileChannel.open(Paths.get(logFileName), FILE_OPTIONS);
-            logLength = fileChannel.size();
+            final long logLength = fileChannel.size();
             if (logLength < LOG_META_DATA_LENGTH)
             {
                 throw new IllegalStateException(
@@ -161,12 +153,6 @@ public final class LogBuffers implements AutoCloseable
         this.fileChannel = fileChannel;
         this.logMetaDataBuffer = logMetaDataBuffer;
         this.mappedByteBuffers = mappedByteBuffers;
-        this.mappedBytesCounter = mappedBytesCounter;
-
-        if (null != mappedBytesCounter)
-        {
-            mappedBytesCounter.getAndAdd(logLength);
-        }
     }
 
     /**
@@ -232,10 +218,6 @@ public final class LogBuffers implements AutoCloseable
     public void close()
     {
         close(fileChannel, logMetaDataBuffer, mappedByteBuffers);
-        if (null != mappedBytesCounter)
-        {
-            mappedBytesCounter.getAndAdd(-logLength);
-        }
     }
 
     /**

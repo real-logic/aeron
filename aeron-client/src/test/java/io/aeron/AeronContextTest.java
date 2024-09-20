@@ -15,14 +15,11 @@
  */
 package io.aeron;
 
-import org.agrona.concurrent.status.AtomicCounter;
-import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
 
 class AeronContextTest
 {
@@ -45,16 +42,5 @@ class AeronContextTest
 
         context.clientName(clientName);
         assertSame(clientName, context.clientName());
-    }
-
-    @Test
-    void shouldAssignMappedBytesCounter()
-    {
-        final Aeron.Context context = new Aeron.Context();
-        assertNull(context.mappedBytesCounter());
-
-        final AtomicCounter counter = mock(AtomicCounter.class);
-        assertSame(context, context.mappedBytesCounter(counter));
-        assertSame(counter, context.mappedBytesCounter());
     }
 }

@@ -16,26 +16,19 @@
 package io.aeron;
 
 import org.agrona.concurrent.UnsafeBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.mockito.InOrder;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static org.hamcrest.CoreMatchers.*;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.inOrder;
-import static org.mockito.Mockito.mock;
 
 class LogBuffersTest
 {
@@ -94,69 +87,5 @@ class LogBuffersTest
             IllegalStateException.class, () -> new LogBuffers(logFile.toAbsolutePath().toString()));
         assertEquals("Log file length less than min length of " + LOG_META_DATA_LENGTH + ": length=" + fileLength,
             exception.getMessage());
-    }
-
-    @Test
-    void mapExistingFile(@TempDir final Path dir) throws IOException
-    {
-        final int termLength = TERM_MIN_LENGTH;
-        final int pageSize = PAGE_MIN_SIZE;
-        final Path logFile = createLogFile(dir, termLength, pageSize);
-
-        try (LogBuffers logBuffers = new LogBuffers(logFile.toString()))
-        {
-            final UnsafeBuffer metaDataBuffer = logBuffers.metaDataBuffer();
-            assertNotNull(metaDataBuffer);
-            assertEquals(termLength, termLength(metaDataBuffer));
-            assertEquals(termLength, logBuffers.termLength());
-            assertEquals(pageSize, pageSize(metaDataBuffer));
-        }
-    }
-
-    @Test
-    void mapFileAndCaptureMappedSize() throws IOException
-    {
-        final Path logFile = createLogFile(Files.createTempDirectory("test"), TERM_MAX_LENGTH, PAGE_MIN_SIZE * 4);
-        final long logFileSize = Files.size(logFile);
-
-        final AtomicCounter mappedBytesCounter = mock(AtomicCounter.class);
-        final LogBuffers logBuffers = new LogBuffers(logFile.toString(), mappedBytesCounter);
-
-        for (int i = 0; i < 5; i++)
-        {
-            logBuffers.duplicateTermBuffers();
-        }
-
-        logBuffers.close();
-
-        final InOrder inOrder = inOrder(mappedBytesCounter);
-        inOrder.verify(mappedBytesCounter).getAndAdd(logFileSize);
-        inOrder.verify(mappedBytesCounter).getAndAdd(-logFileSize);
-        inOrder.verifyNoMoreInteractions();
-    }
-
-    private static Path createLogFile(final Path dir, final int termLength, final int pageSize) throws IOException
-    {
-        final long logFileSize = (long)termLength * PARTITION_COUNT + LOG_META_DATA_LENGTH;
-        final UnsafeBuffer buffer = new UnsafeBuffer(ByteBuffer.allocateDirect(LOG_META_DATA_LENGTH));
-        termLength(buffer, termLength);
-        pageSize(buffer, pageSize);
-        final Path logFile = dir.resolve("some.log");
-        try (FileChannel fileChannel =
-            FileChannel.open(logFile, StandardOpenOption.WRITE, StandardOpenOption.CREATE_NEW))
-        {
-            final ByteBuffer byteBuffer = buffer.byteBuffer();
-            byteBuffer.position(0).limit(LOG_META_DATA_LENGTH);
-
-            long position = logFileSize - LOG_META_DATA_LENGTH;
-            do
-            {
-                position += fileChannel.write(byteBuffer, position);
-            }
-            while (byteBuffer.remaining() > 0);
-        }
-
-        assertEquals(logFileSize, Files.size(logFile));
-        return logFile;
     }
 }

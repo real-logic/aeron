@@ -121,7 +121,7 @@ class MappedRawLog implements RawLog
                     preTouchPages(termBuffers, termLength, filePageSize);
                 }
 
-                mappedBytesCounter.getAndAdd(logLength);
+                mappedBytesCounter.getAndAddOrdered(logLength);
             }
         }
         catch (final IOException ex)
@@ -147,7 +147,7 @@ class MappedRawLog implements RawLog
                 BufferUtil.free(mappedBuffers[i]);
             }
 
-            mappedBytesCounter.getAndAdd(-logLength);
+            mappedBytesCounter.getAndAddOrdered(-logLength);
 
             logMetaDataBuffer.wrap(0, 0);
             for (int i = 0; i < termBuffers.length; i++)

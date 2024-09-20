@@ -29,7 +29,6 @@ import org.agrona.concurrent.broadcast.BroadcastReceiver;
 import org.agrona.concurrent.broadcast.CopyBroadcastReceiver;
 import org.agrona.concurrent.ringbuffer.ManyToOneRingBuffer;
 import org.agrona.concurrent.ringbuffer.RingBuffer;
-import org.agrona.concurrent.status.AtomicCounter;
 import org.agrona.concurrent.status.CountersReader;
 
 import java.io.File;
@@ -73,7 +72,6 @@ public class Aeron implements AutoCloseable
     public static final int NULL_VALUE = -1;
 
     private static final VarHandle IS_CLOSED_VH;
-
     static
     {
         try
@@ -961,7 +959,6 @@ public class Aeron implements AutoCloseable
         private long closeLingerDurationNs = Configuration.closeLingerDurationNs();
 
         private ThreadFactory threadFactory = Thread::new;
-        private AtomicCounter mappedBytesCounter;
 
         /**
          * Perform a shallow copy of the object.
@@ -1061,16 +1058,9 @@ public class Aeron implements AutoCloseable
                 countersValuesBuffer(CncFileDescriptor.createCountersValuesBuffer(cncByteBuffer, cncMetaDataBuffer));
             }
 
-            if (null == mappedBytesCounter)
-            {
-                mappedBytesCounter = new AtomicCounter(countersValuesBuffer(), 35); // Bytes currently mapped
-            }
-
-            mappedBytesCounter.getAndAdd(cncByteBuffer.capacity());
-
             if (null == logBuffersFactory)
             {
-                logBuffersFactory = new MappedLogBuffersFactory(mappedBytesCounter);
+                logBuffersFactory = new MappedLogBuffersFactory();
             }
 
             if (null == errorHandler)
@@ -1780,24 +1770,9 @@ public class Aeron implements AutoCloseable
          */
         public void close()
         {
-            if (null != mappedBytesCounter)
-            {
-                mappedBytesCounter.getAndAdd(-cncByteBuffer.capacity());
-            }
             BufferUtil.free(cncByteBuffer);
             this.cncByteBuffer = null;
             super.close();
-        }
-
-        AtomicCounter mappedBytesCounter()
-        {
-            return mappedBytesCounter;
-        }
-
-        Context mappedBytesCounter(final AtomicCounter mappedBytesCounter)
-        {
-            this.mappedBytesCounter = mappedBytesCounter;
-            return this;
         }
 
         /**
@@ -1842,7 +1817,6 @@ public class Aeron implements AutoCloseable
                 "\n    resourceLingerDurationNs=" + resourceLingerDurationNs +
                 "\n    closeLingerDurationNs=" + closeLingerDurationNs +
                 "\n    threadFactory=" + threadFactory +
-                "\n    mappedBytesCounter=" + mappedBytesCounter +
                 "\n}";
         }
 

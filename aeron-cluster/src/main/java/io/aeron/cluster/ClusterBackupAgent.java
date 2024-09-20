@@ -741,6 +741,11 @@ public final class ClusterBackupAgent implements Agent
         {
             snapshotsRetrieved.addAll(snapshotReplication.snapshotsRetrieved());
 
+            if (!snapshotsRetrieved.isEmpty())
+            {
+                ctx.snapshotRetrieveCounter().incrementOrdered();
+            }
+
             snapshotReplication.close();
             snapshotReplication = null;
 

@@ -134,7 +134,7 @@ class ClusterBackupTest
     }
 
     @Test
-    @InterruptAfter(30)
+    @InterruptAfter(20)
     void shouldBackupClusterWithSnapshot()
     {
         final TestCluster cluster = aCluster().withStaticNodes(3).useResponseChannels(true).start();
@@ -155,6 +155,7 @@ class ClusterBackupTest
 
         cluster.awaitBackupState(ClusterBackup.State.BACKING_UP);
         cluster.awaitBackupLiveLogPosition(logPosition);
+        cluster.awaitBackupSnapshotRetrievedCount(1);
         cluster.stopAllNodes();
 
         final TestNode node = cluster.startStaticNodeFromBackup();

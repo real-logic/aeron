@@ -49,6 +49,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.CLUSTER_BACKUP_SNAPSHOT_RETRIEVE_COUNT_TYPE_ID;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
@@ -614,6 +615,7 @@ public final class ClusterBackup implements AutoCloseable
         private Counter stateCounter;
         private Counter liveLogPositionCounter;
         private Counter nextQueryDeadlineMsCounter;
+        private Counter snapshotRetrieveCounter;
 
         private AeronArchive.Context archiveContext;
         private AeronArchive.Context clusterArchiveContext;
@@ -790,6 +792,16 @@ public final class ClusterBackup implements AutoCloseable
             {
                 nextQueryDeadlineMsCounter = ClusterCounters.allocate(
                     aeron, buffer, "ClusterBackup next query deadline in ms", QUERY_DEADLINE_TYPE_ID, clusterId);
+            }
+
+            if (null == snapshotRetrieveCounter)
+            {
+                snapshotRetrieveCounter = ClusterCounters.allocate(
+                    aeron,
+                    buffer,
+                    "ClusterBackup snapshots retrieved",
+                    CLUSTER_BACKUP_SNAPSHOT_RETRIEVE_COUNT_TYPE_ID,
+                    clusterId);
             }
 
             if (null == threadFactory)
@@ -1708,6 +1720,28 @@ public final class ClusterBackup implements AutoCloseable
         {
             this.liveLogPositionCounter = liveLogPositionCounter;
             return this;
+        }
+
+        /**
+         * Set the counter for the number of snapshots retrieved by the backup from the cluster.
+         *
+         * @param snapshotRetrieveCounter the counter to use for snapshots retrieved.
+         * @return this for a fluent API.
+         */
+        public Context snapshotRetrieveCounter(final Counter snapshotRetrieveCounter)
+        {
+            this.snapshotRetrieveCounter = snapshotRetrieveCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the number of snapshots retrieved by the backup from the cluster.
+         *
+         * @return counter for the number of snapshots retrieved by the backup from the cluster.
+         */
+        public Counter snapshotRetrieveCounter()
+        {
+            return snapshotRetrieveCounter;
         }
 
         /**

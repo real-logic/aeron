@@ -1150,6 +1150,24 @@ public final class TestCluster implements AutoCloseable
         }
     }
 
+    public void awaitBackupSnapshotRetrievedCount(final long snapshotCount)
+    {
+        if (null == backupNode)
+        {
+            throw new IllegalStateException("no backup node present");
+        }
+
+        @SuppressWarnings("indentation")
+        final Supplier<String> msg =
+            () -> "Snapshot retrieve count not found expected=" + snapshotCount +
+                " actual=" + backupNode.snapshotRetrieveCount();
+
+        while (backupNode.snapshotRetrieveCount() < snapshotCount)
+        {
+            Tests.yieldingIdle(msg);
+        }
+    }
+
     public TestNode node(final int index)
     {
         return nodes[index];

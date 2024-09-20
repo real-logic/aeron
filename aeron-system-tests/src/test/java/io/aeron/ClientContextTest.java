@@ -27,6 +27,7 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
+import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
@@ -40,6 +41,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.driver.status.SystemCounterDescriptor.BYTES_CURRENTLY_MAPPED;
+import static io.aeron.logbuffer.LogBufferDescriptor.LOG_META_DATA_LENGTH;
+import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -121,7 +127,7 @@ class ClientContextTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "my-test-client"})
+    @ValueSource(strings = { "", "my-test-client" })
     @InterruptAfter(10)
     void shouldAddClientInfoToTheHeartbeatTimestampCounter(final String clientName)
     {
@@ -215,5 +221,70 @@ class ClientContextTest
         final AeronException aeronException = assertThrows(
             AeronException.class, () -> new Aeron.Context().clientName(name).conclude());
         assertEquals("ERROR - clientName length must <= 100", aeronException.getMessage());
+    }
+
+    @Test
+    void logBuffersMappedOnTheClientSideShouldBeReportedViaSystemCounter()
+    {
+        final String channel = "aeron:ipc?term-length=128m";
+        final int streamId = 42;
+        final Aeron.Context context = new Aeron.Context().aeronDirectoryName(mediaDriver.aeronDirectoryName());
+        try (Aeron aeron = Aeron.connect(context.clone());
+            ExclusivePublication publication = aeron.addExclusivePublication(channel, streamId);
+            Subscription subscription = aeron.addSubscription(channel, streamId))
+        {
+            Tests.awaitConnected(publication);
+            Tests.awaitConnected(subscription);
+
+            final long logBufferLength = (long)publication.termBufferLength() * PARTITION_COUNT + LOG_META_DATA_LENGTH;
+            final CountersReader countersReader = aeron.countersReader();
+            final long originalMappedBytes = countersReader.getCounterValue(BYTES_CURRENTLY_MAPPED.id());
+            assertThat(originalMappedBytes, is(greaterThan(logBufferLength * 2)));
+
+            // LogBuffers are shared so now new mappings reported
+            for (int i = 0; i < 5; i++)
+            {
+                final Subscription sub = aeron.addSubscription(channel, streamId);
+                Tests.awaitConnected(sub);
+            }
+
+            assertThat(
+                countersReader.getCounterValue(BYTES_CURRENTLY_MAPPED.id()),
+                is(originalMappedBytes));
+
+            try (Aeron client1 = Aeron.connect(context.clone());
+                Aeron client2 = Aeron.connect(context.clone()))
+            {
+                final Subscription sub1 = client1.addSubscription(channel, streamId);
+                final Subscription sub2 = client2.addSubscription(channel, streamId);
+                final Subscription sub3 = client2.addSubscription(channel, streamId);
+                Tests.awaitConnected(sub1);
+                Tests.awaitConnected(sub2);
+                Tests.awaitConnected(sub3);
+
+                assertThat(countersReader.getCounterValue(BYTES_CURRENTLY_MAPPED.id()), allOf(
+                    greaterThan(originalMappedBytes + logBufferLength * 2),
+                    lessThan(originalMappedBytes + logBufferLength * 3)));
+
+                assertEquals(3, countConnectedClients(countersReader));
+            }
+
+            Tests.await(() -> 1 == countConnectedClients(countersReader));
+
+            assertThat(countersReader.getCounterValue(BYTES_CURRENTLY_MAPPED.id()), is(originalMappedBytes));
+        }
+    }
+
+    private static int countConnectedClients(final CountersReader countersReader)
+    {
+        final MutableInteger clientCount = new MutableInteger();
+        countersReader.forEach((counterId, typeId, keyBuffer, label) ->
+        {
+            if (HeartbeatTimestamp.HEARTBEAT_TYPE_ID == typeId)
+            {
+                clientCount.increment();
+            }
+        });
+        return clientCount.get();
     }
 }

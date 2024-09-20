@@ -15,13 +15,22 @@
  */
 package io.aeron;
 
+import org.agrona.concurrent.status.AtomicCounter;
+
 /**
  * Default factory for mapping log buffers in the client.
  */
 class MappedLogBuffersFactory implements LogBuffersFactory
 {
+    private final AtomicCounter mappedBytesCounter;
+
+    MappedLogBuffersFactory(final AtomicCounter mappedBytesCounter)
+    {
+        this.mappedBytesCounter = mappedBytesCounter;
+    }
+
     public LogBuffers map(final String logFileName)
     {
-        return new LogBuffers(logFileName);
+        return new LogBuffers(logFileName, mappedBytesCounter);
     }
 }

@@ -1953,7 +1953,7 @@ public class Aeron implements AutoCloseable
 
         private static String cncFileErrorMessage(final File file, final Exception ex)
         {
-            return "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex.getMessage();
+            return "cannot open CnC file: " + file.getAbsolutePath() + " reason=" + ex;
         }
     }
 }

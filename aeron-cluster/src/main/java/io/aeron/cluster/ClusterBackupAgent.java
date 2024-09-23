@@ -741,11 +741,6 @@ public final class ClusterBackupAgent implements Agent
         {
             snapshotsRetrieved.addAll(snapshotReplication.snapshotsRetrieved());
 
-            if (!snapshotsRetrieved.isEmpty())
-            {
-                ctx.snapshotRetrieveCounter().incrementOrdered();
-            }
-
             snapshotReplication.close();
             snapshotReplication = null;
 
@@ -944,9 +939,18 @@ public final class ClusterBackupAgent implements Agent
             throw new AgentTerminationException("failed to update recording log");
         }
 
-        if (wasRecordingLogUpdated && null != eventsListener)
+        if (wasRecordingLogUpdated)
         {
-            eventsListener.onUpdatedRecordingLog(recordingLog, snapshotsRetrieved);
+            recordingLog.force(2);
+            if (!snapshotsRetrieved.isEmpty())
+            {
+                ctx.snapshotRetrieveCounter().incrementOrdered();
+            }
+
+            if (null != eventsListener)
+            {
+                eventsListener.onUpdatedRecordingLog(recordingLog, snapshotsRetrieved);
+            }
         }
 
         snapshotsRetrieved.clear();

@@ -1679,7 +1679,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Get the underling OS send buffer length setting
+     * Get the underlying OS send buffer length setting.
      *
      * @return underlying OS send buffer length setting or null if not specified.
      * @see CommonContext#SOCKET_SNDBUF_PARAM_NAME
@@ -1692,7 +1692,7 @@ public final class ChannelUriStringBuilder
     /**
      * Set the underlying OS receive buffer length.
      *
-     * @param socketRcvbufLength parameter to be passed as SO_SNDBUF value.
+     * @param socketRcvbufLength parameter to be passed as SO_RCVBUF value.
      * @return this for a fluent API.
      * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME
      */
@@ -1731,7 +1731,7 @@ public final class ChannelUriStringBuilder
     }
 
     /**
-     * Get the underling OS receive buffer length setting.
+     * Get the underlying OS receive buffer length setting.
      *
      * @return underlying OS receive buffer length setting or null if not specified.
      * @see CommonContext#SOCKET_RCVBUF_PARAM_NAME

@@ -6,7 +6,7 @@ junit = "5.11.0"
 
 [libraries]
 agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.0, 2.0[", require = "1.23.0" } }
-sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.33.0" }
+sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.33.1" }
 mockito = { group = "org.mockito", name = "mockito-core", version = "5.13.0" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
 findbugs = { group = "com.google.code.findbugs", name = "findbugs-annotations", version = "3.0.1" }

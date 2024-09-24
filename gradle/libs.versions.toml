@@ -3,6 +3,7 @@ agrona = "1.23.0"
 byteBuddy = "1.15.1"
 checkstyle = "10.18.1"
 junit = "5.11.0"
+gradle = "8.10.2"
 
 [libraries]
 agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.0, 2.0[", require = "1.23.0" } }

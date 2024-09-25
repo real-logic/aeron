@@ -864,16 +864,12 @@ abstract class ArchiveConductor
     void stopReplay(final long correlationId, final long replaySessionId, final ControlSession controlSession)
     {
         final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
-        if (null == replaySession)
-        {
-            final String errorMessage = "replay session not known for " + replaySessionId;
-            controlSession.sendErrorResponse(correlationId, UNKNOWN_REPLAY, errorMessage, controlResponseProxy);
-        }
-        else
+        if (null != replaySession)
         {
             replaySession.abort();
-            controlSession.sendOkResponse(correlationId, controlResponseProxy);
         }
+
+        controlSession.sendOkResponse(correlationId, controlResponseProxy);
     }
 
     void stopAllReplays(final long correlationId, final long recordingId, final ControlSession controlSession)

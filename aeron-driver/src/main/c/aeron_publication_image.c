@@ -787,7 +787,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
     {
         const int32_t term_id = image->loss_term_id;
         const int32_t term_offset = image->loss_term_offset;
-        const int32_t length = (int32_t)image->loss_length;
+        const size_t length = image->loss_length;
 
         aeron_acquire();
 
@@ -814,7 +814,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
                             image->session_id,
                             term_id,
                             term_offset,
-                            length);
+                            (int32_t)length);
 
                         if (send_nak_result < 0)
                         {

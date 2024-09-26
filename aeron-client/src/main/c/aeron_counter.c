@@ -53,7 +53,7 @@ int aeron_counter_delete(aeron_counter_t *counter)
 
 void aeron_counter_force_close(aeron_counter_t *counter)
 {
-    AERON_PUT_ORDERED(counter->is_closed, true);
+    AERON_SET_RELEASE(counter->is_closed, true);
 }
 
 int64_t *aeron_counter_addr(aeron_counter_t *counter)
@@ -86,10 +86,10 @@ int aeron_counter_close(
     {
         bool is_closed;
 
-        AERON_GET_VOLATILE(is_closed, counter->is_closed);
+        AERON_GET_ACQUIRE(is_closed, counter->is_closed);
         if (!is_closed)
         {
-            AERON_PUT_ORDERED(counter->is_closed, true);
+            AERON_SET_RELEASE(counter->is_closed, true);
             if (aeron_client_conductor_async_close_counter(
                 counter->conductor, counter, on_close_complete, on_close_complete_clientd) < 0)
             {
@@ -106,7 +106,7 @@ bool aeron_counter_is_closed(aeron_counter_t *counter)
     bool is_closed = false;
     if (NULL != counter)
     {
-        AERON_GET_VOLATILE(is_closed, counter->is_closed);
+        AERON_GET_ACQUIRE(is_closed, counter->is_closed);
     }
 
     return is_closed;

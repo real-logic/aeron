@@ -35,7 +35,7 @@ inline int32_t aeron_term_scanner_scan_for_availability(
         const aeron_frame_header_t *frame_header = (aeron_frame_header_t *)ptr;
 
         int32_t frame_length;
-        AERON_GET_VOLATILE(frame_length, frame_header->frame_length);
+        AERON_GET_ACQUIRE(frame_length, frame_header->frame_length);
         if (0 >= frame_length)
         {
             break;

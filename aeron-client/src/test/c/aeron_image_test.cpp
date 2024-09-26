@@ -163,7 +163,7 @@ public:
                 header->stream_id = STREAM_ID;
                 header->term_id = term_id;
 
-                AERON_PUT_ORDERED(header->frame_header.frame_length, padding_length);
+                AERON_SET_RELEASE(header->frame_header.frame_length, padding_length);
             }
         }
         else
@@ -178,7 +178,7 @@ public:
 
             memcpy(term_buffer->addr + tail_offset + AERON_DATA_HEADER_LENGTH, buffer, length);
 
-            AERON_PUT_ORDERED(header->frame_header.frame_length, (int32_t)frame_length);
+            AERON_SET_RELEASE(header->frame_header.frame_length, (int32_t)frame_length);
         }
     }
 

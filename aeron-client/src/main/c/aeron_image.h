@@ -139,7 +139,7 @@ inline int64_t aeron_image_decr_refcnt(aeron_image_t *image)
 inline int64_t aeron_image_refcnt_volatile(aeron_image_t *image)
 {
     int64_t value;
-    AERON_GET_VOLATILE(value, image->refcnt);
+    AERON_GET_ACQUIRE(value, image->refcnt);
     return value;
 }
 

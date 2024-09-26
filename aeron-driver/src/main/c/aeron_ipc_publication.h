@@ -120,7 +120,7 @@ void aeron_ipc_publication_check_for_blocked_publisher(
 inline void aeron_ipc_publication_add_subscriber_hook(void *clientd, volatile int64_t *value_addr)
 {
     aeron_ipc_publication_t *publication = (aeron_ipc_publication_t *)clientd;
-    AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
+    AERON_SET_RELEASE(publication->log_meta_data->is_connected, 1);
 }
 
 inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, volatile int64_t *value_addr)
@@ -131,7 +131,7 @@ inline void aeron_ipc_publication_remove_subscriber_hook(void *clientd, volatile
 
     if (1 == publication->conductor_fields.subscribable.length && NULL != publication->mapped_raw_log.mapped_file.addr)
     {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 0);
+        AERON_SET_RELEASE(publication->log_meta_data->is_connected, 0);
     }
 }
 
@@ -140,7 +140,7 @@ inline bool aeron_ipc_publication_is_possibly_blocked(
 {
     int32_t producer_term_count;
 
-    AERON_GET_VOLATILE(producer_term_count, publication->log_meta_data->active_term_count);
+    AERON_GET_ACQUIRE(producer_term_count, publication->log_meta_data->active_term_count);
     const int32_t expected_term_count = (int32_t)(consumer_position >> publication->position_bits_to_shift);
 
     if (producer_term_count != expected_term_count)

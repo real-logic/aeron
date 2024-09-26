@@ -177,7 +177,7 @@ public:
         metadata->client_liveness_timeout = (int64_t)CLIENT_LIVENESS_TIMEOUT;
         metadata->start_timestamp = test_epoch_clock();
         metadata->pid = 101;
-        AERON_PUT_ORDERED(metadata->cnc_version, AERON_CNC_VERSION);
+        AERON_SET_RELEASE(metadata->cnc_version, AERON_CNC_VERSION);
 
         if (aeron_mpsc_rb_init(
             &m_to_driver, aeron_cnc_to_driver_buffer(metadata), TO_DRIVER_RING_BUFFER_LENGTH) < 0)

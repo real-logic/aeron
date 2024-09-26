@@ -42,7 +42,7 @@ bool aeron_term_gap_filler_try_fill_gap(
     data_header->frame_header.type = AERON_HDR_TYPE_PAD;
     data_header->term_offset = gap_offset;
     data_header->term_id = term_id;
-    AERON_PUT_ORDERED(data_header->frame_header.frame_length, gap_length);
+    AERON_SET_RELEASE(data_header->frame_header.frame_length, gap_length);
 
     return true;
 }

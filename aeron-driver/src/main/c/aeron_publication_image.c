@@ -51,7 +51,7 @@ static void aeron_update_active_transport_count(aeron_publication_image_t *image
 
     if (active_transport_count != image->log_meta_data->active_transport_count)
     {
-        AERON_PUT_ORDERED(image->log_meta_data->active_transport_count, active_transport_count);
+        AERON_SET_RELEASE(image->log_meta_data->active_transport_count, active_transport_count);
     }
 }
 
@@ -59,7 +59,7 @@ static bool aeron_publication_image_check_and_get_response_session_id(
     aeron_publication_image_t *image, int32_t *response_session_id)
 {
     int64_t _response_session_id;
-    AERON_GET_VOLATILE(_response_session_id, image->response_session_id);
+    AERON_GET_ACQUIRE(_response_session_id, image->response_session_id);
     *response_session_id = (int32_t)_response_session_id;
     return ((int64_t)INT32_MIN) <= _response_session_id && _response_session_id <= ((int64_t)INT32_MAX);
 }
@@ -399,7 +399,7 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
             length - sizeof(int64_t));
 
         uint64_t *ptr = (uint64_t *)(image->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
-        AERON_PUT_ORDERED(*ptr, (uint64_t)0);
+        AERON_SET_RELEASE(*ptr, (uint64_t)0);
 
         image->conductor_fields.clean_position = clean_position + (int64_t)length;
     }
@@ -411,14 +411,14 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
     const int64_t change_number = image->begin_loss_change + 1;
 
-    AERON_PUT_ORDERED(image->begin_loss_change, change_number);
+    AERON_SET_RELEASE(image->begin_loss_change, change_number);
     aeron_release();
 
     image->loss_term_id = term_id;
     image->loss_term_offset = term_offset;
     image->loss_length = length;
 
-    AERON_PUT_ORDERED(image->end_loss_change, change_number);
+    AERON_SET_RELEASE(image->end_loss_change, change_number);
 
     if (image->loss_reporter_offset >= 0)
     {
@@ -644,7 +644,7 @@ int aeron_publication_image_insert_packet(
             if (packet_position >= publication_window_bottom)
             {
                 aeron_publication_image_track_connection(image, destination, addr, now_ns);
-                AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
+                AERON_SET_RELEASE(image->time_of_last_packet_ns, now_ns);
 
                 const bool is_eos = aeron_publication_image_is_end_of_stream(buffer, length);
                 if (is_eos && !image->is_end_of_stream)
@@ -652,8 +652,8 @@ int aeron_publication_image_insert_packet(
                     if (aeron_publication_image_all_eos(image, destination, packet_position))
                     {
                         const int64_t eos_position = aeron_publication_find_eos_position(image);
-                        AERON_PUT_ORDERED(image->log_meta_data->end_of_stream_position, eos_position);
-                        AERON_PUT_ORDERED(image->is_end_of_stream, true);
+                        AERON_SET_RELEASE(image->log_meta_data->end_of_stream_position, eos_position);
+                        AERON_SET_RELEASE(image->is_end_of_stream, true);
                     }
                 }
 
@@ -668,7 +668,7 @@ int aeron_publication_image_insert_packet(
         else if (!aeron_publication_image_is_flow_control_under_run(image, packet_position))
         {
             aeron_publication_image_track_connection(image, destination, addr, now_ns);
-            AERON_PUT_ORDERED(image->time_of_last_packet_ns, now_ns);
+            AERON_SET_RELEASE(image->time_of_last_packet_ns, now_ns);
 
             const size_t index = aeron_logbuffer_index_by_position(packet_position, image->position_bits_to_shift);
             uint8_t *term_buffer = image->mapped_raw_log.term_buffers[index].addr;
@@ -702,7 +702,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 {
     int work_count = 0;
     int64_t change_number;
-    AERON_GET_VOLATILE(change_number, image->end_sm_change);
+    AERON_GET_ACQUIRE(change_number, image->end_sm_change);
     const bool has_sm_timed_out = now_ns > (image->time_of_last_sm_ns + image->sm_timeout_ns);
 
     if (NULL != image->invalidation_reason)
@@ -769,7 +769,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
         aeron_acquire();
 
         int64_t begin_change_number;
-        AERON_GET_VOLATILE(begin_change_number, image->begin_sm_change);
+        AERON_GET_ACQUIRE(begin_change_number, image->begin_sm_change);
 
         if (change_number == begin_change_number)
         {
@@ -777,7 +777,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                 sm_position, image->position_bits_to_shift, image->initial_term_id);
             const int32_t term_offset = (int32_t)(sm_position & image->term_length_mask);
             bool is_sending_eos_sm;
-            AERON_GET_VOLATILE(is_sending_eos_sm, image->is_sending_eos_sm);
+            AERON_GET_ACQUIRE(is_sending_eos_sm, image->is_sending_eos_sm);
             const uint8_t flags = is_sending_eos_sm ? AERON_STATUS_MESSAGE_HEADER_EOS_FLAG : 0;
 
             for (size_t i = 0, len = image->connections.length; i < len; i++)
@@ -827,7 +827,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
     int work_count = 0;
 
     int64_t change_number;
-    AERON_GET_VOLATILE(change_number, image->end_loss_change);
+    AERON_GET_ACQUIRE(change_number, image->end_loss_change);
 
     if (change_number != image->last_loss_change_number)
     {
@@ -838,7 +838,7 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
         aeron_acquire();
 
         int64_t begin_change_number;
-        AERON_GET_VOLATILE(begin_change_number, image->begin_loss_change);
+        AERON_GET_ACQUIRE(begin_change_number, image->begin_loss_change);
 
         if (change_number == begin_change_number)
         {
@@ -1079,9 +1079,9 @@ void aeron_publication_image_on_time_event(
         case AERON_PUBLICATION_IMAGE_STATE_ACTIVE:
         {
             int64_t last_packet_timestamp_ns;
-            AERON_GET_VOLATILE(last_packet_timestamp_ns, image->time_of_last_packet_ns);
+            AERON_GET_ACQUIRE(last_packet_timestamp_ns, image->time_of_last_packet_ns);
             bool is_end_of_stream;
-            AERON_GET_VOLATILE(is_end_of_stream, image->is_end_of_stream);
+            AERON_GET_ACQUIRE(is_end_of_stream, image->is_end_of_stream);
 
             if (!aeron_driver_subscribable_has_working_positions(&image->conductor_fields.subscribable) ||
                 now_ns > (last_packet_timestamp_ns + image->conductor_fields.liveness_timeout_ns) ||
@@ -1091,7 +1091,7 @@ void aeron_publication_image_on_time_event(
             {
                 image->conductor_fields.state = AERON_PUBLICATION_IMAGE_STATE_DRAINING;
                 image->conductor_fields.time_of_last_state_change_ns = now_ns;
-                AERON_PUT_ORDERED(image->is_sending_eos_sm, true);
+                AERON_SET_RELEASE(image->is_sending_eos_sm, true);
             }
 
             aeron_publication_image_check_untethered_subscriptions(conductor, image, now_ns);
@@ -1134,7 +1134,7 @@ void aeron_publication_image_on_time_event(
 
 void aeron_publication_image_receiver_release(aeron_publication_image_t *image)
 {
-    AERON_PUT_ORDERED(image->has_receiver_released, true);
+    AERON_SET_RELEASE(image->has_receiver_released, true);
 }
 
 void aeron_publication_image_invalidate(aeron_publication_image_t *image, int32_t reason_length, const char *reason)

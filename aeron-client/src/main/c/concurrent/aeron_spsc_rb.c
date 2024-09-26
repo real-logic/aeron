@@ -67,7 +67,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
     if ((int32_t)required_capacity > available_capacity)
     {
-        AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
+        AERON_GET_ACQUIRE(head, ring_buffer->descriptor->head_position);
 
         if (required_capacity > (ring_buffer->capacity - (size_t)(tail - head)))
         {
@@ -81,7 +81,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
     int32_t write_index = (int32_t)record_index;
     if (aligned_record_length == to_buffer_end_length) // message fits within the end of the buffer
     {
-        AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, next_tail);
+        AERON_SET_RELEASE(ring_buffer->descriptor->tail_position, next_tail);
         // pre-zero next message header
         next_header = (aeron_rb_record_descriptor_t *)ring_buffer->buffer;
 
@@ -96,7 +96,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
         if (required_capacity > head_index)
         {
-            AERON_GET_VOLATILE(head, ring_buffer->descriptor->head_position);
+            AERON_GET_ACQUIRE(head, ring_buffer->descriptor->head_position);
             head_index = (size_t)(head & mask);
 
             if (required_capacity > head_index)
@@ -112,7 +112,7 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
         next_tail += (int64_t)padding;
     }
 
-    AERON_PUT_ORDERED(ring_buffer->descriptor->tail_position, next_tail);
+    AERON_SET_RELEASE(ring_buffer->descriptor->tail_position, next_tail);
 
     if (0 != padding)
     {
@@ -121,9 +121,9 @@ inline static int32_t aeron_spsc_rb_claim_capacity(aeron_spsc_rb_t *ring_buffer,
 
         next_header->length = 0;
         next_header->msg_type_id = 0;
-        AERON_PUT_ORDERED(record_header->length, -(int32_t)padding);
+        AERON_SET_RELEASE(record_header->length, -(int32_t)padding);
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
-        AERON_PUT_ORDERED(record_header->length, (int32_t)padding);
+        AERON_SET_RELEASE(record_header->length, (int32_t)padding);
         record_index = 0;
     }
 
@@ -158,7 +158,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-        AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+        AERON_SET_RELEASE(record_header->length, -(int32_t)record_length);
 
         size_t current_vector_offset = 0;
         for (int i = 0; i < iovcnt; i++)
@@ -169,7 +169,7 @@ aeron_rb_write_result_t aeron_spsc_rb_writev(
         }
 
         record_header->msg_type_id = msg_type_id;
-        AERON_PUT_ORDERED(record_header->length, (int32_t)record_length);
+        AERON_SET_RELEASE(record_header->length, (int32_t)record_length);
 
         return AERON_RB_SUCCESS;
     }
@@ -190,7 +190,7 @@ int32_t aeron_spsc_rb_try_claim(aeron_spsc_rb_t *ring_buffer, int32_t msg_type_i
     {
         aeron_rb_record_descriptor_t *record_header =
             (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
-        AERON_PUT_ORDERED(record_header->length, -(int32_t)record_length);
+        AERON_SET_RELEASE(record_header->length, -(int32_t)record_length);
         record_header->msg_type_id = msg_type_id;
 
         return AERON_RB_MESSAGE_OFFSET(record_index);
@@ -211,7 +211,7 @@ int aeron_spsc_rb_commit(aeron_spsc_rb_t *ring_buffer, int32_t offset)
     const int32_t length = record_header->length;
     if (length < 0)
     {
-        AERON_PUT_ORDERED(record_header->length, -length);
+        AERON_SET_RELEASE(record_header->length, -length);
         return 0;
     }
 
@@ -231,7 +231,7 @@ int aeron_spsc_rb_abort(aeron_spsc_rb_t *ring_buffer, int32_t offset)
     if (length < 0)
     {
         record_header->msg_type_id = AERON_RB_PADDING_MSG_TYPE_ID;
-        AERON_PUT_ORDERED(record_header->length, -length);
+        AERON_SET_RELEASE(record_header->length, -length);
         return 0;
     }
 
@@ -252,7 +252,7 @@ size_t aeron_spsc_rb_read(
         const size_t record_index = head_index + bytes_read;
         aeron_rb_record_descriptor_t *header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         int32_t record_length;
-        AERON_GET_VOLATILE(record_length, header->length);
+        AERON_GET_ACQUIRE(record_length, header->length);
 
         if (record_length <= 0)
         {
@@ -277,7 +277,7 @@ size_t aeron_spsc_rb_read(
 
     if (0 != bytes_read)
     {
-        AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
+        AERON_SET_RELEASE(ring_buffer->descriptor->head_position, head + bytes_read);
     }
 
     return messages_read;
@@ -297,7 +297,7 @@ size_t aeron_spsc_rb_controlled_read(
         const size_t record_index = head_index + bytes_read;
         aeron_rb_record_descriptor_t *header = (aeron_rb_record_descriptor_t *)(ring_buffer->buffer + record_index);
         int32_t record_length;
-        AERON_GET_VOLATILE(record_length, header->length);
+        AERON_GET_ACQUIRE(record_length, header->length);
 
         if (record_length <= 0)
         {
@@ -333,7 +333,7 @@ size_t aeron_spsc_rb_controlled_read(
         }
         if (AERON_RB_COMMIT == action)
         {
-            AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
+            AERON_SET_RELEASE(ring_buffer->descriptor->head_position, head + bytes_read);
             head_index += bytes_read;
             head += (int64_t)bytes_read;
             bytes_read = 0;
@@ -342,7 +342,7 @@ size_t aeron_spsc_rb_controlled_read(
 
     if (0 != bytes_read)
     {
-        AERON_PUT_ORDERED(ring_buffer->descriptor->head_position, head + bytes_read);
+        AERON_SET_RELEASE(ring_buffer->descriptor->head_position, head + bytes_read);
     }
 
     return messages_read;
@@ -367,7 +367,7 @@ int64_t aeron_spsc_rb_next_correlation_id(aeron_spsc_rb_t *ring_buffer)
 
 void aeron_spsc_rb_consumer_heartbeat_time(aeron_spsc_rb_t *ring_buffer, int64_t time_ms)
 {
-    AERON_PUT_ORDERED(ring_buffer->descriptor->consumer_heartbeat, time_ms);
+    AERON_SET_RELEASE(ring_buffer->descriptor->consumer_heartbeat, time_ms);
 }
 
 extern int64_t aeron_spsc_rb_consumer_position(aeron_spsc_rb_t *ring_buffer);

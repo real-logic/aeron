@@ -35,8 +35,8 @@ int aeron_mpsc_concurrent_array_queue_init(aeron_mpsc_concurrent_array_queue_t *
     queue->mask = length - 1;
     queue->producer.head_cache = 0;
     queue->producer.shared_head_cache = 0;
-    AERON_PUT_ORDERED(queue->producer.tail, (uint64_t)0);
-    AERON_PUT_ORDERED(queue->consumer.head, (uint64_t)0);
+    AERON_SET_RELEASE(queue->producer.tail, (uint64_t)0);
+    AERON_SET_RELEASE(queue->consumer.head, (uint64_t)0);
 
     return 0;
 }

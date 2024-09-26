@@ -85,7 +85,7 @@ int aeron_publication_delete(aeron_publication_t *publication)
 
 void aeron_publication_force_close(aeron_publication_t *publication)
 {
-    AERON_PUT_ORDERED(publication->is_closed, true);
+    AERON_SET_RELEASE(publication->is_closed, true);
 }
 
 int aeron_publication_close(
@@ -95,10 +95,10 @@ int aeron_publication_close(
     {
         bool is_closed;
 
-        AERON_GET_VOLATILE(is_closed, publication->is_closed);
+        AERON_GET_ACQUIRE(is_closed, publication->is_closed);
         if (!is_closed)
         {
-            AERON_PUT_ORDERED(publication->is_closed, true);
+            AERON_SET_RELEASE(publication->is_closed, true);
 
             if (aeron_client_conductor_async_close_publication(
                 publication->conductor, publication, on_close_complete, on_close_complete_clientd) < 0)
@@ -121,7 +121,7 @@ static int64_t aeron_publication_get_and_add_raw_tail(volatile int64_t *addr, si
 static int64_t aeron_publication_raw_tail_volatile(volatile int64_t *addr)
 {
     int64_t raw_tail;
-    AERON_GET_VOLATILE(raw_tail, *addr);
+    AERON_GET_ACQUIRE(raw_tail, *addr);
     return raw_tail;
 }
 
@@ -134,7 +134,7 @@ static void aeron_publication_header_write(
 {
     aeron_data_header_t *header = (aeron_data_header_t *)(term_buffer->addr + offset);
 
-    AERON_PUT_ORDERED(header->frame_header.frame_length, (-(int32_t)length));
+    AERON_SET_RELEASE(header->frame_header.frame_length, (-(int32_t)length));
     aeron_release();
 
     header->frame_header.version = AERON_FRAME_HEADER_VERSION;
@@ -161,7 +161,7 @@ static int64_t aeron_publication_handle_end_of_log_condition(
 
         aeron_publication_header_write(publication, term_buffer, term_offset, (size_t)padding_length, term_id);
         header->frame_header.type = AERON_HDR_TYPE_PAD;
-        AERON_PUT_ORDERED(header->frame_header.frame_length, padding_length);
+        AERON_SET_RELEASE(header->frame_header.frame_length, padding_length);
     }
 
     if (position >= publication->max_possible_position)
@@ -247,7 +247,7 @@ static int64_t aeron_publication_append_unfragmented_message(
                 clientd, term_buffer->addr + term_offset, frame_length);
         }
 
-        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+        AERON_SET_RELEASE(data_header->frame_header.frame_length, (int32_t)frame_length);
     }
 
     return position;
@@ -309,7 +309,7 @@ static int64_t aeron_publication_append_fragmented_message(
                     clientd, term_buffer->addr + term_offset, frame_length);
             }
 
-            AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+            AERON_SET_RELEASE(data_header->frame_header.frame_length, (int32_t)frame_length);
 
             flags = 0;
             frame_offset += (int32_t)aligned_length;
@@ -367,7 +367,7 @@ static int64_t aeron_publication_append_unfragmented_messagev(
                 clientd, term_buffer->addr + term_offset, frame_length);
         }
 
-        AERON_PUT_ORDERED(data_header->frame_header.frame_length, (int32_t)frame_length);
+        AERON_SET_RELEASE(data_header->frame_header.frame_length, (int32_t)frame_length);
     }
 
     return position;
@@ -449,7 +449,7 @@ static int64_t aeron_publication_append_fragmented_messagev(
                     clientd, term_buffer->addr + frame_offset, frame_length);
             }
 
-            AERON_PUT_ORDERED(data_header->frame_header.frame_length, ((int32_t)frame_length));
+            AERON_SET_RELEASE(data_header->frame_header.frame_length, ((int32_t)frame_length));
 
             flags = 0;
             frame_offset += (int32_t)aligned_length;
@@ -481,7 +481,7 @@ int64_t aeron_publication_offer(
     }
 
     bool is_closed;
-    AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     if (!is_closed)
     {
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
@@ -571,7 +571,7 @@ int64_t aeron_publication_offerv(
     }
 
     bool is_closed;
-    AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     if (!is_closed)
     {
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
@@ -660,7 +660,7 @@ int64_t aeron_publication_try_claim(aeron_publication_t *publication, size_t len
     }
 
     bool is_closed;
-    AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     if (!is_closed)
     {
         const int64_t limit = aeron_counter_get_volatile(publication->position_limit);
@@ -703,7 +703,7 @@ bool aeron_publication_is_closed(aeron_publication_t *publication)
 
     if (NULL != publication)
     {
-        AERON_GET_VOLATILE(is_closed, publication->is_closed);
+        AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     }
 
     return is_closed;
@@ -715,7 +715,7 @@ bool aeron_publication_is_connected(aeron_publication_t *publication)
     {
         int32_t is_connected;
 
-        AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+        AERON_GET_ACQUIRE(is_connected, publication->log_meta_data->is_connected);
         return 1 == is_connected;
     }
 
@@ -757,7 +757,7 @@ int64_t aeron_publication_channel_status(aeron_publication_t *publication)
         !aeron_publication_is_closed(publication))
     {
         int64_t value;
-        AERON_GET_VOLATILE(value, *publication->channel_status_indicator);
+        AERON_GET_ACQUIRE(value, *publication->channel_status_indicator);
 
         return value;
     }
@@ -774,7 +774,7 @@ int64_t aeron_publication_position(aeron_publication_t *publication)
     }
 
     bool is_closed;
-    AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     if (is_closed)
     {
         return AERON_PUBLICATION_CLOSED;
@@ -802,7 +802,7 @@ int64_t aeron_publication_position_limit(aeron_publication_t *publication)
     }
 
     bool is_closed;
-    AERON_GET_VOLATILE(is_closed, publication->is_closed);
+    AERON_GET_ACQUIRE(is_closed, publication->is_closed);
     if (is_closed)
     {
         return AERON_PUBLICATION_CLOSED;
@@ -869,7 +869,7 @@ int aeron_buffer_claim_commit(aeron_buffer_claim_t *buffer_claim)
     {
         aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
 
-        AERON_PUT_ORDERED(
+        AERON_SET_RELEASE(
             data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
     }
 
@@ -883,7 +883,7 @@ int aeron_buffer_claim_abort(aeron_buffer_claim_t *buffer_claim)
         aeron_data_header_t *data_header = (aeron_data_header_t *)buffer_claim->frame_header;
 
         data_header->frame_header.type = AERON_HDR_TYPE_PAD;
-        AERON_PUT_ORDERED(
+        AERON_SET_RELEASE(
             data_header->frame_header.frame_length, (int32_t)buffer_claim->length + AERON_DATA_HEADER_LENGTH);
     }
 

@@ -33,7 +33,7 @@ int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *bu
         receiver->descriptor = (aeron_broadcast_descriptor_t *)(receiver->buffer + receiver->capacity);
 
         int64_t latest;
-        AERON_GET_VOLATILE(latest, receiver->descriptor->latest_counter);
+        AERON_GET_ACQUIRE(latest, receiver->descriptor->latest_counter);
 
         receiver->cursor = latest;
         receiver->next_record = latest;

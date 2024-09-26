@@ -223,12 +223,12 @@ TEST_F(DriverConductorCounterTest, shouldIncrementCounterOnConductorThresholdExc
     doWork();
 
     int64_t maxCycleTime;
-    AERON_GET_VOLATILE(maxCycleTime, *maxCycleTimeCounter);
+    AERON_GET_ACQUIRE(maxCycleTime, *maxCycleTimeCounter);
 
     ASSERT_EQ(1000 * 1000 * 1000, maxCycleTime);
 
     int64_t thresholdExceeded;
-    AERON_GET_VOLATILE(thresholdExceeded, *thresholdExceededCounter);
+    AERON_GET_ACQUIRE(thresholdExceeded, *thresholdExceededCounter);
 
     ASSERT_EQ(3, thresholdExceeded);
 }

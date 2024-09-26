@@ -351,7 +351,7 @@ int aeron_async_add_publication_poll(aeron_publication_t **publication, aeron_as
     *publication = NULL;
 
     aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
+    AERON_GET_ACQUIRE(registration_status, async->registration_status);
 
     switch (registration_status)
     {
@@ -419,7 +419,7 @@ int aeron_async_add_exclusive_publication_poll(
     *publication = NULL;
 
     aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
+    AERON_GET_ACQUIRE(registration_status, async->registration_status);
 
     switch (registration_status)
     {
@@ -519,7 +519,7 @@ int aeron_async_add_subscription_poll(aeron_subscription_t **subscription, aeron
     *subscription = NULL;
 
     aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
+    AERON_GET_ACQUIRE(registration_status, async->registration_status);
 
     switch (registration_status)
     {
@@ -616,7 +616,7 @@ int aeron_async_add_counter_poll(aeron_counter_t **counter, aeron_async_add_coun
     *counter = NULL;
 
     aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
+    AERON_GET_ACQUIRE(registration_status, async->registration_status);
 
     switch (registration_status)
     {
@@ -712,7 +712,7 @@ static int aeron_async_destination_poll(aeron_async_destination_t *async)
     }
 
     aeron_client_registration_status_t registration_status;
-    AERON_GET_VOLATILE(registration_status, async->registration_status);
+    AERON_GET_ACQUIRE(registration_status, async->registration_status);
 
     switch (registration_status)
     {
@@ -950,7 +950,7 @@ int aeron_client_handler_cmd_await_processed(aeron_client_handler_cmd_t *cmd, ui
         }
 
         sched_yield();
-        AERON_GET_VOLATILE(processed, cmd->processed);
+        AERON_GET_ACQUIRE(processed, cmd->processed);
     }
 
     return 0;

@@ -20,7 +20,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-#define AERON_GET_VOLATILE(dst, src) \
+#define AERON_GET_ACQUIRE(dst, src) \
 do \
 { \
     dst = src; \
@@ -28,7 +28,7 @@ do \
 } \
 while (false) \
 
-#define AERON_PUT_ORDERED(dst, src) \
+#define AERON_SET_RELEASE(dst, src) \
 do \
 { \
     __asm__ volatile("" ::: "memory"); \

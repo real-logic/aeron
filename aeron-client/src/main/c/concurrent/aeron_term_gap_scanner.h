@@ -40,7 +40,7 @@ inline int32_t aeron_term_gap_scanner_scan_for_gap(
         aeron_frame_header_t *hdr = (aeron_frame_header_t *)(buffer + offset);
         int32_t frame_length;
 
-        AERON_GET_VOLATILE(frame_length, hdr->frame_length);
+        AERON_GET_ACQUIRE(frame_length, hdr->frame_length);
         if (frame_length <= 0)
         {
             break;
@@ -60,7 +60,7 @@ inline int32_t aeron_term_gap_scanner_scan_for_gap(
 
             aeron_frame_header_t *hdr = (aeron_frame_header_t *)(buffer + offset);
             int32_t frame_length;
-            AERON_GET_VOLATILE(frame_length, hdr->frame_length);
+            AERON_GET_ACQUIRE(frame_length, hdr->frame_length);
 
             if (0 != frame_length)
             {

@@ -45,7 +45,7 @@ int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *bu
 inline bool aeron_broadcast_receiver_validate_at(aeron_broadcast_receiver_t *receiver, int64_t cursor)
 {
     int64_t tail_intent_counter;
-    AERON_GET_VOLATILE(tail_intent_counter, receiver->descriptor->tail_intent_counter);
+    AERON_GET_ACQUIRE(tail_intent_counter, receiver->descriptor->tail_intent_counter);
 
     return (cursor + (int64_t)receiver->capacity) > tail_intent_counter;
 }
@@ -63,7 +63,7 @@ inline bool aeron_broadcast_receiver_receive_next(aeron_broadcast_receiver_t *re
     int64_t tail;
     int64_t cursor = receiver->next_record;
 
-    AERON_GET_VOLATILE(tail, receiver->descriptor->tail_counter);
+    AERON_GET_ACQUIRE(tail, receiver->descriptor->tail_counter);
 
     if (tail > cursor)
     {
@@ -72,7 +72,7 @@ inline bool aeron_broadcast_receiver_receive_next(aeron_broadcast_receiver_t *re
         if (!aeron_broadcast_receiver_validate_at(receiver, cursor))
         {
             receiver->lapped_count++;
-            AERON_GET_VOLATILE(cursor, receiver->descriptor->latest_counter);
+            AERON_GET_ACQUIRE(cursor, receiver->descriptor->latest_counter);
             record_offset = (uint32_t)cursor & (receiver->capacity - 1u);
         }
 

@@ -203,11 +203,11 @@ inline void aeron_network_publication_add_subscriber_hook(void *clientd, volatil
 {
     aeron_network_publication_t *publication = (aeron_network_publication_t *)clientd;
 
-    AERON_PUT_ORDERED(publication->has_spies, true);
+    AERON_SET_RELEASE(publication->has_spies, true);
     if (publication->spies_simulate_connection)
     {
-        AERON_PUT_ORDERED(publication->log_meta_data->is_connected, 1);
-        AERON_PUT_ORDERED(publication->is_connected, true);
+        AERON_SET_RELEASE(publication->log_meta_data->is_connected, 1);
+        AERON_SET_RELEASE(publication->is_connected, true);
     }
 }
 
@@ -217,7 +217,7 @@ inline void aeron_network_publication_remove_subscriber_hook(void *clientd, vola
 
     if (1 == aeron_driver_subscribable_working_position_count(&publication->conductor_fields.subscribable))
     {
-        AERON_PUT_ORDERED(publication->has_spies, false);
+        AERON_SET_RELEASE(publication->has_spies, false);
     }
 }
 
@@ -226,7 +226,7 @@ inline bool aeron_network_publication_is_possibly_blocked(
 {
     int32_t producer_term_count;
 
-    AERON_GET_VOLATILE(producer_term_count, publication->log_meta_data->active_term_count);
+    AERON_GET_ACQUIRE(producer_term_count, publication->log_meta_data->active_term_count);
     const int32_t expected_term_count = (int32_t)(consumer_position >> publication->position_bits_to_shift);
 
     if (producer_term_count != expected_term_count)
@@ -263,7 +263,7 @@ inline void aeron_network_publication_trigger_send_setup_frame(
 {
     const int64_t time_ns = aeron_clock_cached_nano_time(publication->cached_clock);
     bool is_end_of_stream;
-    AERON_GET_VOLATILE(is_end_of_stream, publication->is_end_of_stream);
+    AERON_GET_ACQUIRE(is_end_of_stream, publication->is_end_of_stream);
 
     if (!is_end_of_stream)
     {
@@ -291,13 +291,13 @@ inline void aeron_network_publication_trigger_send_setup_frame(
 
 inline void aeron_network_publication_sender_release(aeron_network_publication_t *publication)
 {
-    AERON_PUT_ORDERED(publication->has_sender_released, true);
+    AERON_SET_RELEASE(publication->has_sender_released, true);
 }
 
 inline bool aeron_network_publication_has_sender_released(aeron_network_publication_t *publication)
 {
     bool has_sender_released;
-    AERON_GET_VOLATILE(has_sender_released, publication->has_sender_released);
+    AERON_GET_ACQUIRE(has_sender_released, publication->has_sender_released);
 
     return has_sender_released;
 }

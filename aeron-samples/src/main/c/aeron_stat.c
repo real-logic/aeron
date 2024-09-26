@@ -35,7 +35,7 @@ volatile bool running = true;
 
 void sigint_handler(int signal)
 {
-    AERON_PUT_ORDERED(running, false);
+    AERON_SET_RELEASE(running, false);
 }
 
 static const char *aeron_stat_usage(void)

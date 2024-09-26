@@ -64,9 +64,9 @@ aeron_logbuffer_metadata_t;
 do \
 { \
     int32_t active_term_count; \
-    AERON_GET_VOLATILE(active_term_count, ((m)->active_term_count)); \
+    AERON_GET_ACQUIRE(active_term_count, ((m)->active_term_count)); \
     size_t partition = (size_t)(active_term_count % AERON_LOGBUFFER_PARTITION_COUNT); \
-    AERON_GET_VOLATILE(d, (m)->term_tail_counters[partition]); \
+    AERON_GET_ACQUIRE(d, (m)->term_tail_counters[partition]); \
 } \
 while (false)
 
@@ -148,7 +148,7 @@ inline bool aeron_logbuffer_cas_raw_tail(
 inline int32_t aeron_logbuffer_active_term_count(aeron_logbuffer_metadata_t *log_meta_data)
 {
     int32_t active_term_count;
-    AERON_GET_VOLATILE(active_term_count, log_meta_data->active_term_count);
+    AERON_GET_ACQUIRE(active_term_count, log_meta_data->active_term_count);
     return active_term_count;
 }
 
@@ -171,7 +171,7 @@ inline bool aeron_logbuffer_rotate_log(
     int64_t raw_tail;
     do
     {
-        AERON_GET_VOLATILE(raw_tail, log_meta_data->term_tail_counters[next_index]);
+        AERON_GET_ACQUIRE(raw_tail, log_meta_data->term_tail_counters[next_index]);
         if (expected_term_id != aeron_logbuffer_term_id(raw_tail))
         {
             break;

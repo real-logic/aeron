@@ -75,8 +75,8 @@ int rate_reporter_do_work(void *state)
     int64_t current_timestamp_ns, duration_ns;
     double mps, bps;
 
-    AERON_GET_VOLATILE(current_total_bytes, reporter->polling_fields.total_bytes);
-    AERON_GET_VOLATILE(current_total_messages, reporter->polling_fields.total_messages);
+    AERON_GET_ACQUIRE(current_total_bytes, reporter->polling_fields.total_bytes);
+    AERON_GET_ACQUIRE(current_total_messages, reporter->polling_fields.total_messages);
     current_timestamp_ns = aeron_nano_clock();
     duration_ns = current_timestamp_ns - reporter->last_timestamp_ns;
     mps = ((double)(current_total_messages - reporter->last_total_messages) *

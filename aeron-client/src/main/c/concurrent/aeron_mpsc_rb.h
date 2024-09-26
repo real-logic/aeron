@@ -66,14 +66,14 @@ bool aeron_mpsc_rb_unblock(aeron_mpsc_rb_t *ring_buffer);
 inline int64_t aeron_mpsc_rb_consumer_position(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t position;
-    AERON_GET_VOLATILE(position, ring_buffer->descriptor->head_position);
+    AERON_GET_ACQUIRE(position, ring_buffer->descriptor->head_position);
     return position;
 }
 
 inline int64_t aeron_mpsc_rb_producer_position(aeron_mpsc_rb_t *ring_buffer)
 {
     int64_t position;
-    AERON_GET_VOLATILE(position, ring_buffer->descriptor->tail_position);
+    AERON_GET_ACQUIRE(position, ring_buffer->descriptor->tail_position);
     return position;
 }
 

@@ -28,7 +28,7 @@ void aeron_term_unblocker_reset_header(
     data_header->frame_header.type = AERON_HDR_TYPE_PAD;
     data_header->term_offset = term_offset;
     data_header->term_id = term_id;
-    AERON_PUT_ORDERED(data_header->frame_header.frame_length, frame_length);
+    AERON_SET_RELEASE(data_header->frame_header.frame_length, frame_length);
 }
 
 bool aeron_term_unblocker_scan_back_to_confirm_zeroed(
@@ -44,7 +44,7 @@ bool aeron_term_unblocker_scan_back_to_confirm_zeroed(
         aeron_frame_header_t *frame_header = (aeron_frame_header_t *)(buffer + i);
         int32_t frame_length;
 
-        AERON_GET_VOLATILE(frame_length, frame_header->frame_length);
+        AERON_GET_ACQUIRE(frame_length, frame_header->frame_length);
 
         if (0 != frame_length)
         {
@@ -70,7 +70,7 @@ aeron_term_unblocker_status_t aeron_term_unblocker_unblock(
     aeron_data_header_t *data_header = (aeron_data_header_t *)(buffer + blocked_offset);
     int32_t frame_length;
 
-    AERON_GET_VOLATILE(frame_length, data_header->frame_header.frame_length);
+    AERON_GET_ACQUIRE(frame_length, data_header->frame_header.frame_length);
     if (frame_length < 0)
     {
         aeron_term_unblocker_reset_header(data_header, log_meta_data, blocked_offset, term_id, -frame_length);
@@ -83,7 +83,7 @@ aeron_term_unblocker_status_t aeron_term_unblocker_unblock(
         while (current_offset < tail_offset)
         {
             data_header = (aeron_data_header_t *)(buffer + current_offset);
-            AERON_GET_VOLATILE(frame_length, data_header->frame_header.frame_length);
+            AERON_GET_ACQUIRE(frame_length, data_header->frame_header.frame_length);
             if (frame_length != 0)
             {
                 if (aeron_term_unblocker_scan_back_to_confirm_zeroed(buffer, current_offset, blocked_offset))
@@ -102,7 +102,7 @@ aeron_term_unblocker_status_t aeron_term_unblocker_unblock(
         if (current_offset == (int32_t)term_length)
         {
             data_header = (aeron_data_header_t *)(buffer + blocked_offset);
-            AERON_GET_VOLATILE(frame_length, data_header->frame_header.frame_length);
+            AERON_GET_ACQUIRE(frame_length, data_header->frame_header.frame_length);
             if (0 == frame_length)
             {
                 const int32_t length = current_offset - blocked_offset;

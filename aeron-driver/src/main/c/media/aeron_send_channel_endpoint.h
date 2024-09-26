@@ -151,13 +151,13 @@ int aeron_send_channel_endpoint_resolution_change(
 
 inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
 {
-    AERON_PUT_ORDERED(endpoint->has_sender_released, true);
+    AERON_SET_RELEASE(endpoint->has_sender_released, true);
 }
 
 inline bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint)
 {
     bool has_sender_released;
-    AERON_GET_VOLATILE(has_sender_released, endpoint->has_sender_released);
+    AERON_GET_ACQUIRE(has_sender_released, endpoint->has_sender_released);
 
     return has_sender_released;
 }

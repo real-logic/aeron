@@ -15,7 +15,6 @@
  */
 package io.aeron.driver;
 
-import io.aeron.Aeron;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
@@ -34,7 +33,6 @@ import org.agrona.collections.ArrayListUtil;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.concurrent.CachedNanoClock;
 import org.agrona.concurrent.EpochClock;
-import org.agrona.concurrent.MemoryAccess;
 import org.agrona.concurrent.NanoClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.AtomicCounter;
@@ -117,15 +115,21 @@ public final class PublicationImage
 
     private static final VarHandle BEGIN_SM_CHANGE_VH;
     private static final VarHandle END_SM_CHANGE_VH;
+    private static final VarHandle BEGIN_LOSS_CHANGE_VH;
+    private static final VarHandle END_LOSS_CHANGE_VH;
     static
     {
         try
         {
-            BEGIN_SM_CHANGE_VH = MethodHandles.lookup()
+            final MethodHandles.Lookup lookup = MethodHandles.lookup();
+            BEGIN_SM_CHANGE_VH = lookup
                 .findVarHandle(PublicationImage.class, "beginSmChange", long.class);
-
-            END_SM_CHANGE_VH = MethodHandles.lookup()
+            END_SM_CHANGE_VH = lookup
                 .findVarHandle(PublicationImage.class, "endSmChange", long.class);
+            BEGIN_LOSS_CHANGE_VH = lookup
+                .findVarHandle(PublicationImage.class, "beginLossChange", long.class);
+            END_LOSS_CHANGE_VH = lookup
+                .findVarHandle(PublicationImage.class, "endLossChange", long.class);
         }
         catch (final ReflectiveOperationException ex)
         {
@@ -133,24 +137,24 @@ public final class PublicationImage
         }
     }
 
-    private volatile long beginSmChange = Aeron.NULL_VALUE;
-    private volatile long endSmChange = Aeron.NULL_VALUE;
+    private volatile long beginSmChange;
+    private volatile long endSmChange;
     private long nextSmPosition;
     private int nextSmReceiverWindowLength;
 
-    private long lastSmChangeNumber = Aeron.NULL_VALUE;
+    private long lastSmChangeNumber;
     private long lastSmPosition;
     private long lastOverrunThreshold;
     private long timeOfLastSmNs;
     private final long smTimeoutNs;
     private final long maxReceiverWindowLength;
 
-    private volatile long beginLossChange = Aeron.NULL_VALUE;
-    private volatile long endLossChange = Aeron.NULL_VALUE;
+    private volatile long beginLossChange;
+    private volatile long endLossChange;
     private int lossTermId;
     private int lossTermOffset;
     private int lossLength;
-    private long lastLossChangeNumber = Aeron.NULL_VALUE;
+    private long lastLossChangeNumber;
 
     private volatile long timeOfLastStateChangeNs;
 
@@ -394,13 +398,16 @@ public final class PublicationImage
      */
     public void onGapDetected(final int termId, final int termOffset, final int length)
     {
-        final long changeNumber = beginLossChange + 1;
+        final long changeNumber = (long)BEGIN_LOSS_CHANGE_VH.get(this) + 1;
 
-        beginLossChange = changeNumber;
+        BEGIN_LOSS_CHANGE_VH.setRelease(this, changeNumber);
+        VarHandle.storeStoreFence();
+
         lossTermId = termId;
         lossTermOffset = termOffset;
         lossLength = length;
-        endLossChange = changeNumber;
+
+        END_LOSS_CHANGE_VH.setRelease(this, changeNumber);
 
         if (null != reportEntry)
         {
@@ -713,7 +720,7 @@ public final class PublicationImage
     int sendPendingStatusMessage(final long nowNs)
     {
         int workCount = 0;
-        final long changeNumber = endSmChange;
+        final long changeNumber = (long)END_SM_CHANGE_VH.getAcquire(this);
         final boolean hasSmTimedOut = (timeOfLastSmNs + smTimeoutNs) - nowNs < 0;
 
         if (null != rejectionReason)
@@ -741,9 +748,9 @@ public final class PublicationImage
             final long smPosition = nextSmPosition;
             final int receiverWindowLength = nextSmReceiverWindowLength;
 
-            MemoryAccess.acquireFence();
+            VarHandle.loadLoadFence();
 
-            if (changeNumber == beginSmChange)
+            if (changeNumber == (long)BEGIN_SM_CHANGE_VH.getAcquire(this))
             {
                 final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)smPosition & termLengthMask;
@@ -777,7 +784,7 @@ public final class PublicationImage
     int processPendingLoss()
     {
         int workCount = 0;
-        final long changeNumber = endLossChange;
+        final long changeNumber = (long)END_LOSS_CHANGE_VH.getAcquire(this);
 
         if (changeNumber != lastLossChangeNumber)
         {
@@ -785,9 +792,9 @@ public final class PublicationImage
             final int termOffset = lossTermOffset;
             final int length = lossLength;
 
-            MemoryAccess.acquireFence();
+            VarHandle.loadLoadFence();
 
-            if (changeNumber == beginLossChange)
+            if (changeNumber == (long)BEGIN_LOSS_CHANGE_VH.getAcquire(this))
             {
                 if (isReliable)
                 {
@@ -1048,7 +1055,7 @@ public final class PublicationImage
 
     private void scheduleStatusMessage(final long smPosition, final int receiverWindowLength)
     {
-        final long changeNumber = beginSmChange + 1;
+        final long changeNumber = (long)BEGIN_SM_CHANGE_VH.get(this) + 1;
 
         BEGIN_SM_CHANGE_VH.setRelease(this, changeNumber);
         VarHandle.storeStoreFence();

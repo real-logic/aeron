@@ -259,14 +259,15 @@ inline bool aeron_publication_image_is_flow_control_over_run(
 inline void aeron_publication_image_schedule_status_message(
     aeron_publication_image_t *image, int64_t sm_position, int32_t window_length)
 {
-    int64_t change_number;
-    AERON_GET_VOLATILE(change_number, image->begin_sm_change);
-    change_number += 1;
+    const int64_t change_number = image->begin_sm_change + 1;
 
-    AERON_PUT_VOLATILE(image->begin_sm_change, change_number);
+    AERON_PUT_ORDERED(image->begin_sm_change, change_number);
+    aeron_release();
+
     image->next_sm_position = sm_position;
     image->next_sm_receiver_window_length = window_length;
-    AERON_PUT_VOLATILE(image->end_sm_change, change_number);
+
+    AERON_PUT_ORDERED(image->end_sm_change, change_number);
 }
 
 inline bool aeron_publication_image_is_drained(aeron_publication_image_t *image)

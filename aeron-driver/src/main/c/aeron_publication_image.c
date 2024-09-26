@@ -409,15 +409,16 @@ void aeron_publication_image_clean_buffer_to(aeron_publication_image_t *image, i
 void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int32_t term_offset, size_t length)
 {
     aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
-    int64_t change_number;
-    AERON_GET_VOLATILE(change_number, image->begin_loss_change);
-    change_number += 1;
+    const int64_t change_number = image->begin_loss_change + 1;
 
-    AERON_PUT_VOLATILE(image->begin_loss_change, change_number);
+    AERON_PUT_ORDERED(image->begin_loss_change, change_number);
+    aeron_release();
+
     image->loss_term_id = term_id;
     image->loss_term_offset = term_offset;
     image->loss_length = length;
-    AERON_PUT_VOLATILE(image->end_loss_change, change_number);
+
+    AERON_PUT_ORDERED(image->end_loss_change, change_number);
 
     if (image->loss_reporter_offset >= 0)
     {

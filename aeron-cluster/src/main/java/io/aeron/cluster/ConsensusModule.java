@@ -410,6 +410,8 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Property name for the identity of the appointed leader. This is when automated leader elections are
          * not employed.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          */
         @Config
         public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
@@ -995,6 +997,8 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * The value {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
          * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          *
          * @return {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
          * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
@@ -2328,6 +2332,8 @@ public final class ConsensusModule implements AutoCloseable
          * The cluster member id of the appointed cluster leader.
          * <p>
          * -1 means no leader has been appointed and an automated leader election should occur.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          *
          * @param appointedLeaderId for the cluster.
          * @return this for a fluent API.

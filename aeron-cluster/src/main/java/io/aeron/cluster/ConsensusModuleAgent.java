@@ -42,11 +42,7 @@ import org.agrona.collections.*;
 import org.agrona.concurrent.*;
 import org.agrona.concurrent.status.CountersReader;
 
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Objects;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 import java.util.function.LongConsumer;
 
@@ -162,6 +158,8 @@ final class ConsensusModuleAgent
     private String ingressEndpoints;
     private StandbySnapshotReplicator standbySnapshotReplicator = null;
     private String localLogChannel;
+    private int currentAppointedLeaderId;
+    private long appointedLeaderStartTime;
 
     ConsensusModuleAgent(final ConsensusModule.Context ctx)
     {
@@ -193,6 +191,7 @@ final class ConsensusModuleAgent
         this.serviceAckQueues = ServiceAck.newArrayOfQueues(serviceCount);
         this.dutyCycleTracker = ctx.dutyCycleTracker();
         this.totalSnapshotDurationTracker = ctx.totalSnapshotDurationTracker();
+        this.currentAppointedLeaderId = NULL_VALUE;
 
         aeronClientInvoker = aeron.conductorAgentInvoker();
         aeronClientInvoker.invoke();
@@ -236,6 +235,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public void onClose()
     {
         if (!aeron.isClosed())
@@ -274,6 +274,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public void onStart()
     {
         archive = AeronArchive.connect(ctx.archiveContext().clone());
@@ -338,6 +339,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public int doWork()
     {
         final long timestamp = clusterClock.time();
@@ -389,6 +391,7 @@ final class ConsensusModuleAgent
         return workCount;
     }
 
+    @Override
     public ConsensusModule.Context context()
     {
         return ctx;
@@ -397,6 +400,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public int memberId()
     {
         return memberId;
@@ -405,6 +409,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public String roleName()
     {
         return ctx.agentRoleName();
@@ -413,6 +418,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public long time()
     {
         return clusterClock.time();
@@ -421,6 +427,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public TimeUnit timeUnit()
     {
         return clusterClock.timeUnit();
@@ -429,11 +436,13 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public IdleStrategy idleStrategy()
     {
         return this;
     }
 
+    @Override
     public void idle()
     {
         checkInterruptStatus();
@@ -447,6 +456,7 @@ final class ConsensusModuleAgent
         pollArchiveEvents();
     }
 
+    @Override
     public void idle(final int workCount)
     {
         checkInterruptStatus();
@@ -464,6 +474,7 @@ final class ConsensusModuleAgent
         }
     }
 
+    @Override
     public void reset()
     {
         idleStrategy.reset();
@@ -472,6 +483,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public Aeron aeron()
     {
         return aeron;
@@ -480,6 +492,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public AeronArchive archive()
     {
         return extensionArchive;
@@ -488,6 +501,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public AuthorisationService authorisationService()
     {
         return authorisationService;
@@ -496,6 +510,7 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public ClusterClientSession getClientSession(final long clusterSessionId)
     {
         return sessionByIdMap.get(clusterSessionId);
@@ -504,11 +519,13 @@ final class ConsensusModuleAgent
     /**
      * {@inheritDoc}
      */
+    @Override
     public void closeClusterSession(final long clusterSessionId)
     {
         onServiceCloseSession(clusterSessionId);
     }
 
+    @Override
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {
@@ -516,7 +533,7 @@ final class ConsensusModuleAgent
         {
             throw new ClusterException(
                 "incompatible version: " + SemanticVersion.toString(ctx.appVersion()) +
-                " snapshot=" + SemanticVersion.toString(appVersion),
+                    " snapshot=" + SemanticVersion.toString(appVersion),
                 AeronException.Category.FATAL);
         }
 
@@ -551,10 +568,12 @@ final class ConsensusModuleAgent
         }
     }
 
+    @Override
     public void onLoadEndSnapshot(final DirectBuffer buffer, final int offset, final int length)
     {
     }
 
+    @Override
     public void onLoadClusterSession(
         final long clusterSessionId,
         final long correlationId,
@@ -580,6 +599,7 @@ final class ConsensusModuleAgent
         }
     }
 
+    @Override
     public void onLoadConsensusModuleState(
         final long nextSessionId,
         final long nextServiceSessionId,
@@ -597,6 +617,7 @@ final class ConsensusModuleAgent
         }
     }
 
+    @Override
     public void onLoadPendingMessageTracker(
         final long nextServiceSessionId,
         final long logServiceSessionId,
@@ -616,6 +637,7 @@ final class ConsensusModuleAgent
             nextServiceSessionId, logServiceSessionId, pendingMessageCapacity);
     }
 
+    @Override
     public void onLoadPendingMessage(
         final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
@@ -623,6 +645,7 @@ final class ConsensusModuleAgent
         pendingServiceMessageTrackers[serviceTrackerIndex].appendMessage(buffer, offset, length);
     }
 
+    @Override
     public void onLoadTimer(
         final long correlationId, final long deadline, final DirectBuffer buffer, final int offset, final int length)
     {
@@ -732,6 +755,45 @@ final class ConsensusModuleAgent
                 egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
             }
         }
+        else if (AdminRequestType.APPOINT_LEADER == requestType)
+        {
+            final int appointedLeaderId = payload.getInt(payloadOffset);
+            if (appointedLeaderId == this.memberId)
+            {
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
+                return;
+            }
+
+            boolean illegal = true;
+            for (final ClusterMember activeMember : activeMembers)
+            {
+                if (activeMember.id() == appointedLeaderId)
+                {
+                    illegal = false;
+                    break;
+                }
+            }
+
+            if (illegal)
+            {
+                final String msg = "Failed to append appoint leader memberId illegal";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
+                return;
+            }
+
+            final long timestamp = clusterClock.time();
+            if (ConsensusModule.State.ACTIVE == state &&
+                appendAction(ClusterAction.APPOINT_LEADER, timestamp, appointedLeaderId))
+            {
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.OK, "");
+                this.onAppointLeader(appointedLeaderId);
+            }
+            else
+            {
+                final String msg = "Failed to append appoint leader command to cluster";
+                egressPublisher.sendAdminResponse(session, correlationId, requestType, AdminResponseCode.ERROR, msg);
+            }
+        }
         else
         {
             egressPublisher.sendAdminResponse(
@@ -820,6 +882,7 @@ final class ConsensusModuleAgent
         }
     }
 
+    @Override
     public boolean onTimerEvent(final long correlationId)
     {
         final long appendPosition = logPublisher.appendTimer(correlationId, leadershipTermId, clusterClock.time());
@@ -851,6 +914,16 @@ final class ConsensusModuleAgent
         }
         else if (Cluster.Role.LEADER == role)
         {
+            if (this.state == ConsensusModule.State.APPOINT_LEADER)
+            {
+                if (this.currentAppointedLeaderId == followerMemberId)
+                {
+                    this.enterElection(true, "appoint leader member id : " + this.currentAppointedLeaderId);
+                    this.currentAppointedLeaderId = NULL_VALUE;
+                    this.state(ConsensusModule.State.ACTIVE);
+                }
+                return;
+            }
             final ClusterMember follower = clusterMemberByIdMap.get(followerMemberId);
             if (null != follower && logLeadershipTermId <= this.leadershipTermId)
             {
@@ -1533,6 +1606,12 @@ final class ConsensusModuleAgent
                 {
                     snapshotOnServiceAck(logPosition, timestamp, ServiceAck.EMPTY_SERVICE_ACKS);
                 }
+            }
+            else if (ClusterAction.APPOINT_LEADER == action &&
+                ConsensusModule.State.ACTIVE == state &&
+                election == null)
+            {
+                this.onAppointLeader(flags);
             }
         }
     }
@@ -2307,6 +2386,11 @@ final class ConsensusModuleAgent
                         closeAndTerminate();
                     }
                 }
+                else if (ConsensusModule.State.APPOINT_LEADER == state)
+                {
+                    checkAppointedLeaderTimeout(nowNs);
+                }
+
             }
             else
             {
@@ -3123,6 +3207,19 @@ final class ConsensusModuleAgent
         }
     }
 
+    void onAppointLeader(final int appointedLeaderId)
+    {
+        this.currentAppointedLeaderId = appointedLeaderId;
+        if (this.role == Cluster.Role.LEADER)
+        {
+            this.state(ConsensusModule.State.APPOINT_LEADER);
+            this.appointedLeaderStartTime = clusterClock.timeNanos();
+            return;
+        }
+        this.enterElection(true, "appoint leader member id : " + appointedLeaderId);
+        this.currentAppointedLeaderId = NULL_VALUE;
+    }
+
     private void clearSessionsAfter(final long logPosition)
     {
         for (int i = sessions.size() - 1; i >= 0; i--)
@@ -3232,7 +3329,8 @@ final class ConsensusModuleAgent
             thisMember,
             consensusPublisher,
             ctx,
-            this);
+            this,
+            currentAppointedLeaderId);
 
         election.doWork(clusterClock.timeNanos());
     }
@@ -3817,6 +3915,16 @@ final class ConsensusModuleAgent
         return workCount;
     }
 
+    private void checkAppointedLeaderTimeout(final long nowNs)
+    {
+        if (appointedLeaderStartTime + ctx.appointedLeaderTimeoutNs() < nowNs)
+        {
+            this.state(ConsensusModule.State.ACTIVE);
+        }
+    }
+
+
+    @Override
     public String toString()
     {
         return "ConsensusModuleAgent{" +

@@ -20,12 +20,7 @@ import io.aeron.archive.Archive;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.client.AeronCluster;
 import io.aeron.cluster.client.ClusterException;
-import io.aeron.cluster.codecs.AdminRequestDecoder;
-import io.aeron.cluster.codecs.AdminRequestType;
-import io.aeron.cluster.codecs.BackupQueryDecoder;
-import io.aeron.cluster.codecs.HeartbeatRequestDecoder;
-import io.aeron.cluster.codecs.MessageHeaderDecoder;
-import io.aeron.cluster.codecs.StandbySnapshotDecoder;
+import io.aeron.cluster.codecs.*;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import io.aeron.cluster.service.ClusterMarkFile;
 import io.aeron.cluster.service.ClusterCounters;
@@ -40,11 +35,7 @@ import io.aeron.driver.NameResolver;
 import io.aeron.driver.status.DutyCycleStallTracker;
 import io.aeron.exceptions.ConcurrentConcludeException;
 import io.aeron.exceptions.ConfigurationException;
-import io.aeron.security.Authenticator;
-import io.aeron.security.AuthenticatorSupplier;
-import io.aeron.security.AuthorisationService;
-import io.aeron.security.AuthorisationServiceSupplier;
-import io.aeron.security.DefaultAuthenticatorSupplier;
+import io.aeron.security.*;
 import io.aeron.version.Versioned;
 import org.agrona.*;
 import org.agrona.concurrent.*;
@@ -69,7 +60,6 @@ import static io.aeron.AeronCounters.*;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
-import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
@@ -130,7 +120,12 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Terminal state.
          */
-        CLOSED(6);
+        CLOSED(6),
+
+        /**
+         * Appoint new leader wait election.
+         */
+        APPOINT_LEADER(7);
 
         static final State[] STATES = values();
 
@@ -324,6 +319,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * {@inheritDoc}
      */
+    @Override
     public void close()
     {
         CloseHelper.closeAll(conductorRunner, conductorInvoker);
@@ -956,6 +952,17 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.consensus.module.extension";
 
         /**
+         * Timeout for appointed leader status.
+         */
+        public static final String APPOINTED_LEADER_TIMEOUT_PROP_NAME = "aeron.cluster.appointedLeader.timeout";
+
+        /**
+         * Timeout for appointed leader status.
+         */
+        public static final long APPOINTED_LEADER_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+
+        /**
          * The value {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_DEFAULT} or system property
          * {@link #CLUSTER_INGRESS_FRAGMENT_LIMIT_PROP_NAME} if set.
          *
@@ -1440,6 +1447,18 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout for appointed leader status.
+         *
+         * @return timeout in nanoseconds to wait for canvass request
+         * @see #SESSION_TIMEOUT_PROP_NAME
+         */
+        public static long appointedLeaderTimeoutNs()
+        {
+            return getDurationInNanos(APPOINTED_LEADER_TIMEOUT_PROP_NAME, APPOINTED_LEADER_TIMEOUT_DEFAULT_NS);
+        }
+
+
+        /**
          * Create a new {@link ConsensusModuleExtension} based on the configured
          * {@link #CONSENSUS_MODULE_EXTENSION_CLASS_NAME_PROP_NAME}.
          *
@@ -1474,6 +1493,7 @@ public final class ConsensusModule implements AutoCloseable
     public static final class Context implements Cloneable
     {
         private static final VarHandle IS_CONCLUDED_VH;
+
         static
         {
             try
@@ -1586,11 +1606,14 @@ public final class ConsensusModule implements AutoCloseable
         private ConsensusModuleStateExport boostrapState = null;
         private boolean acceptStandbySnapshots = Configuration.acceptStandbySnapshots();
 
+        private long appointedLeaderTimeoutNs = Configuration.appointedLeaderTimeoutNs();
+
         /**
          * Perform a shallow copy of the object.
          *
          * @return a shallow copy of the object.
          */
+        @Override
         public Context clone()
         {
             try
@@ -4296,6 +4319,33 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
+         * Timeout for appointed leader status.
+         *
+         * @param appointedLeaderTimeoutNs to wait for canvass request in appointed leader statuis.
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
+         * @return this for a fluentAPI.
+         */
+        public Context appointedLeaderTimeoutNs(final long appointedLeaderTimeoutNs)
+        {
+            this.appointedLeaderTimeoutNs = appointedLeaderTimeoutNs;
+            return this;
+        }
+
+        /**
+         * Timeout for appointed leader status.
+         *
+         * @return appointedLeaderTimeoutNs to wait for canvass request in appointed leader statuis.
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_PROP_NAME
+         * @see Configuration#APPOINTED_LEADER_TIMEOUT_DEFAULT_NS
+         */
+        public long appointedLeaderTimeoutNs()
+        {
+            return appointedLeaderTimeoutNs;
+        }
+
+
+        /**
          * Delete the cluster directory.
          */
         public void deleteDirectory()
@@ -4453,6 +4503,7 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * {@inheritDoc}
          */
+        @Override
         public String toString()
         {
             return "ConsensusModule.Context" +
@@ -4546,6 +4597,7 @@ public final class ConsensusModule implements AutoCloseable
     /**
      * {@inheritDoc}
      */
+    @Override
     public String toString()
     {
         return "ConsensusModule{" +

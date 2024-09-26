@@ -788,7 +788,7 @@ void aeron_network_publication_on_status_message(
 
         if (aeron_send_channel_is_unicast(publication->endpoint))
         {
-            AERON_PUT_VOLATILE(publication->has_received_unicast_eos, true);
+            AERON_PUT_ORDERED(publication->has_received_unicast_eos, true);
         }
     }
     else

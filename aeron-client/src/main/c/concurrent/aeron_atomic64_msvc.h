@@ -39,15 +39,6 @@ do \
 } \
 while (false) \
 
-#define AERON_PUT_VOLATILE(dst, src) \
-do \
-{ \
-    _ReadWriteBarrier(); \
-    dst = src; \
-    MemoryBarrier(); \
-} \
-while (false) \
-
 #define AERON_GET_AND_ADD_INT64(original, current, value) \
 do \
 { \

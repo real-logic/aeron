@@ -762,7 +762,7 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
      * loop will be terminating. So, will not process lingering, etc. Let the aeron_close() cleanup
      * everything when the app is ready, but we want to mark everything as closed so that it won't be used.
      */
-    AERON_PUT_VOLATILE(conductor->is_closed, true);
+    AERON_PUT_ORDERED(conductor->is_closed, true);
 
     aeron_array_to_ptr_hash_map_for_each(
         &conductor->image_by_key_map, aeron_client_conductor_force_close_image, NULL);

@@ -42,15 +42,6 @@ do \
 } \
 while (false) \
 
-#define AERON_PUT_VOLATILE(dst, src) \
-do \
-{ \
-    atomic_thread_fence(memory_order_release); \
-    dst = src; \
-    atomic_thread_fence(memory_order_seq_cst); \
-} \
-while (false) \
-
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
 { \

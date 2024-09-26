@@ -36,15 +36,6 @@ do \
 } \
 while (false) \
 
-#define AERON_PUT_VOLATILE(dst, src) \
-do \
-{ \
-    __asm__ volatile("" ::: "memory"); \
-    dst = src; \
-    __asm__ volatile("lock; addl $0, 0(%%rsp)" ::: "cc", "memory"); \
-} \
-while (false) \
-
 #define AERON_GET_AND_ADD_INT64(original, dst, value) \
 do \
 { \

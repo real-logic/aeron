@@ -400,7 +400,7 @@ public final class PublicationImage
     {
         final long changeNumber = (long)BEGIN_LOSS_CHANGE_VH.get(this) + 1;
 
-        BEGIN_LOSS_CHANGE_VH.set(this, changeNumber); // plain write is safe, because `storeStoreFence`
+        BEGIN_LOSS_CHANGE_VH.setRelease(this, changeNumber);
         VarHandle.storeStoreFence();
 
         lossTermId = termId;
@@ -750,7 +750,7 @@ public final class PublicationImage
 
             VarHandle.loadLoadFence();
 
-            if (changeNumber == (long)BEGIN_SM_CHANGE_VH.get(this)) // plain read is safe, because `loadLoadFence`
+            if (changeNumber == (long)BEGIN_SM_CHANGE_VH.getAcquire(this))
             {
                 final int termId = computeTermIdFromPosition(smPosition, positionBitsToShift, initialTermId);
                 final int termOffset = (int)smPosition & termLengthMask;
@@ -794,7 +794,7 @@ public final class PublicationImage
 
             VarHandle.loadLoadFence();
 
-            if (changeNumber == (long)BEGIN_LOSS_CHANGE_VH.get(this)) // plain read is safe, because `loadLoadFence`
+            if (changeNumber == (long)BEGIN_LOSS_CHANGE_VH.getAcquire(this))
             {
                 if (isReliable)
                 {
@@ -1057,7 +1057,7 @@ public final class PublicationImage
     {
         final long changeNumber = (long)BEGIN_SM_CHANGE_VH.get(this) + 1;
 
-        BEGIN_SM_CHANGE_VH.set(this, changeNumber);  // plain write is safe, because `storeStoreFence`
+        BEGIN_SM_CHANGE_VH.setRelease(this, changeNumber);
         VarHandle.storeStoreFence();
 
         nextSmPosition = smPosition;

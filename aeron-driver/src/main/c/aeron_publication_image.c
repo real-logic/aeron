@@ -411,7 +411,7 @@ void aeron_publication_image_on_gap_detected(void *clientd, int32_t term_id, int
     aeron_publication_image_t *image = (aeron_publication_image_t *)clientd;
     const int64_t change_number = image->begin_loss_change + 1;
 
-    image->begin_loss_change =  change_number; // safe, because `aeron_release` fence
+    AERON_SET_RELEASE(image->begin_loss_change, change_number);
     aeron_release();
 
     image->loss_term_id = term_id;
@@ -768,7 +768,10 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
 
         aeron_acquire();
 
-        if (change_number == image->begin_sm_change)  // safe, because `aeron_acquire` fence
+        int64_t begin_change_number;
+        AERON_GET_ACQUIRE(begin_change_number, image->begin_sm_change);
+
+        if (change_number == begin_change_number)
         {
             const int32_t term_id = aeron_logbuffer_compute_term_id_from_position(
                 sm_position, image->position_bits_to_shift, image->initial_term_id);
@@ -834,7 +837,10 @@ int aeron_publication_image_send_pending_loss(aeron_publication_image_t *image)
 
         aeron_acquire();
 
-        if (change_number == image->begin_loss_change) // safe, because `aeron_acquire` fence
+        int64_t begin_change_number;
+        AERON_GET_ACQUIRE(begin_change_number, image->begin_loss_change);
+
+        if (change_number == begin_change_number)
         {
             if (image->conductor_fields.is_reliable)
             {

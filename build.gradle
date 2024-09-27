@@ -1328,6 +1328,6 @@ tasks.named('dependencyUpdates').configure {
 }
 
 wrapper {
-    gradleVersion = '8.10.1'
+    gradleVersion = libs.versions.gradle.get()
     distributionType = 'ALL'
 }

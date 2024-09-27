@@ -41,9 +41,9 @@ public final class Counter extends AtomicCounter
         }
     }
 
+    private volatile boolean isClosed;
     private final long registrationId;
     private final ClientConductor clientConductor;
-    private volatile boolean isClosed;
 
     Counter(
         final long registrationId,

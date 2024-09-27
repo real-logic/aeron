@@ -92,7 +92,7 @@ final class CommonEventDissector
     {
         int encodedLength = 0;
 
-        final int addressLength = buffer.getInt(offset + encodedLength);
+        final int addressLength = buffer.getInt(offset + encodedLength, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_INT;
 
         if (4 == addressLength)

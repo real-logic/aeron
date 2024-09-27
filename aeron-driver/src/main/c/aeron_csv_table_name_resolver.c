@@ -66,7 +66,7 @@ int aeron_csv_table_name_resolver_resolve(
             if (strncmp(name, table->array[i].name, strlen(table->array[i].name) + 1) == 0)
             {
                 int64_t operation;
-                AERON_GET_VOLATILE(operation, *table->array[i].operation_toggle.value_addr);
+                AERON_GET_ACQUIRE(operation, *table->array[i].operation_toggle.value_addr);
 
                 if (AERON_NAME_RESOLVER_CSV_DISABLE_RESOLUTION_OP == operation)
                 {

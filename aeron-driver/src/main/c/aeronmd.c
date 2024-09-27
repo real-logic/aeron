@@ -38,18 +38,18 @@ volatile int exit_status = AERON_NULL_VALUE;
 
 void sigint_handler(int signal)
 {
-    AERON_PUT_ORDERED(exit_status, signal);
+    AERON_SET_RELEASE(exit_status, signal);
 }
 
 void termination_hook(void *state)
 {
-    AERON_PUT_ORDERED(exit_status, EXIT_SUCCESS);
+    AERON_SET_RELEASE(exit_status, EXIT_SUCCESS);
 }
 
 inline bool is_running(void)
 {
     int result;
-    AERON_GET_VOLATILE(result, exit_status);
+    AERON_GET_ACQUIRE(result, exit_status);
     return (AERON_NULL_VALUE == result);
 }
 
@@ -114,35 +114,35 @@ int main(int argc, char **argv)
     if (aeron_driver_context_init(&context) < 0)
     {
         fprintf(stderr, "ERROR: context init (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_context_set_driver_termination_hook(context, termination_hook, NULL) < 0)
     {
         fprintf(stderr, "ERROR: context set termination hook (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_context_set_agent_on_start_function(context, aeron_set_thread_affinity_on_start, context))
     {
         fprintf(stderr, "ERROR: unable to set on_start function(%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_init(&driver, context) < 0)
     {
         fprintf(stderr, "ERROR: driver init (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
     if (aeron_driver_start(driver, true) < 0)
     {
         fprintf(stderr, "ERROR: driver start (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
         goto cleanup;
     }
 
@@ -157,13 +157,13 @@ cleanup:
     if (0 != aeron_driver_close(driver))
     {
         fprintf(stderr, "ERROR: driver close (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
     }
 
     if (0 != aeron_driver_context_close(context))
     {
         fprintf(stderr, "ERROR: driver context close (%d) %s\n", aeron_errcode(), aeron_errmsg());
-        AERON_PUT_ORDERED(exit_status, EXIT_FAILURE);
+        AERON_SET_RELEASE(exit_status, EXIT_FAILURE);
     }
 
     return exit_status;

@@ -42,18 +42,19 @@ import org.agrona.concurrent.errors.DistinctErrorLog;
 import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.File;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.util.Arrays;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.CLUSTER_BACKUP_SNAPSHOT_RETRIEVE_COUNT_TYPE_ID;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.cluster.ConsensusModule.Configuration.SERVICE_ID;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.LIVENESS_TIMEOUT_MS;
 import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.SystemUtil.getDurationInNanos;
 
 /**
@@ -563,10 +564,20 @@ public final class ClusterBackup implements AutoCloseable
      */
     public static class Context implements Cloneable
     {
-        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
-            Context.class, "isConcluded");
-        private volatile int isConcluded;
+        private static final VarHandle IS_CONCLUDED_VH;
+        static
+        {
+            try
+            {
+                IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isConcluded", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
+        private volatile boolean isConcluded;
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
@@ -604,6 +615,7 @@ public final class ClusterBackup implements AutoCloseable
         private Counter stateCounter;
         private Counter liveLogPositionCounter;
         private Counter nextQueryDeadlineMsCounter;
+        private Counter snapshotRetrieveCounter;
 
         private AeronArchive.Context archiveContext;
         private AeronArchive.Context clusterArchiveContext;
@@ -641,7 +653,7 @@ public final class ClusterBackup implements AutoCloseable
         {
             final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
 
-            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
             {
                 throw new ConcurrentConcludeException();
             }
@@ -782,6 +794,16 @@ public final class ClusterBackup implements AutoCloseable
                     aeron, buffer, "ClusterBackup next query deadline in ms", QUERY_DEADLINE_TYPE_ID, clusterId);
             }
 
+            if (null == snapshotRetrieveCounter)
+            {
+                snapshotRetrieveCounter = ClusterCounters.allocate(
+                    aeron,
+                    buffer,
+                    "ClusterBackup snapshots retrieved",
+                    CLUSTER_BACKUP_SNAPSHOT_RETRIEVE_COUNT_TYPE_ID,
+                    clusterId);
+            }
+
             if (null == threadFactory)
             {
                 threadFactory = Thread::new;
@@ -862,7 +884,7 @@ public final class ClusterBackup implements AutoCloseable
          */
         public boolean isConcluded()
         {
-            return 1 == isConcluded;
+            return isConcluded;
         }
 
         /**
@@ -1698,6 +1720,28 @@ public final class ClusterBackup implements AutoCloseable
         {
             this.liveLogPositionCounter = liveLogPositionCounter;
             return this;
+        }
+
+        /**
+         * Set the counter for the number of snapshots retrieved by the backup from the cluster.
+         *
+         * @param snapshotRetrieveCounter the counter to use for snapshots retrieved.
+         * @return this for a fluent API.
+         */
+        public Context snapshotRetrieveCounter(final Counter snapshotRetrieveCounter)
+        {
+            this.snapshotRetrieveCounter = snapshotRetrieveCounter;
+            return this;
+        }
+
+        /**
+         * Get the counter for the number of snapshots retrieved by the backup from the cluster.
+         *
+         * @return counter for the number of snapshots retrieved by the backup from the cluster.
+         */
+        public Counter snapshotRetrieveCounter()
+        {
+            return snapshotRetrieveCounter;
         }
 
         /**

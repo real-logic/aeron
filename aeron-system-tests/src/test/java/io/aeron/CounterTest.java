@@ -29,7 +29,6 @@ import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
-import org.agrona.ErrorHandler;
 import org.agrona.collections.MutableBoolean;
 import org.agrona.concurrent.AgentInvoker;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -40,13 +39,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
-import org.mockito.ArgumentCaptor;
 import org.mockito.Mockito;
 
 import java.util.Arrays;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static org.hamcrest.CoreMatchers.allOf;
@@ -382,6 +381,7 @@ class CounterTest
 
     @Test
     @InterruptAfter(10)
+    @SuppressWarnings("indentation")
     void shouldReturnErrorIfANonStaticCounterExistsForTypeIdRegistrationId()
     {
         final Counter counter = clientA.addCounter(COUNTER_TYPE_ID, "test session-specific counter");
@@ -391,18 +391,23 @@ class CounterTest
         final RegistrationException registrationException = assertThrowsExactly(
             RegistrationException.class,
             () -> clientA.addStaticCounter(
-            COUNTER_TYPE_ID,
-            keyBuffer,
-            0,
-            keyBuffer.capacity(),
-            labelBuffer,
-            0,
-            COUNTER_LABEL.length(),
-            counter.registrationId()));
-        assertThat(registrationException.getMessage(), allOf(
-            containsString("cannot add static counter, because a non-static counter exists (counterId=" +
-            counter.id() + ") for typeId=" + COUNTER_TYPE_ID + " and registrationId=" + counter.registrationId()),
-            containsString("errorCodeValue=11")));
+                COUNTER_TYPE_ID,
+                keyBuffer,
+                0,
+                keyBuffer.capacity(),
+                labelBuffer,
+                0,
+                COUNTER_LABEL.length(),
+                counter.registrationId()));
+
+        assertThat(
+            registrationException.getMessage(),
+            allOf(
+                containsString("cannot add static counter, because a non-static counter exists"),
+                containsString("counterId=" + counter.id()),
+                containsString("typeId=" + COUNTER_TYPE_ID),
+                containsString("registrationId=" + counter.registrationId()),
+                containsString("errorCodeValue=11")));
     }
 
     @Test
@@ -444,13 +449,13 @@ class CounterTest
     {
         final AvailableCounterHandler availableCounterHandler = mock(AvailableCounterHandler.class);
         final UnavailableCounterHandler unavailableCounterHandler = mock(UnavailableCounterHandler.class);
-        final ErrorHandler errorHandler = mock(ErrorHandler.class);
+        final AtomicReference<Throwable> error = new AtomicReference<>();
         try (Aeron aeron = Aeron.connect(new Aeron.Context()
             .aeronDirectoryName(driver.aeronDirectoryName())
             .useConductorAgentInvoker(true)
             .availableCounterHandler(availableCounterHandler)
             .unavailableCounterHandler(unavailableCounterHandler)
-            .errorHandler(errorHandler)))
+            .errorHandler(error::set)))
         {
             final AgentInvoker conductorAgentInvoker = aeron.conductorAgentInvoker();
             assertNotNull(conductorAgentInvoker);
@@ -468,10 +473,12 @@ class CounterTest
 
             Tests.await(() -> 1 == countersReader.getCounterValue(SystemCounterDescriptor.CLIENT_TIMEOUTS.id()));
 
-            conductorAgentInvoker.invoke();
-            final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
-            verify(errorHandler, timeout(5000L)).onError(captor.capture());
-            final Throwable timeoutException = captor.getValue();
+            while (null == error.get())
+            {
+                conductorAgentInvoker.invoke();
+                Thread.yield();
+            }
+            final Throwable timeoutException = error.get();
             if (timeoutException instanceof ClientTimeoutException)
             {
                 assertEquals("FATAL - client timeout from driver", timeoutException.getMessage());

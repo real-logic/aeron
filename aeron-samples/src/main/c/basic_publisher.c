@@ -52,13 +52,13 @@ volatile bool running = true;
 
 void sigint_handler(int signal)
 {
-    AERON_PUT_ORDERED(running, false);
+    AERON_SET_RELEASE(running, false);
 }
 
 inline bool is_running(void)
 {
     bool result;
-    AERON_GET_VOLATILE(result, running);
+    AERON_GET_ACQUIRE(result, running);
     return result;
 }
 

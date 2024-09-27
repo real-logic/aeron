@@ -105,7 +105,7 @@ inline int aeron_agent_do_work(aeron_agent_runner_t *runner)
 inline bool aeron_agent_is_running(aeron_agent_runner_t *runner)
 {
     bool running;
-    AERON_GET_VOLATILE(running, runner->running);
+    AERON_GET_ACQUIRE(running, runner->running);
     return running;
 }
 

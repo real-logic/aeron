@@ -104,6 +104,11 @@ public class TestBackupNode implements AutoCloseable
         return counter.get();
     }
 
+    public long snapshotRetrieveCount()
+    {
+        return context.clusterBackupContext.snapshotRetrieveCounter().get();
+    }
+
     public EpochClock epochClock()
     {
         return context.clusterBackupContext.epochClock();

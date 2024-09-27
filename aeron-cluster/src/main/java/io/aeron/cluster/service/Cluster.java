@@ -207,7 +207,7 @@ public interface Cluster
 
     /**
      * Schedule a timer for a given deadline and provide a correlation id to identify the timer when it expires or
-     * for cancellation. This action is asynchronous and will race with the timer expiring.
+     * for cancellation. This action is asynchronous, when rescheduling it will race with the timer expiring.
      * <p>
      * If the correlationId is for an existing scheduled timer then it will be rescheduled to the new deadline. However,
      * it is best to generate correlationIds in a monotonic fashion and be aware of potential clashes with other
@@ -220,7 +220,7 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      * <p>
-     * Callers of this method should loop until the method succeeds.
+     * Callers of this method must loop until the method succeeds.
      *
      * <pre>{@code
      * private Cluster cluster;
@@ -238,7 +238,7 @@ public interface Cluster
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
      * @param deadline      time after which the timer will fire. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to schedule a timer request has been sent or false if back-pressure is applied.
+     * @return true if the request to schedule a timer has been sent or false if back-pressure is applied.
      * @see #cancelTimer(long)
      */
     boolean scheduleTimer(long correlationId, long deadline);
@@ -253,11 +253,21 @@ public interface Cluster
      * {@link ClusteredService#onSessionClose(ClientSession, long, CloseReason)}.
      * If applied to other events then they are not guaranteed to be reliable.
      * <p>
-     * Callers of this method should loop until the method succeeds, see {@link
-     * io.aeron.cluster.service.Cluster#scheduleTimer(long, long)} for an example.
+     * Callers of this method must loop until the method succeeds.
+     *
+     * <pre>{@code
+     * private Cluster cluster;
+     * // Lines omitted...
+     *
+     * cluster.idleStrategy().reset();
+     * while (!cluster.cancelTimer(correlationId))
+     * {
+     *     cluster.idleStrategy().idle();
+     * }
+     * }</pre>
      *
      * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
-     * @return true if the event to cancel request has been sent or false if back-pressure is applied.
+     * @return true if the request to cancel a timer has been sent or false if back-pressure is applied.
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
@@ -267,14 +277,14 @@ public interface Cluster
      * consensus module and have the cluster session of as the
      * {@link io.aeron.cluster.service.ClusteredServiceContainer.Configuration#SERVICE_ID_PROP_NAME}.
      * <p>
-     * Callers of this method should loop until the method succeeds.
+     * Callers of this method must loop until the method succeeds.
      *
      * <pre>{@code
      * private Cluster cluster;
      * // Lines omitted...
      *
      * cluster.idleStrategy().reset();
-     * do
+     * while(true)
      * {
      *     final long position = cluster.offer(buffer, offset, length);
      *     if (position > 0)
@@ -288,7 +298,6 @@ public interface Cluster
      *
      *     cluster.idleStrategy.idle();
      * }
-     * while (true);
      * }</pre>
      *
      * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
@@ -324,27 +333,36 @@ public interface Cluster
      * <p>
      * On successful claim, the Cluster session header will be written to the start of the claimed buffer section.
      * Clients <b>MUST</b> write into the claimed buffer region at offset + {@link AeronCluster#SESSION_HEADER_LENGTH}.
-     * <pre>{@code
-     *     final DirectBuffer srcBuffer = acquireMessage();
-     *
-     *     if (cluster.tryClaim(length, bufferClaim))
-     *     {
-     *         try
-     *         {
-     *              final MutableDirectBuffer buffer = bufferClaim.buffer();
-     *              final int offset = bufferClaim.offset();
-     *              // ensure that data is written at the correct offset
-     *              buffer.putBytes(offset + AeronCluster.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
-     *         }
-     *         finally
-     *         {
-     *             bufferClaim.commit();
-     *         }
-     *     }
-     * }</pre>
      * <p>
-     * Callers of this method should loop until the method succeeds, see
-     * {@link io.aeron.cluster.service.Cluster#offer(DirectBuffer, int, int)} for an example.
+     * Callers of this method must loop until the method succeeds.
+     *
+     * <pre>{@code
+     * private final BufferClaim bufferClaim = new BufferClaim();
+     * private Cluster cluster;
+     * // Lines omitted...
+     *
+     * final DirectBuffer srcBuffer = acquireMessage();
+     * cluster.idleStrategy().reset();
+     * while(true)
+     * {
+     *     final long position = cluster.tryClaim(length, bufferClaim);
+     *     if (position > 0)
+     *     {
+     *         final MutableDirectBuffer buffer = bufferClaim.buffer();
+     *         final int offset = bufferClaim.offset();
+     *         // ensure that data is written after the session header
+     *         buffer.putBytes(offset + AeronCluster.SESSION_HEADER_LENGTH, srcBuffer, 0, length);
+     *         bufferClaim.commit();
+     *         break;
+     *     }
+     *     else if (Publication.ADMIN_ACTION != position && Publication.BACK_PRESSURED != position)
+     *     {
+     *         throw new ClusterException("Internal tryClaim failed: " + position);
+     *     }
+     *
+     *     cluster.idleStrategy.idle();
+     * }
+     * }</pre>
      *
      * @param length      of the range to claim, in bytes.
      * @param bufferClaim to be populated if the claim succeeds.

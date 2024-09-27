@@ -445,7 +445,7 @@ int aeron_agent_stop(aeron_agent_runner_t *runner)
         return -1;
     }
 
-    AERON_PUT_ORDERED(runner->running, false);
+    AERON_SET_RELEASE(runner->running, false);
 
     if (AERON_AGENT_STATE_STARTED == runner->state)
     {

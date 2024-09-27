@@ -1492,7 +1492,7 @@ bool aeron_publication_image_entry_has_reached_end_of_life(
     aeron_driver_conductor_t *conductor, aeron_publication_image_entry_t *entry)
 {
     bool has_receiver_released = false;
-    AERON_GET_VOLATILE(has_receiver_released, entry->image->has_receiver_released);
+    AERON_GET_ACQUIRE(has_receiver_released, entry->image->has_receiver_released);
 
     return AERON_PUBLICATION_IMAGE_STATE_DONE == entry->image->conductor_fields.state && has_receiver_released;
 }

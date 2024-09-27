@@ -55,11 +55,12 @@ import org.agrona.concurrent.status.CountersReader;
 import java.io.File;
 import java.io.IOException;
 import java.io.UncheckedIOException;
+import java.lang.invoke.MethodHandles;
+import java.lang.invoke.VarHandle;
 import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicIntegerFieldUpdater;
 import java.util.function.Function;
 import java.util.function.LongConsumer;
 import java.util.function.Supplier;
@@ -70,7 +71,6 @@ import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIME
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.COMMIT_POSITION_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.*;
-import static java.util.concurrent.atomic.AtomicIntegerFieldUpdater.newUpdater;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 import static org.agrona.SystemUtil.*;
 
@@ -410,6 +410,8 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * Property name for the identity of the appointed leader. This is when automated leader elections are
          * not employed.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          */
         @Config
         public static final String APPOINTED_LEADER_ID_PROP_NAME = "aeron.cluster.appointed.leader.id";
@@ -995,6 +997,8 @@ public final class ConsensusModule implements AutoCloseable
         /**
          * The value {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
          * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          *
          * @return {@link #APPOINTED_LEADER_ID_DEFAULT} or system property
          * {@link #APPOINTED_LEADER_ID_PROP_NAME} if set.
@@ -1473,13 +1477,20 @@ public final class ConsensusModule implements AutoCloseable
      */
     public static final class Context implements Cloneable
     {
-        /**
-         * Using an integer because there is no support for boolean. 1 is concluded, 0 is not concluded.
-         */
-        private static final AtomicIntegerFieldUpdater<Context> IS_CONCLUDED_UPDATER = newUpdater(
-            Context.class, "isConcluded");
-        private volatile int isConcluded;
+        private static final VarHandle IS_CONCLUDED_VH;
+        static
+        {
+            try
+            {
+                IS_CONCLUDED_VH = MethodHandles.lookup().findVarHandle(Context.class, "isConcluded", boolean.class);
+            }
+            catch (final ReflectiveOperationException ex)
+            {
+                throw new ExceptionInInitializerError(ex);
+            }
+        }
 
+        private volatile boolean isConcluded;
         private boolean ownsAeronClient = false;
         private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
         private Aeron aeron;
@@ -1602,7 +1613,7 @@ public final class ConsensusModule implements AutoCloseable
         @SuppressWarnings("MethodLength")
         public void conclude()
         {
-            if (0 != IS_CONCLUDED_UPDATER.getAndSet(this, 1))
+            if ((boolean)IS_CONCLUDED_VH.getAndSet(this, true))
             {
                 throw new ConcurrentConcludeException();
             }
@@ -2035,7 +2046,7 @@ public final class ConsensusModule implements AutoCloseable
          */
         public boolean isConcluded()
         {
-            return 1 == isConcluded;
+            return isConcluded;
         }
 
         /**
@@ -2328,6 +2339,8 @@ public final class ConsensusModule implements AutoCloseable
          * The cluster member id of the appointed cluster leader.
          * <p>
          * -1 means no leader has been appointed and an automated leader election should occur.
+         * <p>
+         * This feature is for testing and not recommended for production usage.
          *
          * @param appointedLeaderId for the cluster.
          * @return this for a fluent API.

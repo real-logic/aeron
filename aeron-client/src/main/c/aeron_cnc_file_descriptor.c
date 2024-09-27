@@ -32,7 +32,7 @@
 int32_t aeron_cnc_version_volatile(aeron_cnc_metadata_t *metadata)
 {
     int32_t cnc_version;
-    AERON_GET_VOLATILE(cnc_version, metadata->cnc_version);
+    AERON_GET_ACQUIRE(cnc_version, metadata->cnc_version);
     return cnc_version;
 }
 

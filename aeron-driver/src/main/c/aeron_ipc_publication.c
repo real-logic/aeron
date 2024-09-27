@@ -298,7 +298,7 @@ void aeron_ipc_publication_clean_buffer(aeron_ipc_publication_t *publication, in
             length - sizeof(int64_t));
 
         uint64_t *ptr = (uint64_t *)(publication->mapped_raw_log.term_buffers[dirty_index].addr + term_offset);
-        AERON_PUT_ORDERED(*ptr, (uint64_t)0);
+        AERON_SET_RELEASE(*ptr, (uint64_t)0);
 
         publication->conductor_fields.clean_position = (int64_t)(clean_position + length);
     }
@@ -487,7 +487,7 @@ void aeron_ipc_publication_decref(void *clientd)
             aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, producer_position);
         }
 
-        AERON_PUT_ORDERED(publication->log_meta_data->end_of_stream_position, producer_position);
+        AERON_SET_RELEASE(publication->log_meta_data->end_of_stream_position, producer_position);
         publication->conductor_fields.state = AERON_IPC_PUBLICATION_STATE_DRAINING;
     }
 }

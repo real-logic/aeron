@@ -222,17 +222,17 @@ TEST_F(PublicationImageTest, shouldHandleEosAcrossDestinations)
     heartbeat->frame_header.flags |= AERON_DATA_HEADER_EOS_FLAG;
 
     bool is_eos = true;
-    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    AERON_GET_ACQUIRE(is_eos, image->is_end_of_stream);
     ASSERT_EQ(false, is_eos);
 
     aeron_publication_image_insert_packet(image, dest_2, 0, 0, data, AERON_DATA_HEADER_LENGTH, &addr);
 
-    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    AERON_GET_ACQUIRE(is_eos, image->is_end_of_stream);
     ASSERT_EQ(false, is_eos);
 
     aeron_publication_image_insert_packet(image, dest_1, 0, 0, data, AERON_DATA_HEADER_LENGTH, &addr);
 
-    AERON_GET_VOLATILE(is_eos, image->is_end_of_stream);
+    AERON_GET_ACQUIRE(is_eos, image->is_end_of_stream);
     ASSERT_EQ(true, is_eos);
 }
 

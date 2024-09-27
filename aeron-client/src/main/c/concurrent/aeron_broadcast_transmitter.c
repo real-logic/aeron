@@ -44,7 +44,7 @@ int aeron_broadcast_transmitter_init(aeron_broadcast_transmitter_t *transmitter,
 
 inline static void signal_tail_intent(aeron_broadcast_descriptor_t *descriptor, int64_t new_tail)
 {
-    AERON_PUT_ORDERED(descriptor->tail_intent_counter, new_tail);
+    AERON_SET_RELEASE(descriptor->tail_intent_counter, new_tail);
     aeron_release();  /* storeFence */
 }
 
@@ -98,8 +98,8 @@ int aeron_broadcast_transmitter_transmit(
 
     memcpy(transmitter->buffer + record_offset + AERON_BROADCAST_RECORD_HEADER_LENGTH, msg, length);
 
-    AERON_PUT_ORDERED(transmitter->descriptor->latest_counter, current_tail);
-    AERON_PUT_ORDERED(transmitter->descriptor->tail_counter, current_tail + aligned_record_length);
+    AERON_SET_RELEASE(transmitter->descriptor->latest_counter, current_tail);
+    AERON_SET_RELEASE(transmitter->descriptor->tail_counter, current_tail + aligned_record_length);
 
     return 0;
 }

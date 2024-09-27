@@ -140,7 +140,7 @@ int64_t aeron_min_flow_control_strategy_on_idle(
     {
         strategy_state->receivers.length = receiver_count;
         bool has_required_receivers = receiver_count >= (size_t)strategy_state->group_min_size;
-        AERON_PUT_ORDERED(strategy_state->has_required_receivers, has_required_receivers);
+        AERON_SET_RELEASE(strategy_state->has_required_receivers, has_required_receivers);
         aeron_counter_set_ordered(
             strategy_state->receivers_counter.value_addr, (int64_t)strategy_state->receivers.length);
     }
@@ -214,7 +214,7 @@ int64_t aeron_min_flow_control_strategy_process_sm(
             min_position = position_plus_window < min_position ? position_plus_window : min_position;
 
             bool has_required_receivers = strategy_state->receivers.length >= (size_t)strategy_state->group_min_size;
-            AERON_PUT_ORDERED(strategy_state->has_required_receivers, has_required_receivers);
+            AERON_SET_RELEASE(strategy_state->has_required_receivers, has_required_receivers);
 
             strategy_state->last_setup_snd_lmt = -1;
 
@@ -466,7 +466,7 @@ bool aeron_min_flow_control_strategy_has_required_receivers(aeron_flow_control_s
         (aeron_min_flow_control_strategy_state_t *)strategy->state;
 
     bool has_required_receivers;
-    AERON_GET_VOLATILE(has_required_receivers, strategy_state->has_required_receivers);
+    AERON_GET_ACQUIRE(has_required_receivers, strategy_state->has_required_receivers);
 
     return has_required_receivers;
 }
@@ -575,7 +575,7 @@ int aeron_tagged_flow_control_strategy_supplier_init(
     }
 
     bool has_required_receivers = state->receivers.length >= (size_t)state->group_min_size;
-    AERON_PUT_ORDERED(state->has_required_receivers, has_required_receivers);
+    AERON_SET_RELEASE(state->has_required_receivers, has_required_receivers);
 
     *strategy = _strategy;
 

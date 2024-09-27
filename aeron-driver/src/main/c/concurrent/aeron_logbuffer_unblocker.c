@@ -25,10 +25,10 @@ bool aeron_logbuffer_unblocker_unblock(
     const size_t blocked_index = aeron_logbuffer_index_by_term_count(blocked_term_count);
 
     int32_t active_term_count;
-    AERON_GET_VOLATILE(active_term_count, log_meta_data->active_term_count);
+    AERON_GET_ACQUIRE(active_term_count, log_meta_data->active_term_count);
 
     int64_t raw_tail;
-    AERON_GET_VOLATILE(raw_tail, log_meta_data->term_tail_counters[blocked_index]);
+    AERON_GET_ACQUIRE(raw_tail, log_meta_data->term_tail_counters[blocked_index]);
 
     const int32_t term_id = aeron_logbuffer_term_id(raw_tail);
     const int32_t tail_offset = aeron_logbuffer_term_offset(raw_tail, (int32_t)term_length);
@@ -38,7 +38,7 @@ bool aeron_logbuffer_unblocker_unblock(
     if (active_term_count == (blocked_term_count - 1) && 0 == blocked_offset)
     {
         int64_t current_raw_tail;
-        AERON_GET_VOLATILE(
+        AERON_GET_ACQUIRE(
             current_raw_tail,
             log_meta_data->term_tail_counters[aeron_logbuffer_index_by_term_count(active_term_count)]);
 

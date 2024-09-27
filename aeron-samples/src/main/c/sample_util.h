@@ -57,14 +57,14 @@ inline void rate_reporter_poll_handler(void *clientd, const uint8_t *buffer, siz
 {
     rate_reporter_t *reporter = (rate_reporter_t *)clientd;
 
-    AERON_PUT_ORDERED(reporter->polling_fields.total_bytes, reporter->polling_fields.total_bytes + length);
-    AERON_PUT_ORDERED(reporter->polling_fields.total_messages, reporter->polling_fields.total_messages + 1);
+    AERON_SET_RELEASE(reporter->polling_fields.total_bytes, reporter->polling_fields.total_bytes + length);
+    AERON_SET_RELEASE(reporter->polling_fields.total_messages, reporter->polling_fields.total_messages + 1);
 }
 
 inline void rate_reporter_on_message(rate_reporter_t *reporter, size_t length)
 {
-    AERON_PUT_ORDERED(reporter->polling_fields.total_bytes, reporter->polling_fields.total_bytes + length);
-    AERON_PUT_ORDERED(reporter->polling_fields.total_messages, reporter->polling_fields.total_messages + 1);
+    AERON_SET_RELEASE(reporter->polling_fields.total_bytes, reporter->polling_fields.total_bytes + length);
+    AERON_SET_RELEASE(reporter->polling_fields.total_messages, reporter->polling_fields.total_messages + 1);
 }
 
 #if defined(_MSC_VER)

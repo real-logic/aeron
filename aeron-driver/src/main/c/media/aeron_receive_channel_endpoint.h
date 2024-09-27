@@ -287,13 +287,13 @@ static inline void aeron_receive_channel_endpoint_on_remove_matching_state(
 
 inline void aeron_receive_channel_endpoint_receiver_release(aeron_receive_channel_endpoint_t *endpoint)
 {
-    AERON_PUT_ORDERED(endpoint->has_receiver_released, true);
+    AERON_SET_RELEASE(endpoint->has_receiver_released, true);
 }
 
 inline bool aeron_receive_channel_endpoint_has_receiver_released(aeron_receive_channel_endpoint_t *endpoint)
 {
     bool has_receiver_released;
-    AERON_GET_VOLATILE(has_receiver_released, endpoint->has_receiver_released);
+    AERON_GET_ACQUIRE(has_receiver_released, endpoint->has_receiver_released);
 
     return has_receiver_released;
 }

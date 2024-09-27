@@ -23,7 +23,7 @@
 #include <windows.h>
 #include <intrin.h>
 
-#define AERON_GET_VOLATILE(dst, src) \
+#define AERON_GET_ACQUIRE(dst, src) \
 do \
 { \
     dst = src; \
@@ -31,20 +31,11 @@ do \
 } \
 while (false) \
 
-#define AERON_PUT_ORDERED(dst, src) \
+#define AERON_SET_RELEASE(dst, src) \
 do \
 { \
     _ReadWriteBarrier(); \
     dst = src; \
-} \
-while (false) \
-
-#define AERON_PUT_VOLATILE(dst, src) \
-do \
-{ \
-    _ReadWriteBarrier(); \
-    dst = src; \
-    MemoryBarrier(); \
 } \
 while (false) \
 

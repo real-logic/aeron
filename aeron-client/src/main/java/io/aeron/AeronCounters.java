@@ -318,6 +318,12 @@ public final class AeronCounters
     public static final int CLUSTER_BACKUP_ERROR_COUNT_TYPE_ID = 211;
 
     /**
+     * The type id of the {@link Counter} used for tracking the number of snapshots downloaded.
+     */
+    @AeronCounter
+    public static final int CLUSTER_BACKUP_SNAPSHOT_RETRIEVE_COUNT_TYPE_ID = 240;
+
+    /**
      * Counter type id for the consensus module error count.
      */
     @AeronCounter

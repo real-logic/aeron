@@ -44,7 +44,7 @@ inline void aeron_term_rebuilder_insert(uint8_t *dest, const uint8_t *src, size_
         dest_hdr_as_longs->hdr[2] = src_hdr_as_longs->hdr[2];
         dest_hdr_as_longs->hdr[1] = src_hdr_as_longs->hdr[1];
 
-        AERON_PUT_ORDERED(dest_hdr_as_longs->hdr[0], src_hdr_as_longs->hdr[0]);
+        AERON_SET_RELEASE(dest_hdr_as_longs->hdr[0], src_hdr_as_longs->hdr[0]);
     }
 }
 

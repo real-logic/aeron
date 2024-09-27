@@ -62,7 +62,7 @@ inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
 
     if (current_tail >= buffer_limit)
     {
-        AERON_GET_VOLATILE(current_head, queue->consumer.head);
+        AERON_GET_ACQUIRE(current_head, queue->consumer.head);
         buffer_limit = current_head + queue->capacity;
 
         if (current_tail >= buffer_limit)
@@ -75,8 +75,8 @@ inline aeron_queue_offer_result_t aeron_spsc_concurrent_array_queue_offer(
 
     const size_t index = (size_t)(current_tail & queue->mask);
 
-    AERON_PUT_ORDERED(queue->buffer[index], element);
-    AERON_PUT_ORDERED(queue->producer.tail, current_tail + 1);
+    AERON_SET_RELEASE(queue->buffer[index], element);
+    AERON_SET_RELEASE(queue->producer.tail, current_tail + 1);
 
     return AERON_OFFER_SUCCESS;
 }
@@ -87,12 +87,12 @@ inline void *aeron_spsc_concurrent_array_queue_poll(aeron_spsc_concurrent_array_
     const size_t index = (size_t)(current_head & queue->mask);
 
     volatile void *item;
-    AERON_GET_VOLATILE(item, queue->buffer[index]);
+    AERON_GET_ACQUIRE(item, queue->buffer[index]);
 
     if (NULL != item)
     {
-        AERON_PUT_ORDERED(queue->buffer[index], NULL);
-        AERON_PUT_ORDERED(queue->consumer.head, current_head + 1);
+        AERON_SET_RELEASE(queue->buffer[index], NULL);
+        AERON_SET_RELEASE(queue->consumer.head, current_head + 1);
     }
 
     return (void *)item;
@@ -109,16 +109,16 @@ inline size_t aeron_spsc_concurrent_array_queue_drain(
     {
         const size_t index = (size_t)(next_sequence & queue->mask);
         volatile void *item;
-        AERON_GET_VOLATILE(item, queue->buffer[index]);
+        AERON_GET_ACQUIRE(item, queue->buffer[index]);
 
         if (NULL == item)
         {
             break;
         }
 
-        AERON_PUT_ORDERED(queue->buffer[index], NULL);
+        AERON_SET_RELEASE(queue->buffer[index], NULL);
         next_sequence++;
-        AERON_PUT_ORDERED(queue->consumer.head, next_sequence);
+        AERON_SET_RELEASE(queue->consumer.head, next_sequence);
         func(clientd, (void *)item);
     }
 
@@ -130,7 +130,7 @@ inline size_t aeron_spsc_concurrent_array_queue_drain_all(
 {
     uint64_t current_head = queue->consumer.head;
     uint64_t current_tail;
-    AERON_GET_VOLATILE(current_tail, queue->producer.tail);
+    AERON_GET_ACQUIRE(current_tail, queue->producer.tail);
 
     return aeron_spsc_concurrent_array_queue_drain(queue, func, clientd, current_tail - current_head);
 }
@@ -141,13 +141,13 @@ inline size_t aeron_spsc_concurrent_array_queue_size(aeron_spsc_concurrent_array
     uint64_t current_tail;
     uint64_t current_head_after;
 
-    AERON_GET_VOLATILE(current_head_after, queue->consumer.head);
+    AERON_GET_ACQUIRE(current_head_after, queue->consumer.head);
 
     do
     {
         current_head_before = current_head_after;
-        AERON_GET_VOLATILE(current_tail, queue->producer.tail);
-        AERON_GET_VOLATILE(current_head_after, queue->consumer.head);
+        AERON_GET_ACQUIRE(current_tail, queue->producer.tail);
+        AERON_GET_ACQUIRE(current_head_after, queue->consumer.head);
     }
     while (current_head_after != current_head_before);
 

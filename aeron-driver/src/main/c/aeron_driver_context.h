@@ -368,7 +368,7 @@ aeron_driver_context_bindings_clientd_entry_t *aeron_driver_context_bindings_cli
 
 inline void aeron_cnc_version_signal_cnc_ready(aeron_cnc_metadata_t *metadata, int32_t cnc_version)
 {
-    AERON_PUT_VOLATILE(metadata->cnc_version, cnc_version);
+    AERON_SET_RELEASE(metadata->cnc_version, cnc_version);
 }
 
 inline size_t aeron_producer_window_length(size_t producer_window_length, size_t term_length)

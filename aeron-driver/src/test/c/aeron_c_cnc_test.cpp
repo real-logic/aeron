@@ -261,7 +261,7 @@ TEST_F(CncTest, shouldGetLossReport)
         {
         }
 
-        AERON_GET_VOLATILE(retransmits, *retransmitsSentCounter);
+        AERON_GET_ACQUIRE(retransmits, *retransmitsSentCounter);
     }
 
     ASSERT_TRUE(0 < aeron_cnc_loss_reporter_read(m_cnc, countingLossReader, &lossCallbackCounter)) << aeron_errmsg();

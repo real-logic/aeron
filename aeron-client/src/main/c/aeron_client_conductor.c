@@ -564,7 +564,7 @@ int aeron_client_conductor_check_registering_resources(aeron_client_conductor_t 
                 last_index);
             conductor->registering_resources.length--;
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_TIMEOUT_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_TIMEOUT_MEDIA_DRIVER);
 
             work_count += 1;
         }
@@ -762,7 +762,7 @@ void aeron_client_conductor_force_close_resources(aeron_client_conductor_t *cond
      * loop will be terminating. So, will not process lingering, etc. Let the aeron_close() cleanup
      * everything when the app is ready, but we want to mark everything as closed so that it won't be used.
      */
-    AERON_PUT_VOLATILE(conductor->is_closed, true);
+    AERON_SET_RELEASE(conductor->is_closed, true);
 
     aeron_array_to_ptr_hash_map_for_each(
         &conductor->image_by_key_map, aeron_client_conductor_force_close_image, NULL);
@@ -1516,7 +1516,7 @@ void aeron_client_conductor_on_cmd_handler(void *clientd, void *item)
         }
     }
 
-    AERON_PUT_ORDERED(cmd->processed, true);
+    AERON_SET_RELEASE(cmd->processed, true);
 }
 
 int aeron_client_conductor_command_offer(aeron_mpsc_concurrent_array_queue_t *command_queue, void *cmd)
@@ -2259,7 +2259,7 @@ int aeron_client_conductor_on_error(aeron_client_conductor_t *conductor, aeron_e
                 last_index);
             conductor->registering_resources.length--;
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_ERRORED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_ERRORED_MEDIA_DRIVER);
             break;
         }
     }
@@ -2419,7 +2419,7 @@ int aeron_client_conductor_on_publication_ready(
                 last_index);
             conductor->registering_resources.length--;
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
 
             if (is_exclusive && NULL != conductor->on_new_exclusive_publication)
             {
@@ -2499,7 +2499,7 @@ int aeron_client_conductor_on_subscription_ready(
                 return -1;
             }
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
 
             if (NULL != conductor->on_new_subscription)
             {
@@ -2533,7 +2533,7 @@ int aeron_client_conductor_on_operation_success(
                 last_index);
             conductor->registering_resources.length--;
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }
     }
@@ -2826,7 +2826,7 @@ int aeron_client_conductor_on_counter_ready(aeron_client_conductor_t *conductor,
                 return -1;
             }
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }
     }
@@ -2884,7 +2884,7 @@ int aeron_client_conductor_on_static_counter(aeron_client_conductor_t *conductor
                 last_index);
             conductor->registering_resources.length--;
 
-            AERON_PUT_ORDERED(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
+            AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_REGISTERED_MEDIA_DRIVER);
             break;
         }
     }

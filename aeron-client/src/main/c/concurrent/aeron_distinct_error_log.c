@@ -153,7 +153,7 @@ static aeron_distinct_observation_t *aeron_distinct_error_log_new_observation(
     log->observation_list = new_list;
     aeron_free(list);
 
-    AERON_PUT_ORDERED(entry->length, (int32_t)length);
+    AERON_SET_RELEASE(entry->length, (int32_t)length);
 
     return &new_array[0];
 }
@@ -201,7 +201,7 @@ int aeron_distinct_error_log_record(aeron_distinct_error_log_t *log, int error_c
 #endif
     int32_t dest;
     AERON_GET_AND_ADD_INT32(dest, entry->observation_count, 1);
-    AERON_PUT_ORDERED(entry->last_observation_timestamp, timestamp);
+    AERON_SET_RELEASE(entry->last_observation_timestamp, timestamp);
 
     return 0;
 }
@@ -214,7 +214,7 @@ bool aeron_error_log_exists(const uint8_t *buffer, size_t buffer_size)
     aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)buffer;
     int32_t length;
 
-    AERON_GET_VOLATILE(length, entry->length);
+    AERON_GET_ACQUIRE(length, entry->length);
 
     return 0 != length;
 }
@@ -234,14 +234,14 @@ size_t aeron_error_log_read(
         aeron_error_log_entry_t *entry = (aeron_error_log_entry_t *)(buffer + offset);
         int32_t length;
 
-        AERON_GET_VOLATILE(length, entry->length);
+        AERON_GET_ACQUIRE(length, entry->length);
         if (0 == length)
         {
             break;
         }
 
         int64_t last_observation_timestamp;
-        AERON_GET_VOLATILE(last_observation_timestamp, entry->last_observation_timestamp);
+        AERON_GET_ACQUIRE(last_observation_timestamp, entry->last_observation_timestamp);
 
         if (last_observation_timestamp >= since_timestamp)
         {

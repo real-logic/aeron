@@ -83,7 +83,7 @@ inline int64_t aeron_publication_back_pressure_status(
     }
 
     int32_t is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+    AERON_GET_ACQUIRE(is_connected, publication->log_meta_data->is_connected);
     if (1 == is_connected)
     {
         return AERON_PUBLICATION_BACK_PRESSURED;

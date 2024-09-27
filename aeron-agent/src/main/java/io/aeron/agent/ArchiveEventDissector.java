@@ -535,11 +535,11 @@ final class ArchiveEventDissector
         builder.append(" position=").append(position);
 
         builder.append(" ");
-        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         builder.append("\"");
     }
 
@@ -558,11 +558,11 @@ final class ArchiveEventDissector
         builder.append(" position=").append(position);
 
         builder.append(" ");
-        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         builder.append("\"");
     }
 
@@ -587,11 +587,11 @@ final class ArchiveEventDissector
         builder.append(" position=").append(position);
 
         builder.append(" ");
-        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder);
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         absoluteOffset += SIZE_OF_INT;
 
         builder.append(" reason=\"");
-        buffer.getStringAscii(absoluteOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
         builder.append("\"");
     }
 
@@ -606,7 +606,7 @@ final class ArchiveEventDissector
 
         builder.append(": controlSessionId=").append(controlSessionId);
         builder.append(" ");
-        buffer.getStringAscii(absoluteOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
     }
 
     static void dissectReplaySessionError(
@@ -624,7 +624,7 @@ final class ArchiveEventDissector
         builder.append(": sessionId=").append(sessionId);
         builder.append(" recordingId=").append(recordingId);
         builder.append(" errorMessage=");
-        buffer.getStringAscii(absoluteOffset, builder);
+        buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
     }
 
     static void dissectCatalogResize(

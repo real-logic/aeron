@@ -147,7 +147,7 @@ protected:
 
         m_countersReader = aeron_counters_reader(aeron);
         m_errorCounter = aeron_counters_reader_addr(m_countersReader, AERON_SYSTEM_COUNTER_ERRORS);
-        AERON_GET_VOLATILE(m_initialErrorCount, *m_errorCounter);
+        AERON_GET_ACQUIRE(m_initialErrorCount, *m_errorCounter);
 
         return aeron;
     }
@@ -158,7 +158,7 @@ protected:
         do
         {
             std::this_thread::yield();
-            AERON_GET_VOLATILE(currentErrorCount, *m_errorCounter);
+            AERON_GET_ACQUIRE(currentErrorCount, *m_errorCounter);
         }
         while (currentErrorCount <= m_initialErrorCount);
     }

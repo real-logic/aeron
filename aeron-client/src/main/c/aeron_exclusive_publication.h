@@ -91,7 +91,7 @@ inline void aeron_exclusive_publication_rotate_term(aeron_exclusive_publication_
     publication->term_begin_position += publication->term_buffer_length;
 
     publication->log_meta_data->term_tail_counters[next_index] = (int64_t)((uint64_t)next_term_id << 32);
-    AERON_PUT_ORDERED(publication->log_meta_data->active_term_count, next_term_count);
+    AERON_SET_RELEASE(publication->log_meta_data->active_term_count, next_term_count);
 }
 
 inline int64_t aeron_exclusive_publication_new_position(
@@ -122,7 +122,7 @@ inline int64_t aeron_exclusive_publication_back_pressure_status(
     }
 
     int32_t is_connected;
-    AERON_GET_VOLATILE(is_connected, publication->log_meta_data->is_connected);
+    AERON_GET_ACQUIRE(is_connected, publication->log_meta_data->is_connected);
     if (1 == is_connected)
     {
         return AERON_PUBLICATION_BACK_PRESSURED;

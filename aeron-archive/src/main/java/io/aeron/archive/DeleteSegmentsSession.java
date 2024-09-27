@@ -15,14 +15,15 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import io.aeron.archive.client.ArchiveEvent;
-import io.aeron.archive.codecs.RecordingSignal;
 import org.agrona.ErrorHandler;
 
 import java.io.File;
 import java.util.ArrayDeque;
 
+import static io.aeron.Aeron.NULL_VALUE;
+import static io.aeron.archive.ArchiveConductor.DELETE_SUFFIX;
+import static io.aeron.archive.codecs.RecordingSignal.DELETE;
 import static org.agrona.AsciiEncoding.digitCount;
 import static org.agrona.AsciiEncoding.parseLongAscii;
 
@@ -79,8 +80,7 @@ class DeleteSegmentsSession implements Session
     public void close()
     {
         controlSession.archiveConductor().removeDeleteSegmentsSession(this);
-        controlSession.sendSignal(
-            correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
+        controlSession.sendSignal(correlationId, recordingId, NULL_VALUE, NULL_VALUE, DELETE);
     }
 
     /**
@@ -115,22 +115,32 @@ class DeleteSegmentsSession implements Session
         final File file = files.pollFirst();
         if (null != file)
         {
-            if (file.exists() && !file.delete())
+            if (!file.delete())
             {
-                final String errorMessage = "unable to delete segment file: " + file;
-                controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
-                errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
+                if (file.exists())
+                {
+                    onDeleteError(file);
+                }
+                else if (!file.getName().endsWith(DELETE_SUFFIX))
+                {
+                    final File renamedFile = new File(file.getParent(), file.getName() + DELETE_SUFFIX);
+                    if (!renamedFile.delete() && renamedFile.exists())
+                    {
+                        onDeleteError(renamedFile);
+                    }
+                }
             }
 
-            if (files.isEmpty())
-            {
-                controlSession.sendSignal(
-                    correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
-            }
-
-            workCount += 1;
+            workCount = 1;
         }
 
         return workCount;
+    }
+
+    private void onDeleteError(final File file)
+    {
+        final String errorMessage = "unable to delete segment file: " + file;
+        controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+        errorHandler.onError(new ArchiveEvent(errorMessage));
     }
 }

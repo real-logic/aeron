@@ -73,7 +73,7 @@ abstract class ArchiveConductor
     implements AvailableImageHandler, UnavailableCounterHandler
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
-    private static final String DELETE_SUFFIX = ".del";
+    static final String DELETE_SUFFIX = ".del";
 
     private final long closeHandlerRegistrationId;
     private final long unavailableCounterHandlerRegistrationId;
@@ -1548,31 +1548,13 @@ abstract class ArchiveConductor
         final ArrayDeque<File> deleteList = new ArrayDeque<>(files.size());
         for (final String name : files)
         {
-            final File file = new File(archiveDir, name);
-            if (file.exists())
-            {
-                deleteList.addLast(file);
-            }
-            else if (!file.getName().endsWith(DELETE_SUFFIX))
-            {
-                final File deleteFile = new File(file.getParentFile(), file.getName() + DELETE_SUFFIX);
-                if (deleteFile.exists())
-                {
-                    deleteList.addLast(deleteFile);
-                }
-            }
-        }
-
-        final int count = deleteList.size();
-        if (0 == count)
-        {
-            return 0;
+            deleteList.add(new File(archiveDir, name));
         }
 
         addSession(new DeleteSegmentsSession(
             recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
 
-        return count;
+        return files.size();
     }
 
     private void abortRecordingSessionAndCloseSubscription(final Subscription subscription)

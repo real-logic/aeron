@@ -324,8 +324,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
     {
         if (!aeron_archive_proxy_archive_id(
             async->archive_proxy,
-            async->correlation_id,
-            async->control_session_id))
+            async->correlation_id))
         {
             return 0;
         }
@@ -338,8 +337,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
         if (!aeron_archive_proxy_challenge_response(
             async->archive_proxy,
             async->encoded_credentials_from_challenge,
-            async->correlation_id,
-            async->control_session_id))
+            async->correlation_id))
         {
             return 0;
         }
@@ -367,6 +365,7 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             poller->correlation_id == async->correlation_id)
         {
             async->control_session_id = poller->control_session_id;
+            aeron_archive_proxy_set_control_esssion_id(async->archive_proxy, poller->control_session_id);
 
             if (poller->was_challenged)
             {
@@ -382,15 +381,17 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
             {
                 if (!poller->is_code_ok)
                 {
+                    aeron_archive_proxy_close_session(async->archive_proxy);
+
                     if (poller->is_code_error)
                     {
-                        aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
                         AERON_SET_ERR(-1, "%s", poller->error_message);
-                        goto cleanup;
+                    }
+                    else
+                    {
+                        AERON_SET_ERR(-1, "unexpected response code: code=%i", poller->code_value);
                     }
 
-                    aeron_archive_proxy_close_session(async->archive_proxy, async->control_session_id);
-                    AERON_SET_ERR(-1, "unexpected response code: code=%i", poller->code_value);
                     goto cleanup;
                 }
 
@@ -501,7 +502,6 @@ int aeron_archive_async_connect_transition_to_done(aeron_archive_t **aeron_archi
         async->control_response_poller,
         recording_descriptor_poller,
         recording_subscription_descriptor_poller,
-        async->aeron,
         async->control_session_id,
         archive_id);
 

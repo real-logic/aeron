@@ -27,6 +27,7 @@ typedef struct aeron_archive_proxy_stct
 {
     aeron_archive_context_t *ctx;
     aeron_exclusive_publication_t *exclusive_publication;
+    int64_t control_session_id;
     int retry_attempts;
     uint8_t buffer[AERON_ARCHIVE_PROXY_REQUEST_BUFFER_LENGTH];
 }
@@ -46,6 +47,10 @@ int aeron_archive_proxy_init(
     aeron_exclusive_publication_t *exclusive_publication,
     int retry_attempts);
 
+int aeron_archive_proxy_set_control_esssion_id(
+    aeron_archive_proxy_t *archive_proxy,
+    int64_t control_session_id);
+
 int aeron_archive_proxy_close(aeron_archive_proxy_t *archive_proxy);
 
 int aeron_archive_proxy_delete(aeron_archive_proxy_t *archive_proxy);
@@ -59,18 +64,14 @@ bool aeron_archive_proxy_try_connect(
 
 bool aeron_archive_proxy_archive_id(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t correlation_id,
-    int64_t control_session_id);
+    int64_t correlation_id);
 
 bool aeron_archive_proxy_challenge_response(
     aeron_archive_proxy_t *archive_proxy,
     aeron_archive_encoded_credentials_t *encoded_credentials,
-    int64_t correlation_id,
-    int64_t control_session_id);
+    int64_t correlation_id);
 
-bool aeron_archive_proxy_close_session(
-    aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id);
+bool aeron_archive_proxy_close_session(aeron_archive_proxy_t *archive_proxy);
 
 bool aeron_archive_proxy_start_recording(
     aeron_archive_proxy_t *archive_proxy,
@@ -78,55 +79,46 @@ bool aeron_archive_proxy_start_recording(
     int32_t recording_stream_id,
     bool local_source,
     bool auto_stop,
-    int64_t correlation_id,
-    int64_t control_session_id);
+    int64_t correlation_id);
 
 bool aeron_archive_proxy_get_recording_position(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_get_start_position(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_get_stop_position(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_get_max_recorded_position(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_stop_recording(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     const char *channel,
     int32_t stream_id);
 
 bool aeron_archive_proxy_stop_recording_subscription(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t subscription_id);
 
 bool aeron_archive_proxy_stop_recording_by_identity(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_find_last_matching_recording(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t min_recording_id,
     const char *channel_fragment,
@@ -135,20 +127,17 @@ bool aeron_archive_proxy_find_last_matching_recording(
 
 bool aeron_archive_proxy_list_recording(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_list_recordings(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t from_recording_id,
     int32_t record_count);
 
 bool aeron_archive_proxy_list_recordings_for_uri(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t from_recording_id,
     int32_t record_count,
@@ -157,7 +146,6 @@ bool aeron_archive_proxy_list_recordings_for_uri(
 
 bool aeron_archive_proxy_replay(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id,
     const char *replay_channel,
@@ -166,26 +154,22 @@ bool aeron_archive_proxy_replay(
 
 bool aeron_archive_proxy_truncate_recording(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id,
     int64_t position);
 
 bool aeron_archive_proxy_stop_replay(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t replay_session_id);
 
 bool aeron_archive_proxy_stop_all_replays(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_list_recording_subscriptions(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int32_t pseudo_index,
     int32_t subscription_count,
@@ -195,7 +179,6 @@ bool aeron_archive_proxy_list_recording_subscriptions(
 
 bool aeron_archive_proxy_purge_recording(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
@@ -206,12 +189,10 @@ bool aeron_archive_proxy_extend_recording(
     int32_t recording_stream_id,
     bool local_source,
     bool auto_stop,
-    int64_t correlation_id,
-    int64_t control_session_id);
+    int64_t correlation_id);
 
 bool aeron_archive_proxy_replicate(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t src_recording_id,
     int32_t src_control_stream_id,
@@ -220,45 +201,38 @@ bool aeron_archive_proxy_replicate(
 
 bool aeron_archive_proxy_stop_replication(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t replication_id);
 
 bool aeron_archive_request_replay_token(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_detach_segments(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id,
     int64_t new_start_position);
 
 bool aeron_archive_proxy_delete_detached_segments(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_purge_segments(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id,
     int64_t new_start_position);
 
 bool aeron_archive_proxy_attach_segments(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t recording_id);
 
 bool aeron_archive_proxy_migrate_segments(
     aeron_archive_proxy_t *archive_proxy,
-    int64_t control_session_id,
     int64_t correlation_id,
     int64_t src_recording_id,
     int64_t dst_recording_id);

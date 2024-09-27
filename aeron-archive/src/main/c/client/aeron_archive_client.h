@@ -30,7 +30,6 @@ int aeron_archive_create(
     aeron_archive_control_response_poller_t *control_response_poller,
     aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller,
     aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller,
-    aeron_t *aeron,
     int64_t control_session_id,
     int64_t archive_id);
 

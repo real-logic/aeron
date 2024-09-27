@@ -855,6 +855,17 @@ public:
         return replay_session_id;
     }
 
+    /**
+     * Start a replay.
+     *
+     * @param recordingId the id of the recording
+     * @param replayChannel the channel to which the replay should be sent
+     * @param replayStreamId the stream id to which the replay should be sent
+     * @param replayParams the ReplayParams that control the behavior of the replay
+     * @return the Subscription created for consuming the replay
+     *
+     * @see aeron_archive_replay
+     */
     inline std::shared_ptr<Subscription> replay(
         std::int64_t recordingId,
         const std::string &replayChannel,
@@ -877,6 +888,18 @@ public:
         return std::make_shared<Subscription>(m_archiveCtxW.aeron()->aeron(), subscription, nullptr);
     }
 
+    /**
+     * Truncate a stopped recording to the specified position.
+     * The position must be less than the stopped position.
+     * The position must be on a fragment boundary.
+     * Truncating a recording to the start position effectively deletes the recording.
+     *
+     * @param recordingId the id of the recording
+     * @param position the position to which the recording will be truncated
+     * @return the number of segments deleted
+     *
+     * @see aeron_archive_truncate_recording
+     */
     inline std::int64_t truncateRecording(std::int64_t recordingId, std::int64_t position)
     {
         std::int64_t count;
@@ -893,6 +916,13 @@ public:
         return count;
     }
 
+    /**
+     * Stop a replay session.
+     *
+     * @param replaySessionId the replay session id indicating the replay to stop
+     *
+     * @see aeron_archive_stop_replay
+     */
     inline void stopReplay(std::int64_t replaySessionId)
     {
         if (aeron_archive_stop_replay(m_aeron_archive_t, replaySessionId) < 0)
@@ -901,6 +931,14 @@ public:
         }
     }
 
+    /**
+     * Stop all replays matching a recording id.
+     * If recordingId is aeron::NULL_VALUE then match all replays.
+     *
+     * @param recordingId the id of the recording for which all replays will be stopped
+     *
+     * @see aeron_archive_stop_all_replays
+     */
     inline void stopAllReplays(std::int64_t recordingId)
     {
         if (aeron_archive_stop_all_replays(
@@ -910,7 +948,6 @@ public:
             ARCHIVE_MAP_ERRNO_TO_SOURCED_EXCEPTION_AND_THROW;
         }
     }
-
 
     inline std::int32_t listRecordingSubscriptions(
         std::int32_t pseudoIndex,

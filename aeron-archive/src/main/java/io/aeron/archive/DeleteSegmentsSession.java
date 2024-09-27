@@ -23,10 +23,14 @@ import org.agrona.ErrorHandler;
 import java.io.File;
 import java.util.ArrayDeque;
 
+import static org.agrona.AsciiEncoding.digitCount;
+import static org.agrona.AsciiEncoding.parseLongAscii;
+
 class DeleteSegmentsSession implements Session
 {
     private final long recordingId;
     private final long correlationId;
+    private final long maxDeletePosition;
     private final ArrayDeque<File> files;
     private final ControlSession controlSession;
     private final ControlResponseProxy controlResponseProxy;
@@ -46,6 +50,27 @@ class DeleteSegmentsSession implements Session
         this.controlSession = controlSession;
         this.controlResponseProxy = controlResponseProxy;
         this.errorHandler = errorHandler;
+
+        long maxSegmentPosition = Long.MIN_VALUE;
+        final int prefixLength = digitCount(recordingId) + 1;
+        for (final File file : files)
+        {
+            final String name = file.getName();
+            final int dotIndex = name.indexOf('.');
+            maxSegmentPosition = Math.max(
+                maxSegmentPosition, parseLongAscii(name, prefixLength, dotIndex - prefixLength));
+        }
+        maxDeletePosition = maxSegmentPosition;
+    }
+
+    long recordingId()
+    {
+        return recordingId;
+    }
+
+    long maxDeletePosition()
+    {
+        return maxDeletePosition;
     }
 
     /**
@@ -53,14 +78,9 @@ class DeleteSegmentsSession implements Session
      */
     public void close()
     {
-        while (!files.isEmpty())
-        {
-            final File file = files.pollFirst();
-            if (null != file && file.exists() && !file.delete())
-            {
-                errorHandler.onError(new ArchiveEvent("segment delete failed for recording: " + recordingId));
-            }
-        }
+        controlSession.archiveConductor().removeDeleteSegmentsSession(this);
+        controlSession.sendSignal(
+            correlationId, recordingId, Aeron.NULL_VALUE, Aeron.NULL_VALUE, RecordingSignal.DELETE);
     }
 
     /**

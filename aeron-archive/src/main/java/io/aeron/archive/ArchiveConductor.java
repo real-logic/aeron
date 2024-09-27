@@ -89,6 +89,8 @@ abstract class ArchiveConductor
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReplicationSession> replicationSessionByIdMap = new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<DeleteSegmentsSession> deleteSegmentsSessionByRecordingIdMap =
+        new Long2ObjectHashMap<>();
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionByKeyMap =
         new Object2ObjectHashMap<>();
@@ -929,6 +931,16 @@ abstract class ArchiveConductor
             return msg;
         }
 
+        final DeleteSegmentsSession deleteSegmentsSession =
+            deleteSegmentsSessionByRecordingIdMap.get(recordingId);
+        if (null != deleteSegmentsSession && deleteSegmentsSession.maxDeletePosition() >= recordingSummary.stopPosition)
+        {
+            final String msg = "cannot extend recording " + recordingId +
+                " due to an outstanding delete operation";
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return msg;
+        }
+
         final String lowStorageSpaceMsg = isLowStorageSpace(correlationId, controlSession);
         if (null != lowStorageSpaceMsg)
         {
@@ -1017,7 +1029,8 @@ abstract class ArchiveConductor
         final long correlationId, final long recordingId, final long position, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
-            isValidTruncate(correlationId, controlSession, recordingId, position))
+            isValidTruncate(correlationId, controlSession, recordingId, position) &&
+            isDeleteAllowed(recordingId, correlationId, controlSession))
         {
             final long stopPosition = recordingSummary.stopPosition;
             final int segmentLength = recordingSummary.segmentFileLength;
@@ -1032,19 +1045,7 @@ abstract class ArchiveConductor
             final ArrayDeque<String> files = new ArrayDeque<>();
             if (startPosition == position)
             {
-                final String prefix = recordingId + "-";
-                final String[] recordingFiles = archiveDir.list();
-                if (null != recordingFiles)
-                {
-                    for (final String file : recordingFiles)
-                    {
-                        if (file.startsWith(prefix) &&
-                            (file.endsWith(RECORDING_SEGMENT_SUFFIX) || file.endsWith(DELETE_SUFFIX)))
-                        {
-                            files.addLast(file);
-                        }
-                    }
-                }
+                listSegmentFiles(recordingId, files);
             }
             else
             {
@@ -1078,24 +1079,13 @@ abstract class ArchiveConductor
     void purgeRecording(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
-            isValidPurge(correlationId, controlSession, recordingId))
+            isValidPurge(correlationId, controlSession, recordingId) &&
+            isDeleteAllowed(recordingId, correlationId, controlSession))
         {
             catalog.changeState(recordingId, DELETED);
 
             final ArrayDeque<String> files = new ArrayDeque<>();
-            final String[] segmentFiles = archiveDir.list();
-            if (null != segmentFiles)
-            {
-                final String prefix = recordingId + "-";
-                for (final String segmentFile : segmentFiles)
-                {
-                    if (segmentFile.startsWith(prefix) &&
-                        (segmentFile.endsWith(RECORDING_SEGMENT_SUFFIX) || segmentFile.endsWith(DELETE_SUFFIX)))
-                    {
-                        files.addLast(segmentFile);
-                    }
-                }
-            }
+            listSegmentFiles(recordingId, files);
 
             deleteSegments(correlationId, recordingId, controlSession, files);
         }
@@ -1348,7 +1338,8 @@ abstract class ArchiveConductor
 
     void deleteDetachedSegments(final long correlationId, final long recordingId, final ControlSession controlSession)
     {
-        if (hasRecording(recordingId, correlationId, controlSession))
+        if (hasRecording(recordingId, correlationId, controlSession) &&
+            isDeleteAllowed(recordingId, correlationId, controlSession))
         {
             final ArrayDeque<String> files = new ArrayDeque<>();
             findDetachedSegments(recordingId, files);
@@ -1363,7 +1354,8 @@ abstract class ArchiveConductor
         final ControlSession controlSession)
     {
         if (hasRecording(recordingId, correlationId, controlSession) &&
-            isValidDetach(correlationId, controlSession, recordingId, newStartPosition))
+            isValidDetach(correlationId, controlSession, recordingId, newStartPosition) &&
+            isDeleteAllowed(recordingId, correlationId, controlSession))
         {
             catalog.startPosition(recordingId, newStartPosition);
 
@@ -1527,6 +1519,11 @@ abstract class ArchiveConductor
         replicationSessionByIdMap.remove(replicationSession.sessionId());
     }
 
+    void removeDeleteSegmentsSession(final DeleteSegmentsSession deleteSegmentsSession)
+    {
+        deleteSegmentsSessionByRecordingIdMap.remove(deleteSegmentsSession.recordingId());
+    }
+
     private void findDetachedSegments(final long recordingId, final ArrayDeque<String> files)
     {
         catalog.recordingSummary(recordingId, recordingSummary);
@@ -1558,33 +1555,23 @@ abstract class ArchiveConductor
             final File file = new File(archiveDir, name);
             if (file.exists())
             {
-                if (!name.endsWith(DELETE_SUFFIX))
-                {
-                    final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
-                    if (!file.renameTo(toDelete))
-                    {
-                        final String msg = "failed to rename " + file + " to " + toDelete;
-                        controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
-                        return -1;
-                    }
-                    deleteList.addLast(toDelete);
-                }
-                else
-                {
-                    deleteList.addLast(file);
-                }
+                deleteList.addLast(file);
             }
-            else if (!name.endsWith(DELETE_SUFFIX))
+            else if (!file.getName().endsWith(DELETE_SUFFIX))
             {
-                final File toDelete = new File(archiveDir, name + DELETE_SUFFIX);
-                if (toDelete.exists())
+                final File deleteFile = new File(file.getParentFile(), file.getName() + DELETE_SUFFIX);
+                if (deleteFile.exists())
                 {
-                    deleteList.addLast(toDelete);
+                    deleteList.addLast(deleteFile);
                 }
             }
         }
 
         final int count = deleteList.size();
+        if (0 == count)
+        {
+            return 0;
+        }
 
         addSession(new DeleteSegmentsSession(
             recordingId, correlationId, deleteList, controlSession, controlResponseProxy, errorHandler));
@@ -1782,6 +1769,35 @@ abstract class ArchiveConductor
         return true;
     }
 
+    private boolean isDeleteAllowed(
+        final long recordingId, final long correlationId, final ControlSession controlSession)
+    {
+        if (deleteSegmentsSessionByRecordingIdMap.containsKey(recordingId))
+        {
+            final String msg = "another delete operation in progress for recording id: " + recordingId;
+            controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+            return false;
+        }
+        return true;
+    }
+
+    private void listSegmentFiles(final long recordingId, final ArrayDeque<String> files)
+    {
+        final String prefix = recordingId + "-";
+        final String[] recordingFiles = archiveDir.list();
+        if (null != recordingFiles)
+        {
+            for (final String name : recordingFiles)
+            {
+                if (name.startsWith(prefix) &&
+                    (name.endsWith(RECORDING_SEGMENT_SUFFIX) || name.endsWith(DELETE_SUFFIX)))
+                {
+                    files.addLast(name);
+                }
+            }
+        }
+    }
+
     private void startRecordingSession(
         final ControlSession controlSession,
         final long correlationId,
@@ -1867,6 +1883,18 @@ abstract class ArchiveConductor
                 final String msg = "cannot extend active recording " + recordingId +
                     " streamId=" + image.subscription().streamId() + " channel=" + originalChannel;
                 controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg, controlResponseProxy);
+                throw new ArchiveEvent(msg);
+            }
+
+            final DeleteSegmentsSession deleteSegmentsSession =
+                deleteSegmentsSessionByRecordingIdMap.get(recordingId);
+            if (null != deleteSegmentsSession &&
+                deleteSegmentsSession.maxDeletePosition() >= recordingSummary.stopPosition)
+            {
+                final String msg = "cannot extend recording " + recordingId +
+                    " streamId=" + image.subscription().streamId() + " channel=" + originalChannel +
+                    " due to an outstanding delete operation";
+                controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
                 throw new ArchiveEvent(msg);
             }
 

@@ -261,7 +261,7 @@ inline void aeron_publication_image_schedule_status_message(
 {
     const int64_t change_number = image->begin_sm_change + 1;
 
-    AERON_SET_RELEASE(image->begin_sm_change, change_number);
+    image->begin_sm_change = change_number; // safe, because `aeron_release` fence
     aeron_release();
 
     image->next_sm_position = sm_position;

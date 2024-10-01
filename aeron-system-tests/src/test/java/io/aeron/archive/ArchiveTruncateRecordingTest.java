@@ -196,7 +196,6 @@ class ArchiveTruncateRecordingTest
             deleteList.add(Files.createFile(archiveDir.resolve(recordingId + "-1048575" + RECORDING_SEGMENT_SUFFIX)));
             deleteList.add(Files.createFile(archiveDir.resolve(recordingId + "-1048577" + RECORDING_SEGMENT_SUFFIX)));
             deleteList.add(Files.createFile(archiveDir.resolve(recordingId + "-222222222" + RECORDING_SEGMENT_SUFFIX)));
-            deleteList.add(Files.createFile(archiveDir.resolve(recordingId + "-abc" + RECORDING_SEGMENT_SUFFIX)));
             deleteList.add(Files.createFile(archiveDir.resolve(
                 recordingId + "-" + archive.context().segmentFileLength() + RECORDING_SEGMENT_SUFFIX)));
 

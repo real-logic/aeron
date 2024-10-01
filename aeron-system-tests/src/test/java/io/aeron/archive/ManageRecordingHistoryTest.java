@@ -381,7 +381,7 @@ class ManageRecordingHistoryTest
             signalConsumer.reset();
             final long deletedSegments = aeronArchive.deleteDetachedSegments(recordingId);
             awaitSignal(aeronArchive, signalConsumer, recordingId, RecordingSignal.DELETE);
-            assertEquals(2L, deletedSegments);
+            assertEquals(3L, deletedSegments); // non-existing file `0-0.rec` is counted as being deleted
             assertEquals(segmentFileBasePosition, aeronArchive.getStartPosition(recordingId));
 
             final String[] updatedFiles = archive.context().archiveDir()

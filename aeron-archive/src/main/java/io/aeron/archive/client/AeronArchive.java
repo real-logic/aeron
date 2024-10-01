@@ -3048,7 +3048,7 @@ public final class AeronArchive implements AutoCloseable
         @Config
         public long messageTimeoutNs()
         {
-            return messageTimeoutNs;
+            return CommonContext.checkDebugTimeout(messageTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**

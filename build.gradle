@@ -53,7 +53,7 @@ def toolchainLauncher = javaToolchains.launcherFor {
 def aeronGroup = 'io.aeron'
 def aeronVersion = file('version.txt').text.trim()
 
-def agronaVersion = '1.23.0'
+def agronaVersion = '1.23.1'
 def agronaVersionRange = "[${agronaVersion},2.0["
 def sbeVersion = '1.33.0'
 def checkstyleVersion = '10.18.0'

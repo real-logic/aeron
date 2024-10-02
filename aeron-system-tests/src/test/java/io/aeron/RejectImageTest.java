@@ -396,7 +396,7 @@ public class RejectImageTest
                 aeron.countersReader().getCounterValue(ERROR_FRAMES_RECEIVED.id()),
                 lessThan(A_VALUE_THAT_SHOWS_WE_ARENT_SPAMMING_ERROR_MESSAGES));
 
-            while (initialAvailable != imageAvailable.get())
+            while (initialAvailable == imageAvailable.get())
             {
                 Tests.yield();
             }

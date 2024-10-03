@@ -89,8 +89,7 @@ abstract class ArchiveConductor
     private final Long2ObjectHashMap<ReplaySession> replaySessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<RecordingSession> recordingSessionByIdMap = new Long2ObjectHashMap<>();
     private final Long2ObjectHashMap<ReplicationSession> replicationSessionByIdMap = new Long2ObjectHashMap<>();
-    private final Long2ObjectHashMap<DeleteSegmentsSession> deleteSegmentsSessionByRecordingIdMap =
-        new Long2ObjectHashMap<>();
+    private final Long2ObjectHashMap<DeleteSegmentsSession> deleteSegmentsSessionByIdMap = new Long2ObjectHashMap<>();
     private final Int2ObjectHashMap<Counter> counterByIdMap = new Int2ObjectHashMap<>();
     private final Object2ObjectHashMap<String, Subscription> recordingSubscriptionByKeyMap =
         new Object2ObjectHashMap<>();
@@ -927,8 +926,7 @@ abstract class ArchiveConductor
             return msg;
         }
 
-        final DeleteSegmentsSession deleteSegmentsSession =
-            deleteSegmentsSessionByRecordingIdMap.get(recordingId);
+        final DeleteSegmentsSession deleteSegmentsSession = deleteSegmentsSessionByIdMap.get(recordingId);
         if (null != deleteSegmentsSession && deleteSegmentsSession.maxDeletePosition() >= recordingSummary.stopPosition)
         {
             final String msg = "cannot extend recording " + recordingId +
@@ -1517,7 +1515,7 @@ abstract class ArchiveConductor
 
     void removeDeleteSegmentsSession(final DeleteSegmentsSession deleteSegmentsSession)
     {
-        deleteSegmentsSessionByRecordingIdMap.remove(deleteSegmentsSession.recordingId());
+        deleteSegmentsSessionByIdMap.remove(deleteSegmentsSession.sessionId());
     }
 
     private void findDetachedSegments(final long recordingId, final ArrayDeque<String> files)
@@ -1750,7 +1748,7 @@ abstract class ArchiveConductor
     private boolean isDeleteAllowed(
         final long recordingId, final long correlationId, final ControlSession controlSession)
     {
-        if (deleteSegmentsSessionByRecordingIdMap.containsKey(recordingId))
+        if (deleteSegmentsSessionByIdMap.containsKey(recordingId))
         {
             final String msg = "another delete operation in progress for recording id: " + recordingId;
             controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
@@ -1864,8 +1862,7 @@ abstract class ArchiveConductor
                 throw new ArchiveEvent(msg);
             }
 
-            final DeleteSegmentsSession deleteSegmentsSession =
-                deleteSegmentsSessionByRecordingIdMap.get(recordingId);
+            final DeleteSegmentsSession deleteSegmentsSession = deleteSegmentsSessionByIdMap.get(recordingId);
             if (null != deleteSegmentsSession &&
                 deleteSegmentsSession.maxDeletePosition() >= recordingSummary.stopPosition)
             {

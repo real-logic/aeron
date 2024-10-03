@@ -64,11 +64,6 @@ class DeleteSegmentsSession implements Session
         maxDeletePosition = maxSegmentPosition;
     }
 
-    long recordingId()
-    {
-        return recordingId;
-    }
-
     long maxDeletePosition()
     {
         return maxDeletePosition;

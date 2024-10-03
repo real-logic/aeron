@@ -1876,7 +1876,7 @@ abstract class ArchiveConductor
                 final String msg = "cannot extend recording " + recordingId +
                     " streamId=" + image.subscription().streamId() + " channel=" + originalChannel +
                     " due to an outstanding delete operation";
-                controlSession.attemptErrorResponse(correlationId, msg, controlResponseProxy);
+                controlSession.attemptErrorResponse(correlationId, GENERIC, msg, controlResponseProxy);
                 throw new ArchiveEvent(msg);
             }
 

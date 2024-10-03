@@ -16,6 +16,7 @@
 package io.aeron.archive;
 
 import io.aeron.archive.client.ArchiveEvent;
+import io.aeron.archive.client.ArchiveException;
 import org.agrona.ErrorHandler;
 
 import java.io.File;
@@ -140,7 +141,8 @@ class DeleteSegmentsSession implements Session
     private void onDeleteError(final File file)
     {
         final String errorMessage = "unable to delete segment file: " + file;
-        controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+        controlSession.attemptErrorResponse(
+            correlationId, ArchiveException.GENERIC, errorMessage, controlResponseProxy);
         errorHandler.onError(new ArchiveEvent(errorMessage));
     }
 }

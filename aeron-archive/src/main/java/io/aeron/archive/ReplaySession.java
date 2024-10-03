@@ -255,10 +255,11 @@ class ReplaySession implements Session, AutoCloseable
 
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
-        if (null != errorMessage && !controlSession.isDone())
+        if (null != errorMessage)
         {
             onPendingError(sessionId, recordingId, errorMessage);
-            controlSession.attemptErrorResponse(correlationId, errorMessage, controlResponseProxy);
+            controlSession.attemptErrorResponse(
+                correlationId, ArchiveException.GENERIC, errorMessage, controlResponseProxy);
         }
     }
 
@@ -302,7 +303,7 @@ class ReplaySession implements Session, AutoCloseable
                     }
                 }
 
-                controlSession.asyncSendReplayOkResponse(correlationId, sessionId);
+                controlSession.asyncSendOkResponse(correlationId, sessionId);
             }
         }
 

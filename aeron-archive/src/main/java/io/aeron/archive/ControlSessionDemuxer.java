@@ -1066,8 +1066,7 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 if (null != controlSession)
                 {
                     final long replayToken = conductor.generateReplayToken(controlSession, recordingId);
-                    controlSession.sendResponse(
-                        correlationId, replayToken, ControlResponseCode.OK, "", conductor.controlResponseProxy());
+                    controlSession.sendOkResponse(correlationId, replayToken, conductor.controlResponseProxy());
                 }
             }
         }

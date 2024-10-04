@@ -58,8 +58,8 @@ public class ArchiveResponseClientTest
             .publicationTermBufferLength(termLength)
             .sharedIdleStrategy(YieldingIdleStrategy.INSTANCE)
             .spiesSimulateConnection(true)
-            .dirDeleteOnStart(true);
-        driverCtx.enableExperimentalFeatures(true);
+            .dirDeleteOnStart(true)
+            .enableExperimentalFeatures(true);
 
         final Archive.Context archiveContext = TestContexts.localhostArchive()
             .aeronDirectoryName(driverCtx.aeronDirectoryName())
@@ -211,11 +211,11 @@ public class ArchiveResponseClientTest
         "aeron:udp?control-mode=response|control=localhost:10002",
         "aeron:udp?endpoint=localhost:10002"
     })
-    void shouldAsyncConnectUsingResponseChannel(final String channel)
+    void shouldAsyncConnectUsingResponseChannel(final String responseChannel)
     {
         final AeronArchive.Context aeronArchiveCtx = new AeronArchive.Context()
             .controlRequestChannel(archive.context().controlChannel())
-            .controlResponseChannel(channel);
+            .controlResponseChannel(responseChannel);
         try (AeronArchive.AsyncConnect asyncConnect = AeronArchive.asyncConnect(aeronArchiveCtx))
         {
             AeronArchive aeronArchive;

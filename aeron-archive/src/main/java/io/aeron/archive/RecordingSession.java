@@ -191,7 +191,7 @@ class RecordingSession implements Session
 
     void sendPendingError(final ControlResponseProxy controlResponseProxy)
     {
-        if (null != errorMessage && !controlSession.isDone())
+        if (null != errorMessage)
         {
             controlSession.attemptErrorResponse(correlationId, errorCode, errorMessage, controlResponseProxy);
         }

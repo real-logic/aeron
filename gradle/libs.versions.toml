@@ -1,12 +1,12 @@
 [versions]
-agrona = "1.23.0"
+agrona = "1.23.1"
 byteBuddy = "1.15.3"
 checkstyle = "10.18.1"
 junit = "5.11.1"
 gradle = "8.10.2"
 
 [libraries]
-agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.0, 2.0[", require = "1.23.0" } }
+agrona = { group = "org.agrona", name = "agrona", version = { strictly = "[1.23.1, 2.0[", require = "1.23.1" } }
 sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.33.1" }
 mockito = { group = "org.mockito", name = "mockito-core", version = "5.14.1" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
@@ -20,4 +20,4 @@ jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.10.
 [plugins]
 versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
 bnd = { id = "biz.aQute.bnd.builder", version = "7.0.0" }
-shadow = { id = "com.gradleup.shadow", version = "8.3.2" }
+shadow = { id = "com.gradleup.shadow", version = "8.3.3" }

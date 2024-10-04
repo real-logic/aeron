@@ -35,7 +35,7 @@ final class GithubUtil
     {
     }
 
-    public static String currentGitHash(final String projectDir) throws IOException, GitAPIException
+    static String currentGitHash(final String projectDir) throws IOException, GitAPIException
     {
         final FileRepositoryBuilder repositoryBuilder = new FileRepositoryBuilder().findGitDir(new File(projectDir));
         if (repositoryBuilder.getGitDir() == null)

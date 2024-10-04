@@ -182,7 +182,8 @@ public final class ClusterBackupAgent implements Agent
         recordingLog = new RecordingLog(ctx.clusterDir(), true);
         backupArchive = AeronArchive.connect(ctx.archiveContext().clone());
         recordingSignalPoller = new RecordingSignalPoller(
-            backupArchive.controlSessionId(), backupArchive.controlResponsePoller().subscription());
+            backupArchive.controlSessionId(),
+            backupArchive.controlResponsePoller().subscription());
 
         final long nowMs = epochClock.time();
         nextQueryDeadlineMsCounter.setOrdered(nowMs - 1);
@@ -565,23 +566,21 @@ public final class ClusterBackupAgent implements Agent
             {
                 CloseHelper.close(clusterArchiveAsyncConnect);
 
-                final AeronArchive.Context clusterArchiveContext = ctx.clusterArchiveContext().clone();
-                final ChannelUri logSupplierArchiveUri = ChannelUri.parse(
-                    clusterArchiveContext.controlRequestChannel());
+                final AeronArchive.Context context = ctx.clusterArchiveContext().clone();
+                final ChannelUri logSupplierArchiveUri = ChannelUri.parse(context.controlRequestChannel());
                 logSupplierArchiveUri.put(ENDPOINT_PARAM_NAME, logSupplierMember.archiveEndpoint());
-                clusterArchiveContext.controlRequestChannel(logSupplierArchiveUri.toString());
+                context.controlRequestChannel(logSupplierArchiveUri.toString());
 
                 if (null != logSupplierMember.archiveResponseEndpoint())
                 {
-                    final ChannelUri logSupplierResponseUri = ChannelUri.parse(
-                        clusterArchiveContext.controlResponseChannel());
+                    final ChannelUri logSupplierResponseUri = ChannelUri.parse(context.controlResponseChannel());
                     logSupplierResponseUri.put(MDC_CONTROL_MODE_PARAM_NAME, CONTROL_MODE_RESPONSE);
                     logSupplierResponseUri.remove(ENDPOINT_PARAM_NAME);
                     logSupplierResponseUri.put(MDC_CONTROL_PARAM_NAME, logSupplierMember.archiveResponseEndpoint());
-                    clusterArchiveContext.controlResponseChannel(logSupplierResponseUri.toString());
+                    context.controlResponseChannel(logSupplierResponseUri.toString());
                 }
 
-                clusterArchiveAsyncConnect = AeronArchive.asyncConnect(clusterArchiveContext);
+                clusterArchiveAsyncConnect = AeronArchive.asyncConnect(context);
             }
 
             final long nowMs = epochClock.time();

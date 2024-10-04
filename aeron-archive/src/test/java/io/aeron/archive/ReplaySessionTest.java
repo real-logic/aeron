@@ -286,7 +286,7 @@ class ReplaySessionTest
 
         final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
         replaySession.sendPendingError(proxy);
-        verify(mockControlSession).attemptErrorResponse(eq(correlationId), anyString(), eq(proxy));
+        verify(mockControlSession).attemptErrorResponse(eq(correlationId), anyInt(), anyString(), eq(proxy));
     }
 
     @Test

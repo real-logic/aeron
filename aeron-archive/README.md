@@ -112,3 +112,11 @@ the steps below.
 - Run `ArchiveTool` command `migrate`. Information on versions, etc. will be displayed. Errors
 will also be displayed.
 - Run `ArchiveTool` command `verify` to check for validity.
+
+APIs
+=====
+The C and C++ wrapper APIs are nearly complete.  They are **EXPERIMENTAL** and APIs are subject to change.
+
+Remaining work includes:
+- Exposing the `archive proxy` object directly to allow for asynchronous command execution
+- Implementation of the `recording events adaptor` and `poller`

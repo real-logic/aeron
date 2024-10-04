@@ -1005,8 +1005,8 @@ int aeron_archive_extend_recording(
  * @param replication_id_p out param set to the replication id that can be used to stop the replication
  * @param aeron_archive the archive client
  * @param src_recording_id the recording id that must exist at the source Archive
- * @param src_control_channel remote control channel for the source archive to instruct the replay on
- * @param src_control_stream_id remote control stream id for the source archive to instruct the replay on
+ * @param src_control_channel remote control channel for the source archive on which to instruct the replay
+ * @param src_control_stream_id remote control stream id for the source archive on which to instruct the replay
  * @param params optional parameters to configure the behavior of the replication
  * @return 0 for success, -1 for failure
  */

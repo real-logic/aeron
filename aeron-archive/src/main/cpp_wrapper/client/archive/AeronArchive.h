@@ -614,6 +614,8 @@ public:
      * @param channel the channel of the recording to be stopped
      * @param streamId  the stream id of the recording to be stopped
      * @return true if stopped, or false if the subscription is not currently active
+     *
+     * @see aeron_archive_try_stop_recording_channel_and_stream
      */
     inline bool tryStopRecording(const std::string &channel, std::int32_t streamId)
     {
@@ -823,7 +825,7 @@ public:
      * <p>
      * The lower 32-bits of the replay session id contain the session id of the image of the received replay
      * and can be obtained by casting the replay session id to an int32_t.
-     * All 64-bits are required to uniquely identify the replay when calling aeron_archive_stop_replay.
+     * All 64-bits are required to uniquely identify the replay when calling #stopReplay.
      *
      * @param recordingId the id of the recording
      * @param replayChannel the channel to which the replay should be sent
@@ -949,6 +951,21 @@ public:
         }
     }
 
+    /**
+     * List active recording subscriptions in the Aeron Archive.
+     * These are the result of calling aeron_archive_start_recording or aeron_archive_extend_recording.
+     * The subscription id in the returned descriptor can be used when calling AeronArchive:stopRecording.
+     *
+     * @param pseudoIndex the index into the active list at which to begin listing
+     * @param subscriptionCount the limit of the total descriptors to deliver
+     * @param channelFragment for a 'contains' match on the original channel stored with the Aeron Archive
+     * @param streamId the stream id of the recording
+     * @param applyStreamId whether or not the stream id should be matched
+     * @param consumer to be called for each recording subscription
+     * @return the number of matched subscriptions
+     *
+     * @see aeron_archive_list_recording_subscriptions
+     */
     inline std::int32_t listRecordingSubscriptions(
         std::int32_t pseudoIndex,
         std::int32_t subscriptionCount,
@@ -976,6 +993,16 @@ public:
         return count;
     }
 
+    /**
+     * Purge a stopped recording.
+     * i.e. Mark the recording as INVALID at the Archive and delete the corresponding segment files.
+     * The space in the Catalog will be reclaimed upon compaction.
+     *
+     * @param recordingId the id of the stopped recording to be purged
+     * @return the number of deleted segments
+     *
+     * @see aeron_archive_purge_recording
+     */
     inline std::int64_t purgeRecording(std::int64_t recordingId)
     {
         std::int64_t deletedSegmentsCount;
@@ -991,6 +1018,22 @@ public:
         return deletedSegmentsCount;
     }
 
+    /**
+     * Extend an existing, non-active recording for a channel and stream pairing.
+     * <p>
+     * The channel must be configured with the initial position from which it will be extended.
+     * This can be done with ChannelUriStringBuilder#initialPosition.
+     * The details required to initialize can be found by calling #listRecording.
+     *
+     * @param recordingId the id of the existing recording
+     * @param channel the channel of the publication to be recorded
+     * @param streamId the stream id of the publication to be recorded
+     * @param sourceLocation the source location of the publication to be recorded
+     * @param autoStop should the recording be automatically stopped when complete
+     * @return the subscription id of the recording
+     *
+     * @see aeron_archive_extend_recording
+     */
     inline std::int64_t extendRecording(
         std::int64_t recordingId,
         const std::string &channel,
@@ -1017,6 +1060,25 @@ public:
         return subscription_id;
     }
 
+    /**
+     * Replicate a recording from a source Archive to a destination.
+     * This can be considered a backup for a primary Archive.
+     * The source recording will be replayed via the provided replay channel and use the original stream id.
+     * The behavior of the replication will be governed by the values specified in the ReplicationParams.
+     * <p>
+     * For a source recording that is still active, the replay can merge with the live stream and then follow it directly and no longer require the replay from the source.
+     * This would require a multicast live destination.
+     * <p>
+     * Errors will be reported asynchronously and can be checked for with #checkForErrorResponse and #pollForErrorResponse
+     *
+     * @param srcRecordingId the recording id that must exist at the source archive
+     * @param srcControlStreamId remote control channel for the source archive on which to instruct the replay
+     * @param srcControlChannel remote control stream id for the source archive on which to instruct the replay
+     * @param replicationParams optional parameters to configure the behavior of the replication
+     * @return the replication id that can be used to stop the replication
+     *
+     * @see aeron_archive_replicate
+     */
     inline std::int64_t replicate(
         std::int64_t srcRecordingId,
         std::int32_t srcControlStreamId,
@@ -1039,6 +1101,13 @@ public:
         return replicationId;
     }
 
+    /**
+     * Stop a replication by the replication id.
+     *
+     * @param replicationId the replication id retrieved when calling #replicate
+     *
+     * @see aeron_archive_stop_replication
+     */
     inline void stopReplication(std::int64_t replicationId)
     {
         if (aeron_archive_stop_replication(m_aeron_archive_t, replicationId) < 0)
@@ -1047,6 +1116,14 @@ public:
         }
     }
 
+    /**
+     * Try to stop a replication by the replication id.
+     *
+     * @param replicationId the replication id retrieved when calling #replicate
+     * @return true if stopped, or false if the recording is not currently active
+     *
+     * @see aeron_archive_try_stop_replication
+     */
     inline bool tryStopReplication(std::int64_t replicationId)
     {
         bool stopped;
@@ -1062,6 +1139,18 @@ public:
         return stopped;
     }
 
+    /**
+     * Detach segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be the first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId the id of an existing recording
+     * @param newStartPosition the new starting position for the recording after the segments are detached
+     *
+     * @see aeron_archive_detach_segments
+     */
     inline void detachSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
         if (aeron_archive_detach_segments(
@@ -1073,6 +1162,14 @@ public:
         }
     }
 
+    /**
+     * Delete segments which have been previously detached from a recording.
+     *
+     * @param recordingId the id of an existing recording
+     * @return the number of segments deleted
+     *
+     * @see aeron_archive_delete_detached_segments
+     */
     inline std::int64_t deleteDetachedSegments(std::int64_t recordingId)
     {
         std::int64_t count;
@@ -1088,6 +1185,19 @@ public:
         return count;
     }
 
+    /**
+     * Purge (Detach and delete) segments from the beginning of a recording up to the provided new start position.
+     * <p>
+     * The new start position must be the first byte position of a segment after the existing start position.
+     * <p>
+     * It is not possible to detach segments which are active for recording or being replayed.
+     *
+     * @param recordingId the id of an existing recording
+     * @param newStartPosition the new starting position for the recording after the segments are detached
+     * @return the number of segments deleted
+     *
+     * @see aeron_archive_purge_segments
+     */
     inline std::int64_t purgeSegments(std::int64_t recordingId, std::int64_t newStartPosition)
     {
         std::int64_t count;
@@ -1104,6 +1214,16 @@ public:
         return count;
     }
 
+    /**
+     * Attach segments to the beginning of a recording to restore history that was previously detached.
+     * <p>
+     * Segment files must match the existing recording and join exactly to the start position of the recording they are being attached to.
+     *
+     * @param recordingId the id of an existing recording
+     * @return the number of segments attached
+     *
+     * @see aeron_archive_attach_segments
+     */
     inline std::int64_t attachSegments(std::int64_t recordingId)
     {
         std::int64_t count;
@@ -1119,6 +1239,19 @@ public:
         return count;
     }
 
+    /**
+     * Migrate segments from a source recording and attach them to the beginning of a destination recording.
+     * <p>
+     * The source recording must match the destination recording for segment length, term length, mtu length,
+     * stream id, plus the stop position and term id of the source must join with the start position of the destination
+     * and be on a segment boundary.
+     * <p>
+     * The source recording will be effectively truncated back to its start position after the migration.
+     *
+     * @param srcRecordingId the id of an existing recording from which segments will be migrated
+     * @param dstRecordingId the id of an exisintg recording to which segments will be migrated
+     * @return the number of segments deleted
+     */
     inline std::int64_t migrateSegments(std::int64_t srcRecordingId, std::int64_t dstRecordingId)
     {
         std::int64_t count;
@@ -1135,6 +1268,19 @@ public:
         return count;
     }
 
+    /**
+     * Position of the recorded stream at the base of a segment file.
+     * <p>
+     * If a recording starts within a term then the base position can be before the recording started.
+     *
+     * @param startPosition start position of the stream
+     * @param position the position in the stream to calculate the segment base position from
+     * @param termBufferLength term buffer length of the stream
+     * @param segmentFileLength segment file length, which is a multiple of term buffer length
+     * @return the position of the recorded stream at the beginning of a segment file
+     *
+     * @see aeron_archive_segment_file_base_position
+     */
     static std::int64_t segmentFileBasePosition(
         std::int64_t startPosition,
         std::int64_t position,

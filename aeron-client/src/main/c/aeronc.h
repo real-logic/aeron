@@ -851,6 +851,17 @@ int aeron_counters_reader_counter_type_id(
     aeron_counters_reader_t *counters_reader, int32_t counter_id, int32_t *type_id);
 
 /**
+ * Get a pointer to the key of a counter's metadata
+ *
+ * @param counters_reader that contains the counter
+ * @param counter_id to find
+ * @param key_p out pointer set to location of metadata key
+ * @return -1 on failure, 0 on success.
+ */
+int aeron_counters_reader_metadata_key(
+    aeron_counters_reader_t *counters_reader, int32_t counter_id, uint8_t **key_p);
+
+/**
  * Get the label for a counter.
  *
  * @param counters_reader that contains the counter

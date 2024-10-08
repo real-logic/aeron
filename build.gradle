@@ -689,6 +689,19 @@ project(':aeron-archive') {
         args = ['src/main/resources/archive/aeron-archive-codecs.xml']
     }
 
+    def generatedCDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated/c")
+    tasks.register('generateCCodecs', JavaExec) {
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        classpath = configurations.codecGeneration
+        systemProperties(
+            'sbe.output.dir': generatedCDir,
+            'sbe.target.language': 'C',
+            'sbe.target.namespace': 'aeron.archive.client',
+            'sbe.validation.xsd': 'src/main/resources/archive/fpl/sbe.xsd',
+            'sbe.validation.stop.on.error': 'true')
+        args = ['src/main/resources/archive/aeron-archive-codecs.xml']
+    }
+
     compileJava.dependsOn 'compileGeneratedJava'
     compileGeneratedJava.dependsOn 'generateCodecs'
     compileTestJava.dependsOn 'compileGeneratedTestJava'

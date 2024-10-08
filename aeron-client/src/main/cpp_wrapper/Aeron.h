@@ -77,6 +77,15 @@ public:
         aeron_start(m_aeron);
     }
 
+    explicit Aeron(aeron_t *aeron) :
+        m_context(aeron_context(aeron)),
+        m_aeron(aeron),
+        m_countersReader(aeron_counters_reader(m_aeron)),
+        m_clientConductor(m_aeron),
+        m_conductorInvoker(m_clientConductor, m_context.m_exceptionHandler)
+    {
+    }
+
     ~Aeron()
     {
         aeron_on_close_client_pair_t closePair = {emptyCallback, nullptr};

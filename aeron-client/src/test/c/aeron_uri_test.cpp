@@ -22,6 +22,7 @@ extern "C"
 {
 #include "aeron_alloc.h"
 #include "uri/aeron_uri.h"
+#include "uri/aeron_uri_string_builder.h"
 #include "util/aeron_netutil.h"
 }
 
@@ -335,4 +336,169 @@ TEST_P(UriPrintTest, shouldPrintWithTruncation)
     temp_buffer[15] = '\0';
 
     EXPECT_STREQ(temp_buffer, print_buffer);
+}
+
+class UriStringBuilderTest : public testing::Test
+{
+public:
+
+    ~UriStringBuilderTest() override
+    {
+        aeron_uri_string_builder_close(&m_builder);
+    }
+
+protected:
+    aeron_uri_string_builder_t m_builder = {};
+    char out_buff[AERON_MAX_PATH];
+};
+
+TEST_F(UriStringBuilderTest, emptyUri)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:unknown", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, setMedia)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "my-media"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:my-media", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, setMediaAndPrefix)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "ipc"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_PREFIX_KEY, "ultra-prefix"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("ultra-prefix:aeron:ipc", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, simpleParam)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param1", "value1"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?param1=value1", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, twoParams)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param1", "value1"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param2", "value2"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?param1=value1|param2=value2", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, int32Param)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put_int32(&m_builder, "param1", 1234));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?param1=1234", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, overflow)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param1", "value1"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param2", "value2"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, 20));
+
+    EXPECT_STREQ("aeron:udp?param1=va", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, badCharacters)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(-1, aeron_uri_string_builder_put(&m_builder, "key1", "u=dp"));
+    EXPECT_EQ(-1, aeron_uri_string_builder_put(&m_builder, "pa?ram1", "value1"));
+    EXPECT_EQ(-1, aeron_uri_string_builder_put(&m_builder, "param2", "valu|e2"));
+}
+
+TEST_F(UriStringBuilderTest, unset)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param1", "value1"));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param2", "value2"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?param1=value1|param2=value2", out_buff);
+
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, "param2", nullptr));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?param1=value1", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, initOnString)
+{
+    const char *uri = "aeron:udp?a=b|c=d";
+
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(&m_builder, uri));
+
+    EXPECT_STREQ("udp", aeron_uri_string_builder_get(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY));
+    EXPECT_STREQ("b", aeron_uri_string_builder_get(&m_builder, "a"));
+    EXPECT_STREQ("d", aeron_uri_string_builder_get(&m_builder, "c"));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ(uri, out_buff);
+}
+
+TEST_F(UriStringBuilderTest, initOnStringWithPrefix)
+{
+    const char *uri = "some-prefix:aeron:udp";
+
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(&m_builder, uri));
+
+    EXPECT_STREQ("some-prefix", aeron_uri_string_builder_get(&m_builder, AERON_URI_STRING_BUILDER_PREFIX_KEY));
+    EXPECT_STREQ("udp", aeron_uri_string_builder_get(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ(uri, out_buff);
+}
+
+TEST_F(UriStringBuilderTest, initOnMalformedStrings)
+{
+    EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf"));
+    EXPECT_EQ(-1, aeron_uri_string_builder_init_on_string(&m_builder, "asdf:asdf"));
+}
+
+TEST_F(UriStringBuilderTest, initialPosition)
+{
+    EXPECT_EQ(0, aeron_uri_string_builder_init_new(&m_builder));
+    EXPECT_EQ(0, aeron_uri_string_builder_put(&m_builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp"));
+
+    int32_t term_length = 1024 * 128;
+    int64_t position = (term_length * 3) + 64;
+
+    EXPECT_EQ(0, aeron_uri_string_builder_set_initial_position(&m_builder, position, 777, term_length));
+
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_MAX_PATH));
+
+    EXPECT_STREQ("aeron:udp?term-id=780|term-length=131072|init-term-id=777|term-offset=64", out_buff);
 }

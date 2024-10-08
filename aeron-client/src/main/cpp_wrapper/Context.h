@@ -218,6 +218,13 @@ public:
         aeron_context_init(&m_context);
     }
 
+    /// @cond HIDDEN_SYMBOLS
+    explicit Context(aeron_context_t *context)
+    {
+        m_context = context;
+    }
+    /// @endcond
+
     Context(Context &&other) noexcept :
         m_context(other.m_context),
         m_onAvailableImageHandler(other.m_onAvailableImageHandler),

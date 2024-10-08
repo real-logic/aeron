@@ -99,17 +99,10 @@ SET(HEADERS
 # static library
 add_library(aeron_archive_client STATIC ${SOURCE} ${HEADERS})
 add_library(aeron::aeron_archive_client ALIAS aeron_archive_client)
-add_library(aeron_archive_client_wrapper STATIC ${SOURCE} ${HEADERS})
-add_library(aeron::aeron_archive_client_wrapper ALIAS aeron_archive_client_wrapper)
 
 add_dependencies(aeron_archive_client codecs)
-add_dependencies(aeron_archive_client_wrapper codecs)
 
 target_include_directories(aeron_archive_client
-    PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>"
-    PRIVATE "$<BUILD_INTERFACE:${ARCHIVE_CODEC_TARGET_DIR}>")
-
-target_include_directories(aeron_archive_client_wrapper
     PUBLIC "$<BUILD_INTERFACE:${CMAKE_CURRENT_SOURCE_DIR}>" "$<INSTALL_INTERFACE:include>"
     PRIVATE "$<BUILD_INTERFACE:${ARCHIVE_CODEC_TARGET_DIR}>")
 
@@ -120,10 +113,6 @@ endif ()
 
 target_link_libraries(aeron_archive_client
     PRIVATE aeron_client
-    INTERFACE ${CMAKE_THREAD_LIBS_INIT})
-
-target_link_libraries(aeron_archive_client_wrapper
-    PRIVATE aeron_client_wrapper aeron
     INTERFACE ${CMAKE_THREAD_LIBS_INIT})
 
 if (AERON_INSTALL_TARGETS)

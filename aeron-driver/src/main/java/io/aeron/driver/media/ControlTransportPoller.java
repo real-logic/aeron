@@ -45,6 +45,8 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
  */
 public final class ControlTransportPoller extends UdpTransportPoller
 {
+    private static final SendChannelEndpoint[] EMPTY_TRANSPORTS = new SendChannelEndpoint[0];
+
     private final ByteBuffer byteBuffer = BufferUtil.allocateDirectAligned(
         Configuration.MAX_UDP_PAYLOAD_LENGTH, CACHE_LINE_LENGTH);
     private final UnsafeBuffer unsafeBuffer = new UnsafeBuffer(byteBuffer);
@@ -55,13 +57,14 @@ public final class ControlTransportPoller extends UdpTransportPoller
     private final DriverConductorProxy conductorProxy;
     private final Consumer<SelectionKey> selectorPoller =
         (selectionKey) -> poll((SendChannelEndpoint)selectionKey.attachment());
-    private SendChannelEndpoint[] transports = new SendChannelEndpoint[0];
+    private SendChannelEndpoint[] transports = EMPTY_TRANSPORTS;
+    private int totalBytesReceived;
 
     /**
      * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
      *
-     * @param errorHandler      which can be used to log errors and continue.
-     * @param conductorProxy    to send message back to the conductor.
+     * @param errorHandler   which can be used to log errors and continue.
+     * @param conductorProxy to send message back to the conductor.
      */
     public ControlTransportPoller(final ErrorHandler errorHandler, final DriverConductorProxy conductorProxy)
     {
@@ -84,27 +87,28 @@ public final class ControlTransportPoller extends UdpTransportPoller
      */
     public int pollTransports()
     {
-        int bytesReceived = 0;
-        try
+        totalBytesReceived = 0;
+
+        if (transports.length <= ITERATION_THRESHOLD)
         {
-            if (transports.length <= ITERATION_THRESHOLD)
+            for (final SendChannelEndpoint transport : transports)
             {
-                for (final SendChannelEndpoint transport : transports)
-                {
-                    bytesReceived += poll(transport);
-                }
+                poll(transport);
             }
-            else
+        }
+        else
+        {
+            try
             {
                 selector.selectNow(selectorPoller);
             }
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
 
-        return bytesReceived;
+        return totalBytesReceived;
     }
 
     /**
@@ -163,41 +167,38 @@ public final class ControlTransportPoller extends UdpTransportPoller
         return "ControlTransportPoller{}";
     }
 
-    private int poll(final SendChannelEndpoint channelEndpoint)
+    private void poll(final SendChannelEndpoint channelEndpoint)
     {
-        int bytesReceived = 0;
         final InetSocketAddress srcAddress = channelEndpoint.receive(byteBuffer);
 
         if (null != srcAddress)
         {
-            bytesReceived = byteBuffer.position();
-            if (channelEndpoint.isValidFrame(unsafeBuffer, bytesReceived))
+            final int length = byteBuffer.position();
+            totalBytesReceived += length;
+            if (channelEndpoint.isValidFrame(unsafeBuffer, length))
             {
-                channelEndpoint.receiveHook(unsafeBuffer, bytesReceived, srcAddress);
+                channelEndpoint.receiveHook(unsafeBuffer, length, srcAddress);
 
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_NAK == frameType)
                 {
-                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, bytesReceived, srcAddress);
+                    channelEndpoint.onNakMessage(nakMessage, unsafeBuffer, length, srcAddress);
                 }
                 else if (HDR_TYPE_SM == frameType)
                 {
                     channelEndpoint.onStatusMessage(
-                        statusMessage, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
+                        statusMessage, unsafeBuffer, length, srcAddress, conductorProxy);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {
-                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, bytesReceived, srcAddress);
+                    channelEndpoint.onRttMeasurement(rttMeasurement, unsafeBuffer, length, srcAddress);
                 }
                 else if (HDR_TYPE_RSP_SETUP == frameType)
                 {
                     channelEndpoint.onResponseSetup(
-                        responseSetup, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
-
+                        responseSetup, unsafeBuffer, length, srcAddress, conductorProxy);
                 }
             }
         }
-
-        return bytesReceived;
     }
 }

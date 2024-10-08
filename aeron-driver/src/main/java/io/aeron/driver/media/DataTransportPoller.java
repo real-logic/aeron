@@ -55,6 +55,7 @@ public final class DataTransportPoller extends UdpTransportPoller
     private final Consumer<SelectionKey> selectorPoller =
         (selectionKey) -> poll((ChannelAndTransport)selectionKey.attachment());
     private ChannelAndTransport[] channelAndTransports = EMPTY_TRANSPORTS;
+    private int totalBytesReceived;
 
     /**
      * Construct a new {@link TransportPoller} with an {@link ErrorHandler} for logging.
@@ -86,27 +87,28 @@ public final class DataTransportPoller extends UdpTransportPoller
      */
     public int pollTransports()
     {
-        int bytesReceived = 0;
-        try
+        totalBytesReceived = 0;
+
+        if (channelAndTransports.length <= ITERATION_THRESHOLD)
         {
-            if (channelAndTransports.length <= ITERATION_THRESHOLD)
+            for (final ChannelAndTransport channelAndTransport : channelAndTransports)
             {
-                for (final ChannelAndTransport channelAndTransport : channelAndTransports)
-                {
-                    bytesReceived += poll(channelAndTransport);
-                }
+                poll(channelAndTransport);
             }
-            else
+        }
+        else
+        {
+            try
             {
                 selector.selectNow(selectorPoller);
             }
-        }
-        catch (final IOException ex)
-        {
-            LangUtil.rethrowUnchecked(ex);
+            catch (final IOException ex)
+            {
+                LangUtil.rethrowUnchecked(ex);
+            }
         }
 
-        return bytesReceived;
+        return totalBytesReceived;
     }
 
     /**
@@ -122,7 +124,7 @@ public final class DataTransportPoller extends UdpTransportPoller
      *
      * @param channelEndpoint to which the transport belongs.
      * @param transport       new transport to be registered.
-     * @param transportIndex for the transport in the channel.
+     * @param transportIndex  for the transport in the channel.
      * @return {@link SelectionKey} for registration to cancel.
      */
     public SelectionKey registerForRead(
@@ -193,14 +195,14 @@ public final class DataTransportPoller extends UdpTransportPoller
         }
     }
 
-    private int poll(final ChannelAndTransport channelAndTransport)
+    private void poll(final ChannelAndTransport channelAndTransport)
     {
-        int bytesReceived = 0;
         final InetSocketAddress srcAddress = channelAndTransport.transport.receive(byteBuffer);
 
         if (null != srcAddress)
         {
             final int length = byteBuffer.position();
+            totalBytesReceived += length;
             final ReceiveChannelEndpoint channelEndpoint = channelAndTransport.channelEndpoint;
 
             if (channelEndpoint.isValidFrame(unsafeBuffer, length))
@@ -210,7 +212,7 @@ public final class DataTransportPoller extends UdpTransportPoller
                 final int frameType = frameType(unsafeBuffer, 0);
                 if (HDR_TYPE_DATA == frameType || HDR_TYPE_PAD == frameType)
                 {
-                    bytesReceived = channelEndpoint.onDataPacket(
+                    channelEndpoint.onDataPacket(
                         dataMessage, unsafeBuffer, length, srcAddress, channelAndTransport.transportIndex);
                 }
                 else if (HDR_TYPE_SETUP == frameType)
@@ -225,8 +227,6 @@ public final class DataTransportPoller extends UdpTransportPoller
                 }
             }
         }
-
-        return bytesReceived;
     }
 
     /**

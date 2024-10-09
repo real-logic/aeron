@@ -255,7 +255,7 @@ int aeron_data_packet_dispatcher_remove_subscription(aeron_data_packet_dispatche
 
     stream_interest->is_all_sessions = false;
 
-    if (0 == stream_interest->image_by_session_id_map.size && 0 == stream_interest->state_by_session_id_map.size)
+    if (0 == stream_interest->image_by_session_id_map.size && 0 == stream_interest->subscribed_sessions.size)
     {
         aeron_int64_to_ptr_hash_map_remove(&dispatcher->session_by_stream_id_map, stream_id);
         aeron_data_packet_dispatcher_stream_interest_delete(stream_interest);

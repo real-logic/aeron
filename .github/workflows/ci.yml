@@ -312,45 +312,6 @@ jobs:
           name: crash-logs-gcc-2204-${{ matrix.version }}
           path: ${{ steps.copy_test_logs.outputs.file }}
 
-  cpp-gcc-centos-build:
-    name: C++ CentOS 7
-    runs-on: ubuntu-22.04
-    strategy:
-      fail-fast: false
-      matrix:
-        version: [ '9' ]
-    steps:
-      - name: Checkout code
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.sha }}
-      - name: Cache Gradle dependencies
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-caches-${{ hashFiles('**/*.gradle') }}
-          restore-keys: |
-            ${{ runner.os }}-gradle-caches-
-      - name: Cache Gradle wrappers
-        uses: actions/cache@v4
-        with:
-          path: ~/.gradle/wrapper
-          key: ${{ runner.os }}-gradle-wrapper-${{ hashFiles('**/gradle/wrapper/gradle-wrapper.properties') }}
-      - name: Build
-        run: GCC_VERSION=${{ matrix.version }} cppbuild/centos-docker-build
-      - name: Copy test logs
-        id: copy_test_logs
-        if: failure()
-        run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
-          ./gradlew tarTestLogs
-      - name: Upload crash logs
-        if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
-        uses: actions/upload-artifact@v4
-        with:
-          name: crash-logs-gcc-centos-${{ matrix.version }}
-          path: ${{ steps.copy_test_logs.outputs.file }}
-
   cpp-gcc-rocky-build:
     name: C++ Rocky 8
     runs-on: ubuntu-22.04

@@ -21,9 +21,10 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 
+import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
-import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.fail;
 
 /**
@@ -39,6 +40,7 @@ public class ThreadNamingCallbackTest
     void setUp()
     {
         threadName = Thread.currentThread().getName();
+        assertThat(threadName, not(containsString("TEST")));
     }
 
     @Test
@@ -77,6 +79,6 @@ public class ThreadNamingCallbackTest
     @AfterEach
     void tearDown()
     {
-        assertEquals(threadName, Thread.currentThread().getName());
+        assertNotEquals(threadName, Thread.currentThread().getName());
     }
 }

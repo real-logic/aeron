@@ -108,7 +108,6 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        final int remaining = buffer.remaining();
         int bytesSent = 0;
         try
         {
@@ -123,7 +122,7 @@ public final class UdpNameResolutionTransport extends UdpChannelTransport
         }
         catch (final IOException ex)
         {
-            sendError(remaining, ex, remoteAddress);
+            onSendError(ex, remoteAddress, errorHandler);
         }
 
         return bytesSent;

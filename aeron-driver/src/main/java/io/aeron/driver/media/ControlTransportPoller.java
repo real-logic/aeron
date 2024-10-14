@@ -104,7 +104,7 @@ public final class ControlTransportPoller extends UdpTransportPoller
             }
             catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(ex);
+                errorHandler.onError(ex);
             }
         }
 
@@ -168,6 +168,18 @@ public final class ControlTransportPoller extends UdpTransportPoller
     }
 
     private void poll(final SendChannelEndpoint channelEndpoint)
+    {
+        try
+        {
+            receive(channelEndpoint);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+        }
+    }
+
+    private void receive(final SendChannelEndpoint channelEndpoint)
     {
         final InetSocketAddress srcAddress = channelEndpoint.receive(byteBuffer);
 

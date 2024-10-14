@@ -104,7 +104,7 @@ public final class DataTransportPoller extends UdpTransportPoller
             }
             catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(ex);
+                errorHandler.onError(ex);
             }
         }
 
@@ -196,6 +196,18 @@ public final class DataTransportPoller extends UdpTransportPoller
     }
 
     private void poll(final ChannelAndTransport channelAndTransport)
+    {
+        try
+        {
+            receive(channelAndTransport);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+        }
+    }
+
+    private void receive(final ChannelAndTransport channelAndTransport)
     {
         final InetSocketAddress srcAddress = channelAndTransport.transport.receive(byteBuffer);
 

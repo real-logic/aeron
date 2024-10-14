@@ -16,8 +16,14 @@
 package io.aeron.driver;
 
 import io.aeron.driver.MediaDriver.Context;
+import io.aeron.driver.media.ControlTransportPoller;
 import io.aeron.driver.media.DataTransportPoller;
+import io.aeron.driver.media.UdpTransportPoller;
+import io.aeron.driver.status.SystemCounterDescriptor;
 import io.aeron.exceptions.ConfigurationException;
+import org.agrona.ErrorHandler;
+import org.agrona.concurrent.CountedErrorHandler;
+import org.agrona.concurrent.status.AtomicCounter;
 import org.hamcrest.CoreMatchers;
 import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
@@ -28,9 +34,16 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.concurrent.*;
+import java.util.concurrent.Callable;
+import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.CyclicBarrier;
+import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.ThreadPoolExecutor;
+import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.Configuration.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MAX_LENGTH;
@@ -39,8 +52,7 @@ import static org.mockito.Mockito.*;
 
 class MediaDriverContextTest
 {
-    private final Context context = new Context()
-        .dataTransportPoller(mock(DataTransportPoller.class));
+    private final Context context = new Context();
 
     @AfterEach
     void afterEach()
@@ -247,5 +259,78 @@ class MediaDriverContextTest
 
         final ConfigurationException exception = assertThrowsExactly(ConfigurationException.class, context::conclude);
         assertEquals("ERROR - `resolverName` is required when `resolverInterface` is set", exception.getMessage());
+    }
+
+    @Test
+    void shouldAssignCountedErrorHandler(@TempDir final Path tempDir)
+    {
+        context.aeronDirectoryName(tempDir.toString());
+        assertNull(context.countedErrorHandler());
+        final CountedErrorHandler countedErrorHandler = mock(CountedErrorHandler.class);
+        context.countedErrorHandler(countedErrorHandler);
+        assertSame(countedErrorHandler, context.countedErrorHandler());
+
+        context.conclude();
+        assertSame(countedErrorHandler, context.countedErrorHandler());
+    }
+
+    @Test
+    void shouldWrapErrorHandler(@TempDir final Path tempDir)
+    {
+        context.aeronDirectoryName(tempDir.toString());
+        final ErrorHandler customHandler = mock(ErrorHandler.class);
+        context.errorHandler(customHandler);
+        assertNull(context.countedErrorHandler());
+
+        context.conclude();
+
+        final ErrorHandler errorHandler = context.errorHandler();
+        assertNotNull(errorHandler);
+        assertNotSame(customHandler, errorHandler);
+        final CountedErrorHandler countedErrorHandler = context.countedErrorHandler();
+        assertNotNull(countedErrorHandler);
+
+        final RuntimeException exception = new RuntimeException("test");
+        countedErrorHandler.onError(exception);
+
+        verify(customHandler).onError(exception);
+        verifyNoMoreInteractions(customHandler);
+        final AtomicCounter errorCounter = context.systemCounters().get(SystemCounterDescriptor.ERRORS);
+        assertEquals(1, errorCounter.get());
+    }
+
+    @Test
+    void shouldCreateControlTransportPollerWithCountedErrorHandler(@TempDir final Path tempDir) throws Exception
+    {
+        context.aeronDirectoryName(tempDir.toString());
+        context.controlTransportPoller(null);
+
+        context.conclude();
+
+        final ControlTransportPoller controlTransportPoller = context.controlTransportPoller();
+        assertNotNull(controlTransportPoller);
+
+        assertSame(context.countedErrorHandler(), getErrorHandler(controlTransportPoller));
+    }
+
+    @Test
+    void shouldCreateDataTransportPollerWithCountedErrorHandler(@TempDir final Path tempDir) throws Exception
+    {
+        context.aeronDirectoryName(tempDir.toString());
+        context.dataTransportPoller(null);
+
+        context.conclude();
+
+        final DataTransportPoller dataTransportPoller = context.dataTransportPoller();
+        assertNotNull(dataTransportPoller);
+
+        assertSame(context.countedErrorHandler(), getErrorHandler(dataTransportPoller));
+    }
+
+    private static ErrorHandler getErrorHandler(final UdpTransportPoller transportPoller) throws Exception
+    {
+        final Field field = UdpTransportPoller.class.getDeclaredField("errorHandler");
+        field.setAccessible(true);
+        return (ErrorHandler)field.get(transportPoller);
     }
 }

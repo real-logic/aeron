@@ -17,6 +17,7 @@ package io.aeron.driver.media;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
 import io.aeron.protocol.HeaderFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
@@ -116,7 +117,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
     {
         this.context = context;
         this.udpChannel = udpChannel;
-        this.errorHandler = context.errorHandler();
+        this.errorHandler = context.countedErrorHandler();
         this.portManager = portManager;
         this.endPointAddress = endPointAddress;
         this.bindAddress = bindAddress;
@@ -161,11 +162,28 @@ public abstract class UdpChannelTransport implements AutoCloseable
      * @param bytesToSend expected to be sent to the network.
      * @param ex          experienced.
      * @param destination to which the send operation was addressed.
+     * @see #onSendError(IOException, InetSocketAddress, ErrorHandler)
+     * @deprecated {@link #onSendError(IOException, InetSocketAddress, ErrorHandler)} is used instead.
      */
+    @Deprecated(forRemoval = true, since = "1.46.6")
     public static void sendError(final int bytesToSend, final IOException ex, final InetSocketAddress destination)
     {
         throw new AeronException(
             "failed to send " + bytesToSend + " byte packet to " + destination, ex, AeronException.Category.WARN);
+    }
+
+    /**
+     * Report an {@link AeronEvent} with a message for a send error.
+     *
+     * @param ex           experienced.
+     * @param destination  to which the send operation was addressed.
+     * @param errorHandler to report error to.
+     */
+    public static void onSendError(
+        final IOException ex, final InetSocketAddress destination, final ErrorHandler errorHandler)
+    {
+        errorHandler.onError(new AeronEvent(
+            "failed to send datagram to " + destination + ", cause: " + ex, AeronException.Category.WARN));
     }
 
     /**
@@ -418,11 +436,12 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
     /**
      * Useful hook for logging resend calls.
-     * @param sessionId     to resend
-     * @param streamId      to resend
-     * @param termId        to resend
-     * @param termOffset    to resend
-     * @param length        to resend
+     *
+     * @param sessionId  to resend
+     * @param streamId   to resend
+     * @param termId     to resend
+     * @param termOffset to resend
+     * @param length     to resend
      */
     @SuppressWarnings("unused")
     public void resendHook(

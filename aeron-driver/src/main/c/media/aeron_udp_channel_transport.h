@@ -20,6 +20,9 @@
 #include "aeron_socket.h"
 #include "aeron_driver_common.h"
 #include "aeron_udp_channel_transport_bindings.h"
+#include "concurrent/aeron_distinct_error_log.h"
+#include "concurrent/aeron_counters_manager.h"
+#include "util/aeron_error.h"
 
 #define AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP_NONE (0x0)
 #define AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP_HW (0x1)
@@ -49,6 +52,8 @@ typedef struct aeron_udp_channel_transport_stct
     void *bindings_clientd;
     void *destination_clientd;
     void *interceptor_clientds[AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS];
+    aeron_distinct_error_log_t *error_log;
+    int64_t *errors_counter;
     uint32_t timestamp_flags;
 }
 aeron_udp_channel_transport_t;
@@ -100,6 +105,13 @@ inline void aeron_udp_channel_transport_set_interceptor_clientd(
     aeron_udp_channel_transport_t *transport, int interceptor_index, void *clientd)
 {
     transport->interceptor_clientds[interceptor_index] = clientd;
+}
+
+inline void aeron_udp_channel_transport_log_error(aeron_udp_channel_transport_t *transport)
+{
+    aeron_distinct_error_log_record(transport->error_log, aeron_errcode(), aeron_errmsg());
+    aeron_counter_increment(transport->errors_counter, 1);
+    aeron_err_clear();
 }
 
 #endif //AERON_UDP_CHANNEL_TRANSPORT_H

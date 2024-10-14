@@ -106,10 +106,10 @@ int aeron_udp_destination_tracker_send(
     const int64_t now_ns = aeron_clock_cached_nano_time(tracker->cached_clock);
     const bool is_dynamic_control_mode = !tracker->is_manual_control_mode;
     const int length = (int)tracker->destinations.length;
-    int min_bytes_sent = (int)iov->iov_len;
+    int result = (int)iov_length;
     int to_be_removed = 0;
 
-    *bytes_sent = (int64_t)iov->iov_len;
+    *bytes_sent = 0;
 
     int starting_index = tracker->round_robin_index++;
     if (starting_index >= length)
@@ -129,12 +129,11 @@ int aeron_udp_destination_tracker_send(
         {
             const int sendmsg_result = tracker->data_paths->send_func(
                 tracker->data_paths, transport, &entry->addr, iov, iov_length, bytes_sent);
-
-            min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
-            if (aeron_udp_destination_tracker_should_abort_send(iov, iov_length, sendmsg_result, bytes_sent))
+            if (sendmsg_result < 0)
             {
-                tracker->round_robin_index = i;
-                return min_bytes_sent;
+                AERON_APPEND_ERR("%s", "aeron_udp_destination_tracker_send");
+                aeron_udp_channel_transport_log_error(transport);
+                result = 0;
             }
         }
     }
@@ -151,12 +150,11 @@ int aeron_udp_destination_tracker_send(
         {
             const int sendmsg_result = tracker->data_paths->send_func(
                 tracker->data_paths, transport, &entry->addr, iov, iov_length, bytes_sent);
-
-            min_bytes_sent = sendmsg_result < min_bytes_sent ? sendmsg_result : min_bytes_sent;
-            if (aeron_udp_destination_tracker_should_abort_send(iov, iov_length, sendmsg_result, bytes_sent))
+            if (sendmsg_result < 0)
             {
-                tracker->round_robin_index = i;
-                return min_bytes_sent;
+                AERON_APPEND_ERR("%s", "aeron_udp_destination_tracker_send");
+                aeron_udp_channel_transport_log_error(transport);
+                result = 0;
             }
         }
     }
@@ -166,7 +164,7 @@ int aeron_udp_destination_tracker_send(
         aeron_udp_destination_tracker_remove_inactive_destinations(tracker, now_ns);
     }
 
-    return min_bytes_sent;
+    return result;
 }
 
 static bool aeron_udp_destination_tracker_same_port(struct sockaddr_storage *lhs, struct sockaddr_storage *rhs)
@@ -444,6 +442,3 @@ void aeron_udp_destination_tracker_resolution_change(
 
 extern void aeron_udp_destination_tracker_set_counter(
     aeron_udp_destination_tracker_t *tracker, aeron_atomic_counter_t *counter);
-
-extern bool aeron_udp_destination_tracker_should_abort_send(
-    struct iovec *iov, size_t iov_length, int send_result, const int64_t *bytes_sent);

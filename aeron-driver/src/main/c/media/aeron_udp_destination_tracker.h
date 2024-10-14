@@ -110,20 +110,4 @@ inline void aeron_udp_destination_tracker_set_counter(
     tracker->num_destinations_addr = counter->value_addr;
 }
 
-inline bool aeron_udp_destination_tracker_should_abort_send(
-    struct iovec *iov, size_t iov_length, int send_result, const int64_t *bytes_sent)
-{
-    if (iov_length > 1)
-    {
-        return send_result < (int)iov_length ? true : false;
-    }
-    else if (1 == send_result)
-    {
-        return *bytes_sent < (int64_t)iov->iov_len ? true : false;
-    }
-
-    /* do not abort on an uncaught error */
-    return false;
-}
-
 #endif //AERON_UDP_DESTINATION_TRACKER_H

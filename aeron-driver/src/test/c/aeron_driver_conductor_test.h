@@ -342,6 +342,13 @@ public:
         m_context.m_context->error_buffer_length = m_context.m_error_log_buffer.size();
     }
 
+    ~DriverConductorTest()
+    {
+        aeron_system_counters_close(&m_context.m_system_counters);
+        aeron_counters_manager_close(&m_context.m_counters_manager);
+        aeron_distinct_error_log_close(&m_context.m_error_log);
+    }
+
     size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler, size_t message_limit = SIZE_MAX)
     {
         size_t messages = 0;

@@ -96,6 +96,8 @@ int aeron_udp_channel_transport_init(
     transport->fd = -1;
     transport->bindings_clientd = NULL;
     transport->timestamp_flags = AERON_UDP_CHANNEL_TRANSPORT_MEDIA_RCV_TIMESTAMP_NONE;
+    transport->error_log = context->error_log;
+    transport->errors_counter = aeron_system_counter_addr(context->system_counters, AERON_SYSTEM_COUNTER_ERRORS);
     for (size_t i = 0; i < AERON_UDP_CHANNEL_TRANSPORT_MAX_INTERCEPTORS; i++)
     {
         transport->interceptor_clientds[i] = NULL;
@@ -719,3 +721,5 @@ extern void *aeron_udp_channel_transport_get_interceptor_clientd(
 
 extern void aeron_udp_channel_transport_set_interceptor_clientd(
     aeron_udp_channel_transport_t *transport, int interceptor_index, void *clientd);
+
+extern void aeron_udp_channel_transport_log_error(aeron_udp_channel_transport_t *transport);

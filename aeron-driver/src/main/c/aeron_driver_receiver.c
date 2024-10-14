@@ -166,7 +166,7 @@ int aeron_driver_receiver_do_work(void *clientd)
         aeron_driver_receiver_log_error(receiver);
     }
 
-    work_count += bytes_received > 0 ? (int)bytes_received : 0;
+    work_count += (int)bytes_received;
 
     aeron_counter_add_ordered(receiver->total_bytes_received_counter, bytes_received);
 
@@ -176,32 +176,35 @@ int aeron_driver_receiver_do_work(void *clientd)
 
         if (NULL != image->endpoint)
         {
-            int send_sm_result = aeron_publication_image_send_pending_status_message(image, now_ns);
-            if (send_sm_result < 0)
+            if (aeron_publication_image_send_pending_status_message(image, now_ns) < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send SM");
                 aeron_driver_receiver_log_error(receiver);
             }
+            else
+            {
+                work_count++;
+            }
 
-            work_count += send_sm_result < 0 ? 0 : send_sm_result;
-
-            int send_nak_result = aeron_publication_image_send_pending_loss(image);
-            if (send_nak_result < 0)
+            if (aeron_publication_image_send_pending_loss(image) < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send NAK");
                 aeron_driver_receiver_log_error(receiver);
             }
+            else
+            {
+                work_count++;
+            }
 
-            work_count += send_nak_result < 0 ? 0 : send_nak_result;
-
-            int initiate_rttm_result = aeron_publication_image_initiate_rttm(image, now_ns);
-            if (send_nak_result < 0)
+            if (aeron_publication_image_initiate_rttm(image, now_ns) < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send RTTM");
                 aeron_driver_receiver_log_error(receiver);
             }
-
-            work_count += initiate_rttm_result < 0 ? 0 : initiate_rttm_result;
+            else
+            {
+                work_count++;
+            }
         }
     }
 

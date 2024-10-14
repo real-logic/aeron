@@ -82,6 +82,9 @@ extern "C"
 
 #define TEST_CONDUCTOR_CYCLE_TIME_THRESHOLD (600 * 1000 * 1000)
 
+#define CAPACITY (32 * 1024)
+typedef std::array<std::uint8_t, CAPACITY> buffer_t;
+
 static int64_t nano_time = 0;
 static bool free_map_raw_log = true;
 
@@ -242,6 +245,11 @@ struct TestDriverContext
     }
 
     aeron_driver_context_t *m_context = nullptr;
+    aeron_counters_manager_t m_counters_manager = {};
+    aeron_system_counters_t m_system_counters = {};
+    aeron_distinct_error_log_t m_error_log = {};
+    AERON_DECL_ALIGNED(buffer_t m_error_log_buffer, 16) = {};
+
     std::unique_ptr<uint8_t[]> m_cnc;
 };
 
@@ -305,6 +313,33 @@ public:
             &m_broadcast_receiver,
             m_context.m_context->to_clients_buffer,
             m_context.m_context->to_clients_buffer_length);
+
+        int64_t free_to_reuse_timeout_ms = 0;
+        if (m_context.m_context->counter_free_to_reuse_ns > 0)
+        {
+            free_to_reuse_timeout_ms = (int64_t)m_context.m_context->counter_free_to_reuse_ns / (1000 * 1000LL);
+            free_to_reuse_timeout_ms = free_to_reuse_timeout_ms <= 0 ? 1 : free_to_reuse_timeout_ms;
+        }
+
+        aeron_counters_manager_init(
+            &m_context.m_counters_manager,
+            m_context.m_context->counters_metadata_buffer,
+            AERON_COUNTERS_METADATA_BUFFER_LENGTH(m_context.m_context->counters_values_buffer_length),
+            m_context.m_context->counters_values_buffer,
+            m_context.m_context->counters_values_buffer_length,
+            m_context.m_context->cached_clock,
+            free_to_reuse_timeout_ms);
+
+        aeron_system_counters_init(&m_context.m_system_counters, &m_context.m_counters_manager);
+
+        aeron_distinct_error_log_init(
+            &m_context.m_error_log, m_context.m_error_log_buffer.data(), m_context.m_error_log_buffer.size(), aeron_epoch_clock);
+
+        m_context.m_context->counters_manager = &m_context.m_counters_manager;
+        m_context.m_context->system_counters = &m_context.m_system_counters;
+        m_context.m_context->error_log = &m_context.m_error_log;
+        m_context.m_context->error_buffer = m_context.m_error_log_buffer.data();
+        m_context.m_context->error_buffer_length = m_context.m_error_log_buffer.size();
     }
 
     size_t readAllBroadcastsFromConductor(aeron_broadcast_receiver_handler_t handler, size_t message_limit = SIZE_MAX)

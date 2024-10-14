@@ -1940,6 +1940,7 @@ class ClusterTest
 
     @Test
     @InterruptAfter(20)
+    @SuppressWarnings("MethodLength")
     void shouldTrackSnapshotDuration()
     {
         final long service1SnapshotDelayMs = 111;
@@ -2011,11 +2012,36 @@ class ClusterTest
             greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service1SnapshotDelayMs))));
 
         assertEquals(1, service2SnapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
-
-
         assertThat(
             service2SnapshotDurationTracker.maxSnapshotDuration().get(),
             greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service2SnapshotDelayMs))));
+
+        for (final TestNode follower : cluster.followers())
+        {
+            final SnapshotDurationTracker snapshotDurationTracker = follower.consensusModule().context()
+                .totalSnapshotDurationTracker();
+            assertEquals(1, snapshotDurationTracker.snapshotDurationThresholdExceededCount().get());
+            assertThat(
+                snapshotDurationTracker.maxSnapshotDuration().get(),
+                greaterThanOrEqualTo(
+                percent90(MILLISECONDS.toNanos(Math.max(service1SnapshotDelayMs, service2SnapshotDelayMs)))));
+
+            final SnapshotDurationTracker service1SnapshotTracker = follower.container(0).context()
+                .snapshotDurationTracker();
+
+            assertEquals(1, service1SnapshotTracker.snapshotDurationThresholdExceededCount().get());
+            assertThat(
+                service1SnapshotTracker.maxSnapshotDuration().get(),
+                greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service1SnapshotDelayMs))));
+
+            final SnapshotDurationTracker service2SnapshotTracker = follower.container(1).context()
+                .snapshotDurationTracker();
+
+            assertEquals(1, service2SnapshotTracker.snapshotDurationThresholdExceededCount().get());
+            assertThat(
+                service2SnapshotTracker.maxSnapshotDuration().get(),
+                greaterThanOrEqualTo(percent90(MILLISECONDS.toNanos(service1SnapshotDelayMs))));
+        }
     }
 
     private static long percent90(final long value)

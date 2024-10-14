@@ -1515,6 +1515,7 @@ final class ConsensusModuleAgent
             else if (ClusterAction.SNAPSHOT == action && CLUSTER_ACTION_FLAGS_DEFAULT == flags)
             {
                 state(ConsensusModule.State.SNAPSHOT);
+                totalSnapshotDurationTracker.onSnapshotBegin(clusterClock.timeNanos());
                 if (0 == serviceCount)
                 {
                     snapshotOnServiceAck(logPosition, timestamp, ServiceAck.EMPTY_SERVICE_ACKS);
@@ -3244,8 +3245,6 @@ final class ConsensusModuleAgent
             sessions.get(i).timeOfLastActivityNs(nowNs);
         }
 
-        totalSnapshotDurationTracker.onSnapshotEnd(clusterClock.timeNanos());
-
         if (null != clusterTermination)
         {
             serviceProxy.terminationPosition(terminationPosition, ctx.countedErrorHandler());
@@ -3325,6 +3324,7 @@ final class ConsensusModuleAgent
         recordingLog.force(ctx.fileSyncLevel());
         recoveryPlan = recordingLog.createRecoveryPlan(archive, serviceCount, Aeron.NULL_VALUE);
         ctx.snapshotCounter().incrementOrdered();
+        totalSnapshotDurationTracker.onSnapshotEnd(clusterClock.timeNanos());
     }
 
     private void awaitRecordingComplete(

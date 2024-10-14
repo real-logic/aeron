@@ -21,10 +21,11 @@ import org.agrona.collections.ArrayUtil;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 
 import static io.aeron.driver.media.ReceiveChannelEndpoint.DESTINATION_ADDRESS_TIMEOUT;
-import static io.aeron.driver.media.UdpChannelTransport.sendError;
+import static io.aeron.driver.media.UdpChannelTransport.onSendError;
 
 final class MultiRcvDestination
 {
@@ -174,7 +175,6 @@ final class MultiRcvDestination
     static int sendTo(
         final UdpChannelTransport transport, final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        final int remaining = buffer.remaining();
         int bytesSent = 0;
         try
         {
@@ -184,9 +184,12 @@ final class MultiRcvDestination
                 bytesSent = transport.sendDatagramChannel.send(buffer, remoteAddress);
             }
         }
+        catch (final PortUnreachableException ignore)
+        {
+        }
         catch (final IOException ex)
         {
-            sendError(remaining, ex, remoteAddress);
+            onSendError(ex, remoteAddress, transport.errorHandler);
         }
 
         return bytesSent;

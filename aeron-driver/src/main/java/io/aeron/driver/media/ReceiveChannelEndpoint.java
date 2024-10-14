@@ -38,6 +38,7 @@ import org.agrona.concurrent.status.AtomicCounter;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
@@ -209,7 +210,6 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
      */
     public int sendTo(final ByteBuffer buffer, final InetSocketAddress remoteAddress)
     {
-        final int remaining = buffer.remaining();
         int bytesSent = 0;
         try
         {
@@ -222,9 +222,12 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
                 }
             }
         }
+        catch (final PortUnreachableException ignore)
+        {
+        }
         catch (final IOException ex)
         {
-            sendError(remaining, ex, remoteAddress);
+            onSendError(ex, remoteAddress, errorHandler);
         }
 
         return bytesSent;

@@ -34,6 +34,7 @@ import io.aeron.protocol.StatusMessageFlyweight;
 import io.aeron.status.ChannelEndpointStatus;
 import io.aeron.status.LocalSocketAddressStatus;
 import org.agrona.CloseHelper;
+import org.agrona.ErrorHandler;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Long2ObjectHashMap;
@@ -52,10 +53,8 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import static io.aeron.driver.media.SendChannelEndpoint.DESTINATION_TIMEOUT;
-import static io.aeron.driver.media.UdpChannelTransport.sendError;
-import static io.aeron.driver.status.SystemCounterDescriptor.ERROR_FRAMES_RECEIVED;
-import static io.aeron.driver.status.SystemCounterDescriptor.NAK_MESSAGES_RECEIVED;
-import static io.aeron.driver.status.SystemCounterDescriptor.STATUS_MESSAGES_RECEIVED;
+import static io.aeron.driver.media.UdpChannelTransport.onSendError;
+import static io.aeron.driver.status.SystemCounterDescriptor.*;
 import static io.aeron.protocol.StatusMessageFlyweight.SEND_SETUP_FLAG;
 import static io.aeron.status.ChannelEndpointStatus.status;
 import static java.nio.ByteOrder.LITTLE_ENDIAN;
@@ -111,11 +110,11 @@ public class SendChannelEndpoint extends UdpChannelTransport
         MultiSndDestination multiSndDestination = null;
         if (udpChannel.isManualControlMode())
         {
-            multiSndDestination = new ManualSndMultiDestination(context.senderCachedNanoClock());
+            multiSndDestination = new ManualSndMultiDestination(context.senderCachedNanoClock(), errorHandler);
         }
         else if (udpChannel.isDynamicControlMode())
         {
-            multiSndDestination = new DynamicSndMultiDestination(context.senderCachedNanoClock());
+            multiSndDestination = new DynamicSndMultiDestination(context.senderCachedNanoClock(), errorHandler);
         }
 
         this.multiSndDestination = multiSndDestination;
@@ -291,7 +290,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
                 }
                 catch (final IOException ex)
                 {
-                    sendError(bytesToSend, ex, connectAddress);
+                    onSendError(ex, connectAddress, errorHandler);
                 }
             }
             else
@@ -322,8 +321,6 @@ public class SendChannelEndpoint extends UdpChannelTransport
 
         if (null != sendDatagramChannel)
         {
-            final int bytesToSend = buffer.remaining();
-
             try
             {
                 sendHook(buffer, endpointAddress);
@@ -334,7 +331,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
             catch (final IOException ex)
             {
-                sendError(bytesToSend, ex, connectAddress);
+                onSendError(ex, connectAddress, errorHandler);
             }
         }
 
@@ -666,11 +663,13 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
 
     Destination[] destinations = EMPTY_DESTINATIONS;
     final CachedNanoClock nanoClock;
+    final ErrorHandler errorHandler;
     AtomicCounter destinationsCounter = null;
 
-    MultiSndDestination(final CachedNanoClock nanoClock)
+    MultiSndDestination(final CachedNanoClock nanoClock, final ErrorHandler errorHandler)
     {
         this.nanoClock = nanoClock;
+        this.errorHandler = errorHandler;
     }
 
     abstract int send(DatagramChannel channel, ByteBuffer buffer, SendChannelEndpoint channelEndpoint, int bytesToSend);
@@ -709,7 +708,8 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
         final SendChannelEndpoint channelEndpoint,
         final int bytesToSend,
         final int position,
-        final InetSocketAddress destination)
+        final InetSocketAddress destination,
+        final ErrorHandler errorHandler)
     {
         int bytesSent = 0;
         try
@@ -730,7 +730,7 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
         }
         catch (final IOException ex)
         {
-            sendError(bytesToSend, ex, destination);
+            onSendError(ex, destination, errorHandler);
         }
 
         return bytesSent;
@@ -744,9 +744,9 @@ abstract class MultiSndDestination extends MultiSndDestinationRhsPadding
 
 class ManualSndMultiDestination extends MultiSndDestination
 {
-    ManualSndMultiDestination(final CachedNanoClock nanoClock)
+    ManualSndMultiDestination(final CachedNanoClock nanoClock, final ErrorHandler errorHandler)
     {
-        super(nanoClock);
+        super(nanoClock, errorHandler);
     }
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
@@ -785,15 +785,16 @@ class ManualSndMultiDestination extends MultiSndDestination
             roundRobinIndex = startingIndex = 0;
         }
 
+        int result = bytesToSend;
         for (int i = startingIndex; i < length; i++)
         {
             final Destination destination = destinations[i];
 
-            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            final int bytesSent = send(
+                channel, buffer, channelEndpoint, bytesToSend, position, destination.address, errorHandler);
             if (bytesSent < bytesToSend)
             {
-                roundRobinIndex = i;
-                return bytesSent;
+                result = bytesSent;
             }
         }
 
@@ -801,15 +802,15 @@ class ManualSndMultiDestination extends MultiSndDestination
         {
             final Destination destination = destinations[i];
 
-            final int bytesSent = send(channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+            final int bytesSent = send(
+                channel, buffer, channelEndpoint, bytesToSend, position, destination.address, errorHandler);
             if (bytesSent < bytesToSend)
             {
-                roundRobinIndex = i;
-                return bytesSent;
+                result = bytesSent;
             }
         }
 
-        return bytesToSend;
+        return result;
     }
 
     void addDestination(final ChannelUri channelUri, final InetSocketAddress address, final long registrationId)
@@ -921,9 +922,9 @@ class ManualSndMultiDestination extends MultiSndDestination
 
 class DynamicSndMultiDestination extends MultiSndDestination
 {
-    DynamicSndMultiDestination(final CachedNanoClock nanoClock)
+    DynamicSndMultiDestination(final CachedNanoClock nanoClock, final ErrorHandler errorHandler)
     {
-        super(nanoClock);
+        super(nanoClock, errorHandler);
     }
 
     void onStatusMessage(final StatusMessageFlyweight msg, final InetSocketAddress address)
@@ -965,6 +966,8 @@ class DynamicSndMultiDestination extends MultiSndDestination
             roundRobinIndex = startingIndex = 0;
         }
 
+        int result = bytesToSend;
+
         for (int i = startingIndex; i < length; i++)
         {
             final Destination destination = destinations[i];
@@ -972,11 +975,10 @@ class DynamicSndMultiDestination extends MultiSndDestination
             if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
             {
                 final int bytesSent = send(
-                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address, errorHandler);
                 if (bytesSent < bytesToSend)
                 {
-                    roundRobinIndex = i;
-                    return bytesSent;
+                    result = bytesSent;
                 }
             }
             else
@@ -992,11 +994,10 @@ class DynamicSndMultiDestination extends MultiSndDestination
             if ((destination.timeOfLastActivityNs + DESTINATION_TIMEOUT) - nowNs >= 0)
             {
                 final int bytesSent = send(
-                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address);
+                    channel, buffer, channelEndpoint, bytesToSend, position, destination.address, errorHandler);
                 if (bytesSent < bytesToSend)
                 {
-                    roundRobinIndex = i;
-                    return bytesSent;
+                    result = bytesSent;
                 }
             }
             else
@@ -1010,7 +1011,7 @@ class DynamicSndMultiDestination extends MultiSndDestination
             removeInactiveDestinations(nowNs);
         }
 
-        return bytesToSend;
+        return result;
     }
 
     private void add(final Destination destination)

@@ -106,7 +106,7 @@ public final class ControlTransportPoller extends UdpTransportPoller
             }
             catch (final IOException ex)
             {
-                LangUtil.rethrowUnchecked(ex);
+                errorHandler.onError(ex);
             }
         }
 
@@ -171,6 +171,18 @@ public final class ControlTransportPoller extends UdpTransportPoller
 
     private void poll(final SendChannelEndpoint channelEndpoint)
     {
+        try
+        {
+            receive(channelEndpoint);
+        }
+        catch (final Exception ex)
+        {
+            errorHandler.onError(ex);
+        }
+    }
+
+    private void receive(final SendChannelEndpoint channelEndpoint)
+    {
         final InetSocketAddress srcAddress = channelEndpoint.receive(byteBuffer);
 
         if (null != srcAddress)
@@ -194,7 +206,7 @@ public final class ControlTransportPoller extends UdpTransportPoller
                 else if (HDR_TYPE_ERR == frameType)
                 {
                     channelEndpoint.onError(
-                        error, unsafeBuffer, bytesReceived, srcAddress, conductorProxy);
+                        error, unsafeBuffer, length, srcAddress, conductorProxy);
                 }
                 else if (HDR_TYPE_RTTM == frameType)
                 {

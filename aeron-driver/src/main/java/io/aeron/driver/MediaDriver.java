@@ -541,6 +541,7 @@ public final class MediaDriver implements AutoCloseable
 
         private DistinctErrorLog errorLog;
         private ErrorHandler errorHandler;
+        private CountedErrorHandler countedErrorHandler;
         private boolean useConcurrentCountersManager;
         private CountersManager countersManager;
         private SystemCounters systemCounters;
@@ -596,6 +597,7 @@ public final class MediaDriver implements AutoCloseable
             if (IS_CLOSED_VH.compareAndSet(this, false, true))
             {
                 CloseHelper.close(errorHandler, logFactory);
+                CloseHelper.close(errorHandler, countedErrorHandler);
 
                 if (null != systemCounters)
                 {
@@ -3685,6 +3687,17 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        /**
+         * Counted error handler that wraps {@link #errorHandler()} and
+         * {@link io.aeron.driver.status.SystemCounterDescriptor#ERRORS} counter.
+         *
+         * @return counted error handler.
+         */
+        public CountedErrorHandler countedErrorHandler()
+        {
+            return countedErrorHandler;
+        }
+
         OneToOneConcurrentArrayQueue<Runnable> receiverCommandQueue()
         {
             return receiverCommandQueue;
@@ -3817,6 +3830,12 @@ public final class MediaDriver implements AutoCloseable
             return this;
         }
 
+        Context countedErrorHandler(final CountedErrorHandler countedErrorHandler)
+        {
+            this.countedErrorHandler = countedErrorHandler;
+            return this;
+        }
+
         int osDefaultSocketRcvbufLength()
         {
             resolveOsSocketBufLengths();
@@ -3922,11 +3941,6 @@ public final class MediaDriver implements AutoCloseable
             if (null == receiveChannelEndpointSupplier)
             {
                 receiveChannelEndpointSupplier = Configuration.receiveChannelEndpointSupplier();
-            }
-
-            if (null == dataTransportPoller)
-            {
-                dataTransportPoller = new DataTransportPoller(errorHandler);
             }
 
             if (null == applicationSpecificFeedback)
@@ -4093,6 +4107,7 @@ public final class MediaDriver implements AutoCloseable
             systemCounters.get(AERON_VERSION).set(aeronVersion);
         }
 
+        @SuppressWarnings("MethodLength")
         private void concludeDependantProperties()
         {
             clientProxy = new ClientProxy(new BroadcastTransmitter(
@@ -4106,7 +4121,12 @@ public final class MediaDriver implements AutoCloseable
                     createErrorLogBuffer(cncByteBuffer, cncMetaDataBuffer), epochClock, US_ASCII);
             }
 
-            errorHandler = CommonContext.setupErrorHandler(this.errorHandler, errorLog);
+            errorHandler = CommonContext.setupErrorHandler(errorHandler, errorLog);
+
+            if (null == countedErrorHandler)
+            {
+                countedErrorHandler = new CountedErrorHandler(errorHandler, systemCounters.get(ERRORS));
+            }
 
             receiverProxy = new ReceiverProxy(
                 threadingMode, receiverCommandQueue, systemCounters.get(RECEIVER_PROXY_FAILS));
@@ -4117,7 +4137,12 @@ public final class MediaDriver implements AutoCloseable
 
             if (null == controlTransportPoller)
             {
-                controlTransportPoller = new ControlTransportPoller(errorHandler, driverConductorProxy);
+                controlTransportPoller = new ControlTransportPoller(countedErrorHandler, driverConductorProxy);
+            }
+
+            if (null == dataTransportPoller)
+            {
+                dataTransportPoller = new DataTransportPoller(countedErrorHandler);
             }
 
             if (null == logFactory)

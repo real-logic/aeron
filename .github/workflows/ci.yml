@@ -602,7 +602,7 @@ jobs:
         id: copy_test_logs
         if: failure()
         run: |
-          echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
+          echo "file=build/distributions/test_logs.tbz2" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
           ./gradlew tarTestLogs
       - name: Upload crash logs
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'

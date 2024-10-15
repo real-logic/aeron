@@ -713,17 +713,14 @@ final class ControlSession implements Session
             recordingSignal,
             controlPublication))
         {
-            if (controlPublication.isConnected())
-            {
-                syncResponseQueue.offer(() -> controlResponseProxy.sendSignal(
-                    controlSessionId,
-                    correlationId,
-                    recordingId,
-                    subscriptionId,
-                    position,
-                    recordingSignal,
-                    controlPublication));
-            }
+            syncResponseQueue.offer(() -> controlResponseProxy.sendSignal(
+                controlSessionId,
+                correlationId,
+                recordingId,
+                subscriptionId,
+                position,
+                recordingSignal,
+                controlPublication));
         }
     }
 

@@ -36,7 +36,6 @@ class CreateReplayPublicationSession implements Session
     private final Aeron aeron;
     private final Counter limitPositionCounter;
     private final ControlSession controlSession;
-    private final ControlResponseProxy controlResponseProxy;
     private final ArchiveConductor conductor;
 
     CreateReplayPublicationSession(
@@ -54,7 +53,6 @@ class CreateReplayPublicationSession implements Session
         final Counter limitPositionCounter,
         final Aeron aeron,
         final ControlSession controlSession,
-        final ControlResponseProxy controlResponseProxy,
         final ArchiveConductor conductor)
     {
         this.correlationId = correlationId;
@@ -71,7 +69,6 @@ class CreateReplayPublicationSession implements Session
         this.limitPositionCounter = limitPositionCounter;
         this.aeron = aeron;
         this.controlSession = controlSession;
-        this.controlResponseProxy = controlResponseProxy;
         this.conductor = conductor;
     }
 
@@ -128,7 +125,7 @@ class CreateReplayPublicationSession implements Session
             {
                 isDone = true;
                 final String msg = "failed to create replay publication: " + ex.getMessage();
-                controlSession.sendErrorResponse(correlationId, msg, controlResponseProxy);
+                controlSession.sendErrorResponse(correlationId, msg);
                 throw ex;
             }
 

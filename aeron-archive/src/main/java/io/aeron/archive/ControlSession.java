@@ -612,48 +612,47 @@ final class ControlSession implements Session
         }
     }
 
-    void sendOkResponse(final long correlationId, final ControlResponseProxy proxy)
+    void sendOkResponse(final long correlationId)
     {
-        sendResponse(correlationId, 0L, OK, null, proxy);
+        sendResponse(correlationId, 0L, OK, null);
     }
 
-    void sendOkResponse(final long correlationId, final long relevantId, final ControlResponseProxy proxy)
+    void sendOkResponse(final long correlationId, final long relevantId)
     {
-        sendResponse(correlationId, relevantId, OK, null, proxy);
+        sendResponse(correlationId, relevantId, OK, null);
     }
 
-    void sendErrorResponse(final long correlationId, final String errorMessage, final ControlResponseProxy proxy)
+    void sendErrorResponse(final long correlationId, final String errorMessage)
     {
-        sendResponse(correlationId, 0L, ERROR, errorMessage, proxy);
+        sendResponse(correlationId, 0L, ERROR, errorMessage);
     }
 
     void sendErrorResponse(
-        final long correlationId, final long relevantId, final String errorMessage, final ControlResponseProxy proxy)
+        final long correlationId, final long relevantId, final String errorMessage)
     {
-        sendResponse(correlationId, relevantId, ERROR, errorMessage, proxy);
+        sendResponse(correlationId, relevantId, ERROR, errorMessage);
     }
 
-    void sendRecordingUnknown(final long correlationId, final long recordingId, final ControlResponseProxy proxy)
+    void sendRecordingUnknown(final long correlationId, final long recordingId)
     {
-        sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null, proxy);
+        sendResponse(correlationId, recordingId, RECORDING_UNKNOWN, null);
     }
 
-    void sendSubscriptionUnknown(final long correlationId, final ControlResponseProxy proxy)
+    void sendSubscriptionUnknown(final long correlationId)
     {
-        sendResponse(correlationId, 0L, SUBSCRIPTION_UNKNOWN, null, proxy);
+        sendResponse(correlationId, 0L, SUBSCRIPTION_UNKNOWN, null);
     }
 
     void sendResponse(
         final long correlationId,
         final long relevantId,
         final ControlResponseCode code,
-        final String errorMessage,
-        final ControlResponseProxy proxy)
+        final String errorMessage)
     {
         assertCalledOnConductorThread();
 
         if (!syncResponseQueue.isEmpty() ||
-            !proxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
+            !controlResponseProxy.sendResponse(controlSessionId, correlationId, relevantId, code, errorMessage, this))
         {
             queueResponse(correlationId, relevantId, code, errorMessage);
         }
@@ -674,26 +673,25 @@ final class ControlSession implements Session
     }
 
     void attemptErrorResponse(
-        final long correlationId, final int errorCode, final String errorMessage, final ControlResponseProxy proxy)
+        final long correlationId, final int errorCode, final String errorMessage)
     {
         assertCalledOnConductorThread();
         if (State.ACTIVE == state)
         {
-            proxy.sendResponse(controlSessionId, correlationId, errorCode, ERROR, errorMessage, this);
+            controlResponseProxy.sendResponse(controlSessionId, correlationId, errorCode, ERROR, errorMessage, this);
         }
     }
 
-    int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer, final ControlResponseProxy proxy)
+    int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
     {
         assertCalledOnConductorThread();
-        return proxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this);
+        return controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this);
     }
 
-    boolean sendSubscriptionDescriptor(
-        final long correlationId, final Subscription subscription, final ControlResponseProxy proxy)
+    boolean sendSubscriptionDescriptor(final long correlationId, final Subscription subscription)
     {
         assertCalledOnConductorThread();
-        return proxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
+        return controlResponseProxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
     }
 
     void sendSignal(

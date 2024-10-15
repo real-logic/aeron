@@ -49,7 +49,7 @@ class DeleteSegmentsSessionTest
             new File(segmentFileName(recordingId, 56678))));
 
         final DeleteSegmentsSession deleteSegmentsSession = new DeleteSegmentsSession(
-            recordingId, correlationId, files, controlSession, controlResponseProxy, errorHandler);
+            recordingId, correlationId, files, controlSession, errorHandler);
 
         assertEquals(12345000000L, deleteSegmentsSession.maxDeletePosition());
     }
@@ -64,7 +64,7 @@ class DeleteSegmentsSessionTest
         when(controlSession.archiveConductor()).thenReturn(conductor);
 
         final DeleteSegmentsSession deleteSegmentsSession = new DeleteSegmentsSession(
-            recordingId, correlationId, files, controlSession, controlResponseProxy, errorHandler);
+            recordingId, correlationId, files, controlSession, errorHandler);
 
         deleteSegmentsSession.close();
 

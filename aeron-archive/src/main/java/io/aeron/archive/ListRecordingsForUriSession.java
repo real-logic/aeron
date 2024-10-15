@@ -32,7 +32,6 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
         final byte[] channelFragment,
         final int streamId,
         final Catalog catalog,
-        final ControlResponseProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer,
         final RecordingDescriptorDecoder recordingDescriptorDecoder)
@@ -42,7 +41,6 @@ class ListRecordingsForUriSession extends AbstractListRecordingsSession
             fromRecordingId,
             count,
             catalog,
-            proxy,
             controlSession,
             descriptorBuffer);
 

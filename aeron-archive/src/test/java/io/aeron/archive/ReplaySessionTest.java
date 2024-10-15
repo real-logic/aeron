@@ -285,8 +285,8 @@ class ReplaySessionTest
         assertEquals(ReplaySession.State.DONE, replaySession.state());
 
         final ControlResponseProxy proxy = mock(ControlResponseProxy.class);
-        replaySession.sendPendingError(proxy);
-        verify(mockControlSession).attemptErrorResponse(eq(correlationId), anyInt(), anyString(), eq(proxy));
+        replaySession.sendPendingError();
+        verify(mockControlSession).attemptErrorResponse(eq(correlationId), anyInt(), anyString());
     }
 
     @Test

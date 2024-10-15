@@ -35,7 +35,6 @@ class DeleteSegmentsSession implements Session
     private final long maxDeletePosition;
     private final ArrayDeque<File> files;
     private final ControlSession controlSession;
-    private final ControlResponseProxy controlResponseProxy;
     private final ErrorHandler errorHandler;
 
     DeleteSegmentsSession(
@@ -43,14 +42,12 @@ class DeleteSegmentsSession implements Session
         final long correlationId,
         final ArrayDeque<File> files,
         final ControlSession controlSession,
-        final ControlResponseProxy controlResponseProxy,
         final ErrorHandler errorHandler)
     {
         this.recordingId = recordingId;
         this.correlationId = correlationId;
         this.files = files;
         this.controlSession = controlSession;
-        this.controlResponseProxy = controlResponseProxy;
         this.errorHandler = errorHandler;
 
         long maxSegmentPosition = Long.MIN_VALUE;
@@ -136,8 +133,7 @@ class DeleteSegmentsSession implements Session
     private void onDeleteError(final File file)
     {
         final String errorMessage = "unable to delete segment file: " + file;
-        controlSession.attemptErrorResponse(
-            correlationId, ArchiveException.GENERIC, errorMessage, controlResponseProxy);
+        controlSession.attemptErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
         errorHandler.onError(new ArchiveEvent(errorMessage));
     }
 }

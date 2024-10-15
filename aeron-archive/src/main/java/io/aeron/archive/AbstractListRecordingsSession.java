@@ -26,7 +26,6 @@ abstract class AbstractListRecordingsSession implements Session
     private final Catalog catalog;
     private final int count;
     private final ControlSession controlSession;
-    private final ControlResponseProxy proxy;
     private final long correlationId;
     private long recordingId;
     private int sent;
@@ -37,7 +36,6 @@ abstract class AbstractListRecordingsSession implements Session
         final long fromRecordingId,
         final int count,
         final Catalog catalog,
-        final ControlResponseProxy proxy,
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
@@ -46,7 +44,6 @@ abstract class AbstractListRecordingsSession implements Session
         this.count = count;
         this.controlSession = controlSession;
         this.catalog = catalog;
-        this.proxy = proxy;
         this.descriptorBuffer = descriptorBuffer;
     }
 
@@ -107,15 +104,14 @@ abstract class AbstractListRecordingsSession implements Session
             final boolean noMoreRecordings = position < 0 || position > lastPosition;
             if (noMoreRecordings || catalog.wrapDescriptorAtOffset(descriptorBuffer, (int)index[position + 1]) < 0)
             {
-                controlSession.sendRecordingUnknown(
-                    correlationId, noMoreRecordings ? recordingId : index[position], proxy);
+                controlSession.sendRecordingUnknown(correlationId, noMoreRecordings ? recordingId : index[position]);
                 isDone = true;
                 break;
             }
 
             if (acceptDescriptor(descriptorBuffer))
             {
-                if (0 == controlSession.sendDescriptor(correlationId, descriptorBuffer, proxy))
+                if (0 == controlSession.sendDescriptor(correlationId, descriptorBuffer))
                 {
                     isDone = controlSession.isDone();
                     break;

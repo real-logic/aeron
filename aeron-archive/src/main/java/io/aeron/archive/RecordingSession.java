@@ -189,11 +189,11 @@ class RecordingSession implements Session
         return isAutoStop;
     }
 
-    void sendPendingError(final ControlResponseProxy controlResponseProxy)
+    void sendPendingError()
     {
         if (null != errorMessage)
         {
-            controlSession.attemptErrorResponse(correlationId, errorCode, errorMessage, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, errorCode, errorMessage);
         }
     }
 

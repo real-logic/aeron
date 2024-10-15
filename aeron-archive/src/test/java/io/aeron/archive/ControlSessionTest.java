@@ -89,7 +89,7 @@ class ControlSessionTest
         when(mockControlPublication.isConnected()).thenReturn(true);
 
         session.doWork();
-        session.sendOkResponse(1L, mockProxy);
+        session.sendOkResponse(1L);
         session.doWork();
 
         cachedEpochClock.update(CONNECT_TIMEOUT_MS + 1L);

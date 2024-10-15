@@ -253,13 +253,12 @@ class ReplaySession implements Session, AutoCloseable
         return segmentFileBasePosition;
     }
 
-    void sendPendingError(final ControlResponseProxy controlResponseProxy)
+    void sendPendingError()
     {
         if (null != errorMessage)
         {
             onPendingError(sessionId, recordingId, errorMessage);
-            controlSession.attemptErrorResponse(
-                correlationId, ArchiveException.GENERIC, errorMessage, controlResponseProxy);
+            controlSession.attemptErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
         }
     }
 

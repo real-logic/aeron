@@ -176,34 +176,37 @@ int aeron_driver_receiver_do_work(void *clientd)
 
         if (NULL != image->endpoint)
         {
-            if (aeron_publication_image_send_pending_status_message(image, now_ns) < 0)
+            int send_result = aeron_publication_image_send_pending_status_message(image, now_ns);
+            if (send_result < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send SM");
                 aeron_driver_receiver_log_error(receiver);
             }
             else
             {
-                work_count++;
+                work_count += send_result;
             }
 
-            if (aeron_publication_image_send_pending_loss(image) < 0)
+            send_result = aeron_publication_image_send_pending_loss(image);
+            if (send_result < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send NAK");
                 aeron_driver_receiver_log_error(receiver);
             }
             else
             {
-                work_count++;
+                work_count += send_result;
             }
 
-            if (aeron_publication_image_initiate_rttm(image, now_ns) < 0)
+            send_result = aeron_publication_image_initiate_rttm(image, now_ns);
+            if (send_result < 0)
             {
                 AERON_APPEND_ERR("%s", "receiver send RTTM");
                 aeron_driver_receiver_log_error(receiver);
             }
             else
             {
-                work_count++;
+                work_count += send_result;
             }
         }
     }

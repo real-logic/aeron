@@ -1116,10 +1116,8 @@ class ControlSessionDemuxer implements Session, FragmentHandler
                 conductor.logWarning("unauthorised archive action=" + templateId +
                     " controlSessionId=" + controlSessionId + " source=" + image.sourceIdentity());
 
-                controlSession.attemptErrorResponse(
-                    correlationId,
-                    ArchiveException.UNAUTHORISED_ACTION,
-                    "unauthorised action");
+                controlSession.sendErrorResponse(
+                    correlationId, ArchiveException.UNAUTHORISED_ACTION, "unauthorised action");
 
                 return null;
             }

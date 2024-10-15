@@ -133,7 +133,7 @@ class DeleteSegmentsSession implements Session
     private void onDeleteError(final File file)
     {
         final String errorMessage = "unable to delete segment file: " + file;
-        controlSession.attemptErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
+        controlSession.sendErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
         errorHandler.onError(new ArchiveEvent(errorMessage));
     }
 }

@@ -888,10 +888,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
 
     private void error(final String msg, final int errorCode)
     {
-        if (controlSession.controlPublication().isConnected())
-        {
-            controlSession.sendErrorResponse(replicationId, errorCode, msg);
-        }
+        controlSession.sendErrorResponse(replicationId, errorCode, msg);
     }
 
     private void signal(final long position, final RecordingSignal recordingSignal)

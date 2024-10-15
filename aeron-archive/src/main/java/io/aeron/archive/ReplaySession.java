@@ -258,7 +258,7 @@ class ReplaySession implements Session, AutoCloseable
         if (null != errorMessage)
         {
             onPendingError(sessionId, recordingId, errorMessage);
-            controlSession.attemptErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
+            controlSession.sendErrorResponse(correlationId, ArchiveException.GENERIC, errorMessage);
         }
     }
 

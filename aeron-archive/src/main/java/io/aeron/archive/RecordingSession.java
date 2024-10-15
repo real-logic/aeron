@@ -193,7 +193,7 @@ class RecordingSession implements Session
     {
         if (null != errorMessage)
         {
-            controlSession.attemptErrorResponse(correlationId, errorCode, errorMessage);
+            controlSession.sendErrorResponse(correlationId, errorCode, errorMessage);
         }
     }
 

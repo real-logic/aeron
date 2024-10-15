@@ -672,16 +672,6 @@ final class ControlSession implements Session
         }
     }
 
-    void attemptErrorResponse(
-        final long correlationId, final int errorCode, final String errorMessage)
-    {
-        assertCalledOnConductorThread();
-        if (State.ACTIVE == state)
-        {
-            controlResponseProxy.sendResponse(controlSessionId, correlationId, errorCode, ERROR, errorMessage, this);
-        }
-    }
-
     int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
     {
         assertCalledOnConductorThread();

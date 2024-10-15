@@ -1854,7 +1854,7 @@ abstract class ArchiveConductor
             {
                 final String msg = "cannot extend active recording " + recordingId +
                     " streamId=" + image.subscription().streamId() + " channel=" + originalChannel;
-                controlSession.attemptErrorResponse(correlationId, ACTIVE_RECORDING, msg);
+                controlSession.sendErrorResponse(correlationId, ACTIVE_RECORDING, msg);
                 throw new ArchiveEvent(msg);
             }
 
@@ -1865,7 +1865,7 @@ abstract class ArchiveConductor
                 final String msg = "cannot extend recording " + recordingId +
                     " streamId=" + image.subscription().streamId() + " channel=" + originalChannel +
                     " due to an outstanding delete operation";
-                controlSession.attemptErrorResponse(correlationId, GENERIC, msg);
+                controlSession.sendErrorResponse(correlationId, GENERIC, msg);
                 throw new ArchiveEvent(msg);
             }
 
@@ -1943,7 +1943,7 @@ abstract class ArchiveConductor
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image.joinPosition=" + image.joinPosition() + " != rec.stopPosition=" + recordingSummary.stopPosition;
-            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg);
+            controlSession.sendErrorResponse(correlationId, INVALID_EXTENSION, msg);
             throw new ArchiveEvent(msg);
         }
 
@@ -1952,7 +1952,7 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image.initialTermId=" + image.initialTermId() +
                 " != rec.initialTermId=" + recordingSummary.initialTermId;
-            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg);
+            controlSession.sendErrorResponse(correlationId, INVALID_EXTENSION, msg);
             throw new ArchiveEvent(msg);
         }
 
@@ -1961,7 +1961,7 @@ abstract class ArchiveConductor
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image.termBufferLength=" + image.termBufferLength() +
                 " != rec.termBufferLength=" + recordingSummary.termBufferLength;
-            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg);
+            controlSession.sendErrorResponse(correlationId, INVALID_EXTENSION, msg);
             throw new ArchiveEvent(msg);
         }
 
@@ -1969,7 +1969,7 @@ abstract class ArchiveConductor
         {
             final String msg = "cannot extend recording " + recordingSummary.recordingId +
                 " image.mtuLength=" + image.mtuLength() + " != rec.mtuLength=" + recordingSummary.mtuLength;
-            controlSession.attemptErrorResponse(correlationId, INVALID_EXTENSION, msg);
+            controlSession.sendErrorResponse(correlationId, INVALID_EXTENSION, msg);
             throw new ArchiveEvent(msg);
         }
     }

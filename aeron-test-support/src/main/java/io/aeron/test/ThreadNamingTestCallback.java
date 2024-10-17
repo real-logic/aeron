@@ -16,12 +16,13 @@
 package io.aeron.test;
 
 import org.junit.jupiter.api.extension.AfterEachCallback;
+import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeTestExecutionCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
 
 import java.lang.reflect.Method;
 
-public class ThreadNamingTestCallback implements BeforeTestExecutionCallback, AfterEachCallback
+public class ThreadNamingTestCallback implements BeforeTestExecutionCallback, AfterTestExecutionCallback, AfterEachCallback
 {
     private final ThreadLocal<String> oldThreadName = new ThreadLocal<>();
     {
@@ -43,5 +44,11 @@ public class ThreadNamingTestCallback implements BeforeTestExecutionCallback, Af
     {
         Thread.currentThread().setName(oldThreadName.get());
         oldThreadName.remove();
+    }
+
+    public void afterTestExecution(final ExtensionContext context) throws Exception
+    {
+        final Thread thread = Thread.currentThread();
+        thread.setName(thread.getName() + ":tearDown");
     }
 }

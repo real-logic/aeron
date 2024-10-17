@@ -431,6 +431,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
 
         try
         {
+            System.out.println("Reported and termination: " + closeables);
             CloseHelper.closeAll(closeables);
         }
         catch (final Throwable t)

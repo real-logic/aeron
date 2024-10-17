@@ -413,6 +413,11 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
+    public String toString()
+    {
+        return "MediaDriver{" + ctx.aeronDirectoryName() + '}';
+    }
+
     /**
      * Context for the {@link MediaDriver} that can be used to provide overrides for {@link Configuration}.
      * <p>
@@ -4044,7 +4049,7 @@ public final class MediaDriver implements AutoCloseable
                 }
                 else
                 {
-                    asyncTaskExecutor = newDefaultAsyncTaskExecutor(asyncTaskExecutorThreads);
+                    asyncTaskExecutor = newDefaultAsyncTaskExecutor(asyncTaskExecutorThreads, aeronDirectoryName());
                 }
             }
 
@@ -4054,7 +4059,7 @@ public final class MediaDriver implements AutoCloseable
             }
         }
 
-        private static ThreadPoolExecutor newDefaultAsyncTaskExecutor(final int threadCount)
+        private static ThreadPoolExecutor newDefaultAsyncTaskExecutor(final int threadCount, final String dirName)
         {
             final AtomicInteger id = new AtomicInteger();
             final ThreadPoolExecutor executor = new ThreadPoolExecutor(
@@ -4065,7 +4070,9 @@ public final class MediaDriver implements AutoCloseable
                 new LinkedBlockingQueue<>(),
                 (r) ->
                 {
-                    final Thread thread = new Thread(r, "async-task-executor-" + id.getAndIncrement());
+                    final Thread thread = new Thread(
+                        r,
+                        "async-task-executor-" + id.getAndIncrement() + " " + dirName);
                     thread.setDaemon(true);
                     return thread;
                 });

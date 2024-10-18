@@ -2632,7 +2632,7 @@ public final class AeronArchive implements AutoCloseable
          * Channel for sending control messages to a driver local archive. Default to IPC.
          */
         @Config
-        public static final String LOCAL_CONTROL_CHANNEL_DEFAULT = CommonContext.IPC_CHANNEL;
+        public static final String LOCAL_CONTROL_CHANNEL_DEFAULT = "aeron:ipc?term-length=64k";
 
         /**
          * Stream id within a channel for sending control messages to a driver local archive.

@@ -44,6 +44,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.ALIAS_PARAM_NAME;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.SystemUtil.*;
@@ -964,10 +965,25 @@ public final class ClusteredServiceContainer implements AutoCloseable
 
             if (null == archiveContext)
             {
+                final ChannelUri controlChannel = ChannelUri.parse(AeronArchive.Configuration.localControlChannel());
+                final String requestChannel;
+                final String responseChannel;
+                if (!controlChannel.containsKey(ALIAS_PARAM_NAME))
+                {
+                    controlChannel.put(ALIAS_PARAM_NAME, "sc-" + serviceId + "-archive-ctrl-req-cluster-" + clusterId);
+                    requestChannel = controlChannel.toString();
+                    controlChannel.put(ALIAS_PARAM_NAME, "sc-" + serviceId + "-archive-ctrl-resp-cluster-" + clusterId);
+                    responseChannel = controlChannel.toString();
+                }
+                else
+                {
+                    responseChannel = requestChannel = controlChannel.toString();
+                }
                 archiveContext = new AeronArchive.Context()
-                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                    .controlRequestChannel(requestChannel)
+                    .controlResponseChannel(responseChannel)
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+                    .controlResponseStreamId(BitUtil.generateRandomisedId());
             }
 
             if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))

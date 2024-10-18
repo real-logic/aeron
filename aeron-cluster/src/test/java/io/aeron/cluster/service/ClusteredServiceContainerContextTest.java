@@ -18,11 +18,14 @@ package io.aeron.cluster.service;
 import io.aeron.Aeron;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
+import io.aeron.archive.client.AeronArchive;
 import io.aeron.cluster.codecs.mark.ClusterComponentType;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.status.AtomicCounter;
+import org.hamcrest.Matchers;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -39,6 +42,7 @@ import java.nio.file.Paths;
 import static io.aeron.cluster.service.ClusterMarkFile.ERROR_BUFFER_MIN_LENGTH;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_DIR_PROP_NAME;
 import static java.nio.charset.StandardCharsets.US_ASCII;
+import static org.hamcrest.MatcherAssert.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -288,6 +292,99 @@ class ClusteredServiceContainerContextTest
         finally
         {
             CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldUseExplicitlyAssignArchiveContext()
+    {
+        final AeronArchive.Context archiveContext = new AeronArchive.Context()
+            .controlRequestChannel("aeron:ipc")
+            .controlResponseChannel("aeron:ipc");
+        context.archiveContext(archiveContext);
+        assertSame(archiveContext, context.archiveContext());
+
+        try
+        {
+            context.conclude();
+
+            assertSame(archiveContext, context.archiveContext());
+            assertSame(context.aeron(), archiveContext.aeron());
+            assertFalse(archiveContext.ownsAeronClient());
+            assertSame(context.countedErrorHandler(), archiveContext.errorHandler());
+            assertSame(NoOpLock.INSTANCE, archiveContext.lock());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+        }
+    }
+
+    @Test
+    void shouldCreateArchiveContextUsingocalChannelConfiguration()
+    {
+        final String controlChannel = "aeron:ipc?alias=test";
+        final int localControlStreamId = 8;
+        System.setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, controlChannel);
+        System.setProperty(
+            AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME, Integer.toString(localControlStreamId));
+        context.archiveContext(null);
+        assertNull(context.archiveContext());
+
+        try
+        {
+            context.conclude();
+
+            final AeronArchive.Context archiveContext = context.archiveContext();
+            assertNotNull(archiveContext);
+            assertSame(context.aeron(), archiveContext.aeron());
+            assertFalse(archiveContext.ownsAeronClient());
+            assertSame(context.countedErrorHandler(), archiveContext.errorHandler());
+            assertSame(NoOpLock.INSTANCE, archiveContext.lock());
+            assertEquals(controlChannel, archiveContext.controlRequestChannel());
+            assertEquals(controlChannel, archiveContext.controlResponseChannel());
+            assertEquals(localControlStreamId, archiveContext.controlRequestStreamId());
+            assertNotEquals(localControlStreamId, archiveContext.controlResponseStreamId());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+            System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME);
+            System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME);
+        }
+    }
+
+    @Test
+    void shouldCreateAliasForControlStreams()
+    {
+        final String controlChannel = "aeron:ipc?term-length=64k";
+        final int localControlStreamId = 0;
+        System.setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, controlChannel);
+        System.setProperty(
+            AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME, Integer.toString(localControlStreamId));
+        context.archiveContext(null).serviceId(5).clusterId(42);
+        assertNull(context.archiveContext());
+
+        try
+        {
+            context.conclude();
+
+            final AeronArchive.Context archiveContext = context.archiveContext();
+            assertNotNull(archiveContext);
+            assertThat(
+                archiveContext.controlRequestChannel(),
+                Matchers.containsString("alias=sc-5-archive-ctrl-req-cluster-42"));
+            assertThat(
+                archiveContext.controlResponseChannel(),
+                Matchers.containsString("alias=sc-5-archive-ctrl-resp-cluster-42"));
+            assertEquals(localControlStreamId, archiveContext.controlRequestStreamId());
+            assertNotEquals(localControlStreamId, archiveContext.controlResponseStreamId());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
+            System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME);
+            System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME);
         }
     }
 }

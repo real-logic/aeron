@@ -1956,10 +1956,25 @@ public final class ConsensusModule implements AutoCloseable
 
             if (null == archiveContext)
             {
+                final ChannelUri controlChannel = ChannelUri.parse(AeronArchive.Configuration.localControlChannel());
+                final String requestChannel;
+                final String responseChannel;
+                if (!controlChannel.containsKey(ALIAS_PARAM_NAME))
+                {
+                    controlChannel.put(ALIAS_PARAM_NAME, "cm-archive-ctrl-req-cluster-" + clusterId);
+                    requestChannel = controlChannel.toString();
+                    controlChannel.put(ALIAS_PARAM_NAME, "cm-archive-ctrl-resp-cluster-" + clusterId);
+                    responseChannel = controlChannel.toString();
+                }
+                else
+                {
+                    responseChannel = requestChannel = controlChannel.toString();
+                }
                 archiveContext = new AeronArchive.Context()
-                    .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                    .controlRequestChannel(requestChannel)
+                    .controlResponseChannel(responseChannel)
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+                    .controlResponseStreamId(BitUtil.generateRandomisedId());
             }
 
             if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))

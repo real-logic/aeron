@@ -413,6 +413,9 @@ public final class MediaDriver implements AutoCloseable
         }
     }
 
+    /**
+     * {@inheritDoc}
+     */
     public String toString()
     {
         return "MediaDriver{" + ctx.aeronDirectoryName() + '}';

@@ -1072,18 +1072,7 @@ public final class PublicationImage
         final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
         if (untetheredSubscriptionsSize > 0)
         {
-            long maxConsumerPosition = 0;
-            for (final ReadablePosition subscriberPosition : subscriberPositions)
-            {
-                final long position = subscriberPosition.getVolatile();
-                if (position > maxConsumerPosition)
-                {
-                    maxConsumerPosition = position;
-                }
-            }
-
-            final long windowLength = nextSmReceiverWindowLength;
-            final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 2);
+            final long untetheredWindowLimit = untetheredWindowLimit();
 
             for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {
@@ -1112,13 +1101,14 @@ public final class PublicationImage
                 {
                     if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
                     {
+                        final long joinPosition = joinPosition();
                         subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
                         conductor.notifyAvailableImageLink(
                             correlationId,
                             sessionId,
                             untethered.subscriptionLink,
                             untethered.position.id(),
-                            maxConsumerPosition,
+                            joinPosition,
                             rawLog.fileName(),
                             sourceIdentity);
                         untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
@@ -1126,6 +1116,24 @@ public final class PublicationImage
                 }
             }
         }
+    }
+
+    private long untetheredWindowLimit()
+    {
+        long maxConsumerPosition = 0;
+
+        for (final ReadablePosition subscriberPosition : subscriberPositions)
+        {
+            final long position = subscriberPosition.getVolatile();
+            if (position > maxConsumerPosition)
+            {
+                maxConsumerPosition = position;
+            }
+        }
+
+        final int windowLength = nextSmReceiverWindowLength;
+
+        return (maxConsumerPosition - windowLength) + (windowLength >> 2);
     }
 
     private void updateActiveTransportCount()

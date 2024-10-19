@@ -1048,7 +1048,7 @@ void aeron_publication_image_check_untethered_subscriptions(
                 case AERON_SUBSCRIPTION_TETHER_RESTING:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + resting_timeout_ns))
                     {
-                        aeron_counter_set_ordered(tetherable_position->value_addr, *image->rcv_pos_position.value_addr);
+                        aeron_counter_set_ordered(tetherable_position->value_addr, max_sub_pos);
                         aeron_driver_conductor_on_available_image(
                             conductor,
                             image->conductor_fields.managed_resource.registration_id,

@@ -461,7 +461,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                         sessionId,
                         untethered.subscriptionLink,
                         untethered.position.id(),
-                        joinPosition(),
+                        consumerPosition,
                         rawLog.fileName(),
                         CommonContext.IPC_CHANNEL);
                     untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);

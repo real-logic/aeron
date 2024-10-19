@@ -113,7 +113,7 @@ class UntetheredSubscriptionTest
             eq(SESSION_ID),
             eq(untetheredLink),
             anyInt(),
-            eq(ipcPublication.joinPosition()),
+            eq(tetheredPosition.get()),
             eq(rawLog.fileName()),
             eq(CommonContext.IPC_CHANNEL));
     }

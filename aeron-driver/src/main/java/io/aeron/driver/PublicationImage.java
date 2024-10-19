@@ -1072,7 +1072,18 @@ public final class PublicationImage
         final int untetheredSubscriptionsSize = untetheredSubscriptions.size();
         if (untetheredSubscriptionsSize > 0)
         {
-            final long untetheredWindowLimit = untetheredWindowLimit();
+            long maxConsumerPosition = 0;
+            for (final ReadablePosition subscriberPosition : subscriberPositions)
+            {
+                final long position = subscriberPosition.getVolatile();
+                if (position > maxConsumerPosition)
+                {
+                    maxConsumerPosition = position;
+                }
+            }
+
+            final long windowLength = nextSmReceiverWindowLength;
+            final long untetheredWindowLimit = (maxConsumerPosition - windowLength) + (windowLength >> 2);
 
             for (int lastIndex = untetheredSubscriptionsSize - 1, i = lastIndex; i >= 0; i--)
             {
@@ -1107,7 +1118,7 @@ public final class PublicationImage
                             sessionId,
                             untethered.subscriptionLink,
                             untethered.position.id(),
-                            joinPosition(),
+                            maxConsumerPosition,
                             rawLog.fileName(),
                             sourceIdentity);
                         untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);
@@ -1115,24 +1126,6 @@ public final class PublicationImage
                 }
             }
         }
-    }
-
-    private long untetheredWindowLimit()
-    {
-        long maxConsumerPosition = 0;
-
-        for (final ReadablePosition subscriberPosition : subscriberPositions)
-        {
-            final long position = subscriberPosition.getVolatile();
-            if (position > maxConsumerPosition)
-            {
-                maxConsumerPosition = position;
-            }
-        }
-
-        final int windowLength = nextSmReceiverWindowLength;
-
-        return (maxConsumerPosition - windowLength) + (windowLength >> 2);
     }
 
     private void updateActiveTransportCount()

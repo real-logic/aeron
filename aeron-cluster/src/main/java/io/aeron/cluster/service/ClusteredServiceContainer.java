@@ -44,6 +44,7 @@ import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
+import static io.aeron.ChannelUri.*;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.*;
 import static java.nio.charset.StandardCharsets.US_ASCII;
 import static org.agrona.SystemUtil.*;
@@ -967,7 +968,9 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 archiveContext = new AeronArchive.Context()
                     .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
                     .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+                    .controlResponseStreamId(
+                        clusterId * 100 + 100 + AeronArchive.Configuration.controlResponseStreamId() + (serviceId + 1));
             }
 
             if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))
@@ -984,7 +987,13 @@ public final class ClusteredServiceContainer implements AutoCloseable
                 .aeron(aeron)
                 .ownsAeronClient(false)
                 .lock(NoOpLock.INSTANCE)
-                .errorHandler(countedErrorHandler);
+                .errorHandler(countedErrorHandler)
+                .controlRequestChannel(addAliasIfAbsent(
+                archiveContext.controlRequestChannel(),
+                "sc-" + serviceId + "-archive-ctrl-req-cluster-" + clusterId))
+                .controlResponseChannel(addAliasIfAbsent(
+                archiveContext.controlResponseChannel(),
+                "sc-" + serviceId + "-archive-ctrl-resp-cluster-" + clusterId));
 
             if (null == shutdownSignalBarrier)
             {

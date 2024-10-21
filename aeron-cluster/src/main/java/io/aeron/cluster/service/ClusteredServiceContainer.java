@@ -969,7 +969,8 @@ public final class ClusteredServiceContainer implements AutoCloseable
                     .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
                     .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
                     .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
-                    .controlResponseStreamId(BitUtil.generateRandomisedId());
+                    .controlResponseStreamId(
+                        clusterId * 100 + 100 + AeronArchive.Configuration.controlResponseStreamId() + (serviceId + 1));
             }
 
             if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))

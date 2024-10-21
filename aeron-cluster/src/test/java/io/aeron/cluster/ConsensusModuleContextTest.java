@@ -837,15 +837,18 @@ class ConsensusModuleContextTest
         }
     }
 
-    @Test
-    void shouldCreateAliasForControlStreams()
+    @ParameterizedTest
+    @CsvSource({ "19,20", "0,222" })
+    void shouldCreateAliasForControlStreams(final int clusterId, final int controlResponseStreamId)
     {
         final String controlChannel = "aeron:ipc?term-length=64k";
         final int localControlStreamId = 10;
         System.setProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME, controlChannel);
         System.setProperty(
             AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME, Integer.toString(localControlStreamId));
-        context.archiveContext(null).clusterId(19);
+        System.setProperty(
+            AeronArchive.Configuration.CONTROL_RESPONSE_STREAM_ID_PROP_NAME, Integer.toString(controlResponseStreamId));
+        context.archiveContext(null).clusterId(clusterId);
         assertNull(context.archiveContext());
 
         try
@@ -856,18 +859,19 @@ class ConsensusModuleContextTest
             assertNotNull(archiveContext);
             assertThat(
                 archiveContext.controlRequestChannel(),
-                Matchers.containsString("alias=cm-archive-ctrl-req-cluster-19"));
+                Matchers.containsString("alias=cm-archive-ctrl-req-cluster-" + clusterId));
             assertThat(
                 archiveContext.controlResponseChannel(),
-                Matchers.containsString("alias=cm-archive-ctrl-resp-cluster-19"));
+                Matchers.containsString("alias=cm-archive-ctrl-resp-cluster-" + clusterId));
             assertEquals(localControlStreamId, archiveContext.controlRequestStreamId());
-            assertNotEquals(localControlStreamId, archiveContext.controlResponseStreamId());
+            assertEquals(clusterId * 100 + 100 + controlResponseStreamId, archiveContext.controlResponseStreamId());
         }
         finally
         {
             CloseHelper.quietClose(context::close);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME);
+            System.clearProperty(AeronArchive.Configuration.CONTROL_RESPONSE_STREAM_ID_PROP_NAME);
         }
     }
 

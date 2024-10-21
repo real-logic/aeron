@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.logbuffer.LogBufferDescriptor;
 import org.agrona.AsciiEncoding;
+import org.agrona.Strings;
 import org.agrona.collections.ArrayUtil;
 import org.agrona.collections.Object2ObjectHashMap;
 
@@ -484,6 +485,27 @@ public final class ChannelUri
         channelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(sessionId));
 
         return channelUri.toString();
+    }
+
+    /**
+     * Add alias to the uri if none exists.
+     *
+     * @param uri   to add alias to.
+     * @param alias to add to the uri.
+     * @return original uri if alias is empty or one is already defined, otherwise new uri with an alias.
+     */
+    public static String addAliasIfAbsent(final String uri, final String alias)
+    {
+        if (!Strings.isEmpty(alias))
+        {
+            final ChannelUri channelUri = ChannelUri.parse(uri);
+            if (!channelUri.containsKey(CommonContext.ALIAS_PARAM_NAME))
+            {
+                channelUri.put(CommonContext.ALIAS_PARAM_NAME, alias);
+                return channelUri.toString();
+            }
+        }
+        return uri;
     }
 
     /**

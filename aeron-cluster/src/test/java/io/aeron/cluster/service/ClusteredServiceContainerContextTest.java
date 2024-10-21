@@ -16,6 +16,7 @@
 package io.aeron.cluster.service;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
 import io.aeron.archive.client.AeronArchive;
@@ -30,6 +31,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
@@ -321,7 +323,7 @@ class ClusteredServiceContainerContextTest
     }
 
     @Test
-    void shouldCreateArchiveContextUsingocalChannelConfiguration()
+    void shouldCreateArchiveContextUsingLocalChannelConfiguration()
     {
         final String controlChannel = "aeron:ipc?alias=test";
         final int localControlStreamId = 8;
@@ -385,6 +387,46 @@ class ClusteredServiceContainerContextTest
             CloseHelper.quietClose(context::close);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME);
+        }
+    }
+
+
+    @ParameterizedTest
+    @CsvSource({
+        "aeron:ipc,aeron:ipc?term-length=64k|mtu=8k," +
+            "aeron:ipc?alias=sc-88-archive-ctrl-req-cluster-99," +
+            "aeron:ipc?term-length=64k|mtu=8k|alias=sc-88-archive-ctrl-resp-cluster-99",
+        "aeron:ipc?alias=x,aeron:ipc?alias=y,aeron:ipc?alias=x,aeron:ipc?alias=y"
+    })
+    void shouldCreateAliasForControlStreamsEvenWhenArchiveContextAssignedExplicitly(
+        final String controlRequestChannel,
+        final String controlResponseChannel,
+        final String expectedControlRequestChannel,
+        final String expectedControlResponseChannel)
+    {
+        final AeronArchive.Context archiveContext = new AeronArchive.Context()
+            .controlRequestChannel(controlRequestChannel)
+            .controlResponseChannel(controlResponseChannel)
+            .controlRequestStreamId(42)
+            .controlResponseStreamId(18);
+        context.archiveContext(archiveContext).clusterId(99).serviceId(88);
+
+        try
+        {
+            context.conclude();
+
+            assertEquals(
+                ChannelUri.parse(archiveContext.controlRequestChannel()),
+                ChannelUri.parse(expectedControlRequestChannel));
+            assertEquals(
+                ChannelUri.parse(archiveContext.controlResponseChannel()),
+                ChannelUri.parse(expectedControlResponseChannel));
+            assertEquals(42, archiveContext.controlRequestStreamId());
+            assertEquals(18, archiveContext.controlResponseStreamId());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
         }
     }
 }

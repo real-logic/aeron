@@ -17,6 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.Aeron;
 import io.aeron.AeronCounters;
+import io.aeron.ChannelUri;
 import io.aeron.CommonContext;
 import io.aeron.Counter;
 import io.aeron.RethrowingErrorHandler;
@@ -803,7 +804,7 @@ class ConsensusModuleContextTest
     }
 
     @Test
-    void shouldCreateArchiveContextUsingocalChannelConfiguration()
+    void shouldCreateArchiveContextUsingLocalChannelConfiguration()
     {
         final String controlChannel = "aeron:ipc?alias=test";
         final int localControlStreamId = 8;
@@ -867,6 +868,45 @@ class ConsensusModuleContextTest
             CloseHelper.quietClose(context::close);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_CHANNEL_PROP_NAME);
             System.clearProperty(AeronArchive.Configuration.LOCAL_CONTROL_STREAM_ID_PROP_NAME);
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "aeron:ipc,aeron:ipc?term-length=64k|mtu=8k," +
+            "aeron:ipc?alias=cm-archive-ctrl-req-cluster--65," +
+            "aeron:ipc?term-length=64k|mtu=8k|alias=cm-archive-ctrl-resp-cluster--65",
+        "aeron:ipc?alias=x,aeron:ipc?alias=y,aeron:ipc?alias=x,aeron:ipc?alias=y"
+    })
+    void shouldCreateAliasForControlStreamsEvenWhenArchiveContextAssignedExplicitly(
+        final String controlRequestChannel,
+        final String controlResponseChannel,
+        final String expectedControlRequestChannel,
+        final String expectedControlResponseChannel)
+    {
+        final AeronArchive.Context archiveContext = new AeronArchive.Context()
+            .controlRequestChannel(controlRequestChannel)
+            .controlResponseChannel(controlResponseChannel)
+            .controlRequestStreamId(42)
+            .controlResponseStreamId(18);
+        context.archiveContext(archiveContext).clusterId(-65);
+
+        try
+        {
+            context.conclude();
+
+            assertEquals(
+                ChannelUri.parse(archiveContext.controlRequestChannel()),
+                ChannelUri.parse(expectedControlRequestChannel));
+            assertEquals(
+                ChannelUri.parse(archiveContext.controlResponseChannel()),
+                ChannelUri.parse(expectedControlResponseChannel));
+            assertEquals(42, archiveContext.controlRequestStreamId());
+            assertEquals(18, archiveContext.controlResponseStreamId());
+        }
+        finally
+        {
+            CloseHelper.quietClose(context::close);
         }
     }
 

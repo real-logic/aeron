@@ -31,7 +31,6 @@ $CmakeBuildParallelLevel = [Environment]::ProcessorCount
 $DeleteBuildDir = $true
 $BuildConfig = "Release"
 
-#foreach ($arg in $Args)
 for ($i = 0; $i -lt $Args.count; $i++)
 {
     $arg = $Args[$i]
@@ -168,7 +167,7 @@ try
         $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/cmake-$CMakeVersion-windows-x86_64.zip", "$PSScriptRoot\cmake-$CMakeVersion-windows-x86_64.zip")
 
         Push-Location $PSScriptRoot
-        7z x "cmake-$CMakeVersion-windows-x86_64.zip"
+        Expand-Archive -LiteralPath "cmake-$CMakeVersion-windows-x86_64.zip" -DestinationPath "$PSScriptRoot"
         Remove-Item "cmake-$CMakeVersion-windows-x86_64.zip"
         Pop-Location
     }

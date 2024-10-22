@@ -43,7 +43,6 @@ class ListRecordingsSessionTest
 
     private Catalog catalog;
     private final long correlationId = 1;
-    private final ControlResponseProxy controlResponseProxy = mock(ControlResponseProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
@@ -79,8 +78,9 @@ class ListRecordingsSessionTest
         );
 
         final MutableLong counter = new MutableLong(0);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         session.doWork();
         verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any());
@@ -99,32 +99,9 @@ class ListRecordingsSessionTest
             descriptorBuffer);
 
         final MutableLong counter = new MutableLong(fromId);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
-
-        session.doWork();
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
-    }
-
-    @Test
-    void shouldResendDescriptorWhenSendFails()
-    {
-        final long fromRecordingId = 1;
-        final ListRecordingsSession session = new ListRecordingsSession(
-            correlationId,
-            fromRecordingId,
-            1,
-            catalog,
-            controlSession,
-            descriptorBuffer);
-
-        when(controlSession.sendDescriptor(eq(correlationId), any())).thenReturn(0);
-        session.doWork();
-        verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any());
-
-        final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         session.doWork();
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
@@ -142,8 +119,9 @@ class ListRecordingsSessionTest
             descriptorBuffer);
 
         final MutableLong counter = new MutableLong(1);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         session.doWork();
 

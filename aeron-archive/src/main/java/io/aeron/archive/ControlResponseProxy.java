@@ -49,7 +49,7 @@ class ControlResponseProxy
     private final RecordingSignalEventEncoder recordingSignalEventEncoder = new RecordingSignalEventEncoder();
     private final ChallengeEncoder challengeEncoder = new ChallengeEncoder();
 
-    int sendDescriptor(
+    boolean sendDescriptor(
         final long controlSessionId,
         final long correlationId,
         final UnsafeBuffer descriptorBuffer,
@@ -76,14 +76,14 @@ class ControlResponseProxy
                 contentLength);
             if (position > 0)
             {
-                return messageLength;
+                return true;
             }
 
             checkResult(session, position);
         }
         while (--attempts > 0);
 
-        return 0;
+        return false;
     }
 
     boolean sendSubscriptionDescriptor(

@@ -41,7 +41,8 @@ import static io.aeron.CommonContext.IPC_CHANNEL;
 public class ArchiveReplayTest
 {
     @RegisterExtension
-    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
+    final SystemTestWatcher systemTestWatcher = new SystemTestWatcher()
+        .ignoreErrorsMatching(s -> s.contains("response publication is closed"));
 
     private TestMediaDriver driver;
     private Archive archive;

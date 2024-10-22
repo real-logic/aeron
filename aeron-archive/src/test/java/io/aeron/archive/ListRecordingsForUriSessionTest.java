@@ -46,7 +46,6 @@ class ListRecordingsForUriSessionTest
 
     private Catalog catalog;
     private final long correlationId = 1;
-    private final ControlResponseProxy controlResponseProxy = mock(ControlResponseProxy.class);
     private final ControlSession controlSession = mock(ControlSession.class);
 
     @BeforeEach
@@ -87,8 +86,9 @@ class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         final MutableLong counter = new MutableLong(0);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         assertEquals(5, session.doWork());
         verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any());
@@ -110,37 +110,11 @@ class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         assertEquals(4, session.doWork());
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
-    }
-
-    @Test
-    void shouldResendDescriptorWhenSendFails()
-    {
-        final long fromRecordingId = 1;
-        final ListRecordingsForUriSession session = new ListRecordingsForUriSession(
-            correlationId,
-            fromRecordingId,
-            1,
-            LOCALHOST_BYTES,
-            1,
-            catalog,
-            controlSession,
-            descriptorBuffer,
-            recordingDescriptorDecoder);
-
-        when(controlSession.sendDescriptor(eq(correlationId), any())).thenReturn(0);
-        assertEquals(1, session.doWork());
-        verify(controlSession, times(1)).sendDescriptor(eq(correlationId), any());
-
-        final MutableLong counter = new MutableLong(fromRecordingId);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
-
-        assertEquals(1, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
     }
 
@@ -159,8 +133,9 @@ class ListRecordingsForUriSessionTest
             recordingDescriptorDecoder);
 
         final MutableLong counter = new MutableLong(1);
-        when(controlSession.sendDescriptor(eq(correlationId), any()))
-            .then(verifySendDescriptor(counter));
+        doAnswer(verifySendDescriptor(counter))
+            .when(controlSession)
+            .sendDescriptor(eq(correlationId), any());
 
         assertEquals(4, session.doWork());
         verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());

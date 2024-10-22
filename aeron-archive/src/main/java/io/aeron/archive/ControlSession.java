@@ -672,16 +672,26 @@ final class ControlSession implements Session
         }
     }
 
-    int sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
+    void sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
     {
         assertCalledOnConductorThread();
-        return controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this);
+        if (!syncResponseQueue.isEmpty() ||
+            !controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this))
+        {
+            syncResponseQueue.offer(() -> controlResponseProxy.sendDescriptor(
+                controlSessionId, correlationId, descriptorBuffer, this));
+        }
     }
 
-    boolean sendSubscriptionDescriptor(final long correlationId, final Subscription subscription)
+    void sendSubscriptionDescriptor(final long correlationId, final Subscription subscription)
     {
         assertCalledOnConductorThread();
-        return controlResponseProxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
+        if (!syncResponseQueue.isEmpty() ||
+            !controlResponseProxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this))
+        {
+            syncResponseQueue.offer(() -> controlResponseProxy.sendSubscriptionDescriptor(
+                controlSessionId, correlationId, subscription, this));
+        }
     }
 
     void sendSignal(

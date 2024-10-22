@@ -100,11 +100,7 @@ class ListRecordingSubscriptionsSession implements Session
                 if (!(applyStreamId && subscription.streamId() != streamId) &&
                     subscription.channel().contains(channelFragment))
                 {
-                    if (!controlSession.sendSubscriptionDescriptor(correlationId, subscription))
-                    {
-                        break;
-                    }
-
+                    controlSession.sendSubscriptionDescriptor(correlationId, subscription);
                     workCount += 1;
 
                     if (++sent >= subscriptionCount)

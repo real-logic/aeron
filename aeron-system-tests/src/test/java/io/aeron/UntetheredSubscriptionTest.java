@@ -221,7 +221,9 @@ class UntetheredSubscriptionTest
 
                     if (!channel.startsWith("aeron-spy"))
                     {
-                        assertEquals(tetheredSub.imageAtIndex(0).position(), untetheredSub.imageAtIndex(0).joinPosition());
+                        final long tetheredPosition = tetheredSub.imageAtIndex(0).position();
+                        final long untetheredJoinPosition = untetheredSub.imageAtIndex(0).joinPosition();
+                        assertEquals(tetheredPosition, untetheredJoinPosition);
                     }
                     return;
                 }

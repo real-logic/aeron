@@ -172,7 +172,7 @@ do
     *)
       echo "Unknown option ${option}"
       echo "Use --help for help"
-      exit
+      exit 1
       ;;
   esac
 done

@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -218,6 +219,10 @@ class UntetheredSubscriptionTest
                         aeron.conductorAgentInvoker().invoke();
                     }
 
+                    if (!channel.startsWith("aeron-spy"))
+                    {
+                        assertEquals(tetheredSub.imageAtIndex(0).position(), untetheredSub.imageAtIndex(0).joinPosition());
+                    }
                     return;
                 }
             }

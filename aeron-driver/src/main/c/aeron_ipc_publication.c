@@ -370,7 +370,8 @@ void aeron_ipc_publication_check_untethered_subscriptions(
                 case AERON_SUBSCRIPTION_TETHER_RESTING:
                     if (now_ns > (tetherable_position->time_of_last_update_ns + resting_timeout_ns))
                     {
-                        aeron_counter_set_ordered(tetherable_position->value_addr, consumer_position);
+                        int64_t join_position = aeron_ipc_publication_join_position(publication);
+                        aeron_counter_set_ordered(tetherable_position->value_addr, join_position);
                         aeron_driver_conductor_on_available_image(
                             conductor,
                             publication->conductor_fields.managed_resource.registration_id,

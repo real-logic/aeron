@@ -1040,13 +1040,14 @@ public final class PublicationImage
                 {
                     if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
                     {
+                        final long joinPosition = joinPosition();
                         subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
                         conductor.notifyAvailableImageLink(
                             correlationId,
                             sessionId,
                             untethered.subscriptionLink,
                             untethered.position.id(),
-                            joinPosition(),
+                            joinPosition,
                             rawLog.fileName(),
                             sourceIdentity);
                         untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);

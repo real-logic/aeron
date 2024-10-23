@@ -455,13 +455,14 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             {
                 if ((untethered.timeOfLastUpdateNs + untetheredRestingTimeoutNs) - nowNs <= 0)
                 {
+                    final long joinPosition = joinPosition();
                     subscriberPositions = ArrayUtil.add(subscriberPositions, untethered.position);
                     conductor.notifyAvailableImageLink(
                         registrationId,
                         sessionId,
                         untethered.subscriptionLink,
                         untethered.position.id(),
-                        joinPosition(),
+                        joinPosition,
                         rawLog.fileName(),
                         CommonContext.IPC_CHANNEL);
                     untethered.state(UntetheredSubscription.State.ACTIVE, nowNs, streamId, sessionId);

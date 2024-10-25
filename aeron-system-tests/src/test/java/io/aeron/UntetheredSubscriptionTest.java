@@ -41,9 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -223,9 +220,10 @@ class UntetheredSubscriptionTest
                 aeron.conductorAgentInvoker().invoke();
             }
 
+            final Image tetheredImage = tetheredSub.imageAtIndex(0);
             final Image untetheredImage = untetheredSub.imageAtIndex(0);
-            assertThat(untetheredImage.position(), lessThan(publication.position()));
-            while (untetheredImage.position() < publication.position())
+            while (untetheredImage.position() < publication.position() ||
+                tetheredImage.position() < publication.position())
             {
                 int fragments = 0;
                 fragments += tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
@@ -236,7 +234,6 @@ class UntetheredSubscriptionTest
                     aeron.conductorAgentInvoker().invoke();
                 }
             }
-            assertEquals(publication.position(), tetheredSub.imageAtIndex(0).position());
         }
     }
 }

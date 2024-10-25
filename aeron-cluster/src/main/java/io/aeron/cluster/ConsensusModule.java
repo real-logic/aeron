@@ -66,6 +66,7 @@ import java.util.function.LongConsumer;
 import java.util.function.Supplier;
 
 import static io.aeron.AeronCounters.*;
+import static io.aeron.ChannelUri.*;
 import static io.aeron.CommonContext.*;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_CLIENT_TIMEOUT_COUNT_TYPE_ID;
 import static io.aeron.cluster.ConsensusModule.Configuration.CLUSTER_NODE_ROLE_TYPE_ID;
@@ -1959,7 +1960,9 @@ public final class ConsensusModule implements AutoCloseable
                 archiveContext = new AeronArchive.Context()
                     .controlRequestChannel(AeronArchive.Configuration.localControlChannel())
                     .controlResponseChannel(AeronArchive.Configuration.localControlChannel())
-                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId());
+                    .controlRequestStreamId(AeronArchive.Configuration.localControlStreamId())
+                    .controlResponseStreamId(
+                        clusterId * 100 + 100 + AeronArchive.Configuration.controlResponseStreamId());
             }
 
             if (!archiveContext.controlRequestChannel().startsWith(CommonContext.IPC_CHANNEL))
@@ -1981,7 +1984,11 @@ public final class ConsensusModule implements AutoCloseable
                 .aeron(aeron)
                 .errorHandler(countedErrorHandler)
                 .ownsAeronClient(false)
-                .lock(NoOpLock.INSTANCE);
+                .lock(NoOpLock.INSTANCE)
+                .controlRequestChannel(addAliasIfAbsent(
+                archiveContext.controlRequestChannel(), "cm-archive-ctrl-req-cluster-" + clusterId))
+                .controlResponseChannel(addAliasIfAbsent(
+                archiveContext.controlResponseChannel(), "cm-archive-ctrl-resp-cluster-" + clusterId));
 
             if (null == shutdownSignalBarrier)
             {
@@ -2018,7 +2025,7 @@ public final class ConsensusModule implements AutoCloseable
                 egressPublisher = new EgressPublisher();
             }
 
-            final ChannelUri channelUri = ChannelUri.parse(logChannel());
+            final ChannelUri channelUri = parse(logChannel());
             isLogMdc = channelUri.isUdp() && null == channelUri.get(ENDPOINT_PARAM_NAME);
 
             if (null == consensusModuleExtension)
@@ -4441,7 +4448,7 @@ public final class ConsensusModule implements AutoCloseable
 
         private void validateLogChannel()
         {
-            final ChannelUri logChannelUri = ChannelUri.parse(logChannel);
+            final ChannelUri logChannelUri = parse(logChannel);
             if (logChannelUri.containsKey(INITIAL_TERM_ID_PARAM_NAME))
             {
                 throw new ConfigurationException("logChannel must not contain: " + INITIAL_TERM_ID_PARAM_NAME);

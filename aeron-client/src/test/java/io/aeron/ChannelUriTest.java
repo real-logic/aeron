@@ -20,6 +20,8 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.MethodSource;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.List;
 import java.util.function.BiConsumer;
@@ -243,6 +245,39 @@ class ChannelUriTest
         uri.forEachParameter(parameterConsumer);
 
         verifyNoInteractions(parameterConsumer);
+    }
+
+    @ParameterizedTest
+    @NullAndEmptySource
+    void shouldReturnOriginalUriWhenAliasIsEmpty(final String alias)
+    {
+        final String uri = "aeron:udp";
+        assertEquals(uri, ChannelUri.addAliasIfAbsent(uri, alias));
+    }
+
+    @Test
+    void shouldReturnOriginalUriWhenAliasIsAlreadyDefined()
+    {
+        final String uri = "aeron:udp?alias=xyz|term-length=64k";
+        final String alias = "new alias";
+        assertEquals(uri, ChannelUri.addAliasIfAbsent(uri, alias));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?term-length=64k|ssc=false|mtu=8k",
+        "aeron:ipc",
+        "aeron:udp?custom=alias",
+    })
+    void shouldReturnNewUriWtihAnAliasAdded(final String uri)
+    {
+        final String alias = "my alias";
+        final ChannelUri channelUri = ChannelUri.parse(uri);
+        channelUri.put(CommonContext.ALIAS_PARAM_NAME, alias);
+
+        final String result = ChannelUri.addAliasIfAbsent(uri, alias);
+        assertNotNull(result);
+        assertEquals(channelUri, ChannelUri.parse(result));
     }
 
     private static void assertSubstitution(

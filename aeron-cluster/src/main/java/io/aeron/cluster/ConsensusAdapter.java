@@ -351,6 +351,7 @@ class ConsensusAdapter implements FragmentHandler, AutoCloseable
                 else
                 {
                     encodedCredentials = new byte[standbySnapshotDecoder.encodedCredentialsLength()];
+                    standbySnapshotDecoder.getEncodedCredentials(encodedCredentials, 0, encodedCredentials.length);
                 }
 
                 consensusModuleAgent.onStandbySnapshot(

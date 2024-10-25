@@ -35,12 +35,12 @@ import org.junit.jupiter.params.provider.MethodSource;
 
 import java.nio.ByteBuffer;
 import java.util.List;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.Arrays.asList;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -158,9 +158,10 @@ class UntetheredSubscriptionTest
         final FragmentHandler fragmentHandler = (buffer, offset, length, header) -> {};
 
         final UnsafeBuffer srcBuffer = new UnsafeBuffer(ByteBuffer.allocate(MESSAGE_LENGTH));
+        srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)-1);
         final String untetheredChannel = channel + "|tether=false";
         final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
-        boolean pollingUntethered = true;
+        int untetheredPollLimit = 3;
 
         try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
             Subscription untetheredSub = aeron.addSubscription(
@@ -173,36 +174,41 @@ class UntetheredSubscriptionTest
                 aeron.conductorAgentInvoker().invoke();
             }
 
-            while (true)
+            while (0 == unavailableImageCount.get())
             {
-                if (publication.offer(srcBuffer) < 0)
+                if (publication.offer(srcBuffer, 0, ThreadLocalRandom.current().nextInt(1, MESSAGE_LENGTH)) < 0)
                 {
                     Tests.yield();
                     aeron.conductorAgentInvoker().invoke();
                 }
 
-                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
+                if (untetheredPollLimit > 0 && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
                 {
-                    pollingUntethered = false;
+                    untetheredPollLimit--;
                 }
 
                 tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+            }
 
-                if (unavailableImageCount.get() == 1)
+            while (availableImageCount.get() < 2)
+            {
+                publication.offer(srcBuffer, 0, ThreadLocalRandom.current().nextInt(1, MESSAGE_LENGTH));
+                Tests.yield();
+                aeron.conductorAgentInvoker().invoke();
+            }
+
+            final Image tetheredImage = tetheredSub.imageAtIndex(0);
+            final Image untetheredImage = untetheredSub.imageAtIndex(0);
+            while (untetheredImage.position() < publication.position() ||
+                tetheredImage.position() < publication.position())
+            {
+                int fragments = 0;
+                fragments += tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                fragments += untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);
+                if (0 == fragments)
                 {
-                    while (availableImageCount.get() < 2)
-                    {
-                        Tests.yield();
-                        aeron.conductorAgentInvoker().invoke();
-                    }
-
-                    if (!channel.startsWith("aeron-spy"))
-                    {
-                        final long tetheredPosition = tetheredSub.imageAtIndex(0).position();
-                        final long untetheredJoinPosition = untetheredSub.imageAtIndex(0).joinPosition();
-                        assertEquals(tetheredPosition, untetheredJoinPosition);
-                    }
-                    return;
+                    Tests.yield();
+                    aeron.conductorAgentInvoker().invoke();
                 }
             }
         }

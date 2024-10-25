@@ -64,4 +64,12 @@ public class NanosecondClusterClock implements ClusterClock
     {
         return HighResolutionClock.epochNanos();
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long convertToNanos(final long time)
+    {
+        return time;
+    }
 }

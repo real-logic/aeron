@@ -64,11 +64,12 @@ import static io.aeron.cluster.ConsensusModule.Configuration.*;
 import static io.aeron.cluster.client.AeronCluster.Configuration.PROTOCOL_SEMANTIC_VERSION;
 import static io.aeron.cluster.service.ClusteredServiceContainer.Configuration.MARK_FILE_UPDATE_INTERVAL_NS;
 import static io.aeron.exceptions.AeronException.Category.WARN;
+import static java.util.concurrent.TimeUnit.*;
 
 final class ConsensusModuleAgent
     implements Agent, IdleStrategy, TimerService.TimerHandler, ConsensusModuleSnapshotListener, ConsensusModuleControl
 {
-    static final long SLOW_TICK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(10);
+    static final long SLOW_TICK_INTERVAL_NS = MILLISECONDS.toNanos(10);
     static final short APPEND_POSITION_FLAG_NONE = 0;
     static final short APPEND_POSITION_FLAG_CATCHUP = 1;
 
@@ -341,7 +342,7 @@ final class ConsensusModuleAgent
     public int doWork()
     {
         final long timestamp = clusterClock.time();
-        final long nowNs = clusterTimeUnit.toNanos(timestamp);
+        final long nowNs = clusterClock.convertToNanos(timestamp);
         int workCount = 0;
 
         dutyCycleTracker.measureAndUpdate(nowNs);
@@ -423,7 +424,7 @@ final class ConsensusModuleAgent
      */
     public TimeUnit timeUnit()
     {
-        return clusterClock.timeUnit();
+        return clusterTimeUnit;
     }
 
     /**
@@ -640,8 +641,8 @@ final class ConsensusModuleAgent
             clusterSessionId, responseStreamId, refineResponseChannel(responseChannel));
 
         session.asyncConnect(aeron);
-        final long now = clusterClock.time();
-        session.lastActivityNs(clusterTimeUnit.toNanos(now), correlationId);
+        final long nowNs = clusterClock.timeNanos();
+        session.lastActivityNs(nowNs, correlationId);
 
         if (Cluster.Role.LEADER != role)
         {
@@ -663,7 +664,7 @@ final class ConsensusModuleAgent
             }
             else
             {
-                authenticator.onConnectRequest(session.id(), encodedCredentials, clusterTimeUnit.toMillis(now));
+                authenticator.onConnectRequest(session.id(), encodedCredentials, NANOSECONDS.toMillis(nowNs));
                 pendingUserSessions.add(session);
             }
         }
@@ -680,7 +681,7 @@ final class ConsensusModuleAgent
                 session.disconnect(aeron, ctx.countedErrorHandler());
 
                 if (logPublisher.appendSessionClose(
-                    memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+                    memberId, session, leadershipTermId, clusterClock.time(), clusterTimeUnit))
                 {
                     session.closedLogPosition(logPublisher.position());
                     uncommittedClosedSessions.addLast(session);
@@ -754,7 +755,7 @@ final class ConsensusModuleAgent
                 if (logPublisher.appendMessage(
                     leadershipTermId, clusterSessionId, timestamp, buffer, offset, length) > 0)
                 {
-                    session.timeOfLastActivityNs(clusterTimeUnit.toNanos(timestamp));
+                    session.timeOfLastActivityNs(clusterClock.convertToNanos(timestamp));
                 }
                 else
                 {
@@ -810,10 +811,9 @@ final class ConsensusModuleAgent
 
             if (session.id() == clusterSessionId && session.state() == CHALLENGED)
             {
-                final long timestamp = clusterClock.time();
-                final long nowMs = clusterTimeUnit.toMillis(timestamp);
-                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
-                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, nowMs);
+                final long nowNs = clusterClock.timeNanos();
+                session.lastActivityNs(nowNs, correlationId);
+                authenticator.onChallengeResponse(clusterSessionId, encodedCredentials, NANOSECONDS.toMillis(nowNs));
                 break;
             }
         }
@@ -1131,16 +1131,15 @@ final class ConsensusModuleAgent
                     responseStreamId,
                     refineResponseChannel(responseChannel));
 
-                final long timestamp = clusterClock.time();
+                final long nowNs = clusterClock.timeNanos();
 
                 session.action(ClusterSession.Action.BACKUP);
                 session.asyncConnect(aeron);
-                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
+                session.lastActivityNs(nowNs, correlationId);
 
                 if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
                 {
-                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
-                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, NANOSECONDS.toMillis(nowNs));
                     pendingBackupSessions.add(session);
                 }
                 else
@@ -1172,12 +1171,10 @@ final class ConsensusModuleAgent
                 session.action(ClusterSession.Action.HEARTBEAT);
                 session.asyncConnect(aeron);
 
-                final long timestamp = clusterClock.time();
-                final long timestampNs = clusterTimeUnit.toNanos(timestamp);
-                final long timestampMs = clusterTimeUnit.toMillis(timestamp);
+                final long nowNs = clusterClock.timeNanos();
 
-                session.lastActivityNs(timestampNs, correlationId);
-                authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                session.lastActivityNs(nowNs, correlationId);
+                authenticator.onConnectRequest(session.id(), encodedCredentials, NANOSECONDS.toMillis(nowNs));
                 pendingBackupSessions.add(session);
             }
         }
@@ -1216,17 +1213,16 @@ final class ConsensusModuleAgent
                     responseStreamId,
                     refineResponseChannel(responseChannel));
 
-                final long timestamp = clusterClock.time();
+                final long nowNs = clusterClock.timeNanos();
 
                 session.action(ClusterSession.Action.STANDBY_SNAPSHOT);
                 session.asyncConnect(aeron);
-                session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
+                session.lastActivityNs(nowNs, correlationId);
                 session.requestInput(standbySnapshotEntries);
 
                 if (AeronCluster.Configuration.PROTOCOL_MAJOR_VERSION == SemanticVersion.major(version))
                 {
-                    final long timestampMs = clusterTimeUnit.toMillis(timestamp);
-                    authenticator.onConnectRequest(session.id(), encodedCredentials, timestampMs);
+                    authenticator.onConnectRequest(session.id(), encodedCredentials, NANOSECONDS.toMillis(nowNs));
                     pendingBackupSessions.add(session);
                 }
                 else
@@ -1356,7 +1352,7 @@ final class ConsensusModuleAgent
             if (Cluster.Role.LEADER == role && ConsensusModule.State.ACTIVE == state)
             {
                 if (logPublisher.appendSessionClose(
-                    memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+                    memberId, session, leadershipTermId, clusterClock.time(), clusterTimeUnit))
                 {
                     final String msg = CloseReason.SERVICE_ACTION.name();
                     egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
@@ -1394,7 +1390,7 @@ final class ConsensusModuleAgent
     void onServiceAck(
         final long logPosition, final long timestamp, final long ackId, final long relevantId, final int serviceId)
     {
-        logOnServiceAck(memberId, logPosition, timestamp, clusterClock.timeUnit(), ackId, relevantId, serviceId);
+        logOnServiceAck(memberId, logPosition, timestamp, clusterTimeUnit, ackId, relevantId, serviceId);
         captureServiceAck(logPosition, ackId, relevantId, serviceId);
 
         if (ServiceAck.hasReached(logPosition, serviceAckId, serviceAckQueues))
@@ -1481,7 +1477,7 @@ final class ConsensusModuleAgent
     {
         final ClusterSession session = new ClusterSession(clusterSessionId, responseStreamId, responseChannel);
         session.open(logPosition);
-        session.lastActivityNs(clusterTimeUnit.toNanos(timestamp), correlationId);
+        session.lastActivityNs(clusterClock.convertToNanos(timestamp), correlationId);
 
         addSession(session);
         if (clusterSessionId >= nextSessionId)
@@ -1797,7 +1793,7 @@ final class ConsensusModuleAgent
     {
         return logPublisher.appendNewLeadershipTermEvent(
             leadershipTermId,
-            clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS),
+            clusterTimeUnit.convert(nowNs, NANOSECONDS),
             election.logPosition(),
             memberId,
             logPublisher.sessionId(),
@@ -1812,7 +1808,7 @@ final class ConsensusModuleAgent
         if (Cluster.Role.LEADER == role)
         {
             timeOfLastLogUpdateNs = nowNs - leaderHeartbeatIntervalNs;
-            timerService.currentTime(clusterClock.timeUnit().convert(nowNs, TimeUnit.NANOSECONDS));
+            timerService.currentTime(clusterTimeUnit.convert(nowNs, NANOSECONDS));
             ClusterControl.ToggleState.activate(controlToggle);
             prepareSessionsForNewTerm(election.isLeaderStartup());
         }
@@ -2777,7 +2773,7 @@ final class ConsensusModuleAgent
                         session.closing(CloseReason.TIMEOUT);
 
                         if (logPublisher.appendSessionClose(
-                            memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+                            memberId, session, leadershipTermId, clusterClock.time(), clusterTimeUnit))
                         {
                             final String msg = session.closeReason().name();
                             egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);
@@ -2790,7 +2786,7 @@ final class ConsensusModuleAgent
 
                     case CLOSING:
                         if (logPublisher.appendSessionClose(
-                            memberId, session, leadershipTermId, clusterClock.time(), clusterClock.timeUnit()))
+                            memberId, session, leadershipTermId, clusterClock.time(), clusterTimeUnit))
                         {
                             final String msg = session.closeReason().name();
                             egressPublisher.sendEvent(session, leadershipTermId, memberId, EventCode.CLOSED, msg);

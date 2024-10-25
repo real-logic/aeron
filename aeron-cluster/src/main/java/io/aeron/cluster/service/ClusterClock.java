@@ -76,6 +76,17 @@ public interface ClusterClock
     }
 
     /**
+     * Convert given Cluster time to {@link TimeUnit#NANOSECONDS}.
+     *
+     * @param time to convert to nanoseconds.
+     * @return time in {@link TimeUnit#NANOSECONDS}.
+     */
+    default long convertToNanos(long time)
+    {
+        return timeUnit().toNanos(time);
+    }
+
+    /**
      * Map {@link TimeUnit} to a corresponding {@link ClusterTimeUnit}.
      *
      * @param timeUnit to map to a corresponding {@link ClusterTimeUnit}.

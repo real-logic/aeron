@@ -17,7 +17,7 @@ package io.aeron.cluster;
 
 import io.aeron.cluster.service.ClusterClock;
 
-import java.util.concurrent.TimeUnit;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 /**
  * A {@link ClusterClock} implemented by calling {@link System#currentTimeMillis()}.
@@ -45,7 +45,7 @@ public class MillisecondClusterClock implements ClusterClock
      */
     public long timeMicros()
     {
-        return TimeUnit.MILLISECONDS.toMicros(System.currentTimeMillis());
+        return MILLISECONDS.toMicros(System.currentTimeMillis());
     }
 
     /**
@@ -53,6 +53,14 @@ public class MillisecondClusterClock implements ClusterClock
      */
     public long timeNanos()
     {
-        return TimeUnit.MILLISECONDS.toNanos(System.currentTimeMillis());
+        return MILLISECONDS.toNanos(System.currentTimeMillis());
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long convertToNanos(final long time)
+    {
+        return MILLISECONDS.toNanos(time);
     }
 }

@@ -102,4 +102,11 @@ public interface ConsensusModuleControl
      * @param clusterSessionId to be closed.
      */
     void closeClusterSession(long clusterSessionId);
+
+    /**
+     * Numeric id for the commit position counter.
+     *
+     * @return commit position counter id.
+     */
+    int commitPositionCounterId();
 }

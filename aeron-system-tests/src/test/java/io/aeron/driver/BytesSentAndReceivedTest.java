@@ -43,7 +43,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import static io.aeron.protocol.DataHeaderFlyweight.HEADER_LENGTH;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -122,7 +121,7 @@ public class BytesSentAndReceivedTest
 
             assertThat(subscription.imageAtIndex(0).position(), equalTo(publication.position()));
 
-            expectedTotalBytes += publication.position() + HEADER_LENGTH /* heartbeat */;
+            expectedTotalBytes += publication.position();
         }
 
         final CountersReader countersReader = aeron.countersReader();

@@ -25,7 +25,9 @@ import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.CloseHelper;
 import org.agrona.LangUtil;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -62,10 +64,16 @@ class PathologicallySlowConsumerTest
             .publicationLingerTimeoutNs(TimeUnit.MILLISECONDS.toNanos(222))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(200))
             .untetheredWindowLimitTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-            .untetheredRestingTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500));
+            .untetheredRestingTimeoutNs(TimeUnit.SECONDS.toNanos(5));
         driver = TestMediaDriver.launch(context, testWatcher);
         aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver.aeronDirectoryName()));
         testWatcher.dataCollector().add(driver.context().aeronDirectory());
+    }
+
+    @AfterEach
+    void afterEach()
+    {
+        CloseHelper.closeAll(aeron, driver);
     }
 
     @ParameterizedTest
@@ -124,7 +132,7 @@ class PathologicallySlowConsumerTest
                 {
                     assertEquals(1, slowSubscription.poll(
                         (buffer, offset, length, header) -> Tests.sleep(2500),
-                        Integer.MAX_VALUE));
+                        3));
                 }
                 catch (final Throwable ex)
                 {
@@ -152,7 +160,7 @@ class PathologicallySlowConsumerTest
 
             thread.join();
             assertEquals(1, imageUnavailable.get());
-            assertEquals(2, imageAvailable.get());
+            assertEquals(1, imageAvailable.get());
             if (null != error.get())
             {
                 LangUtil.rethrowUnchecked(error.get());

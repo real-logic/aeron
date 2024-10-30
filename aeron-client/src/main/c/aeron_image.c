@@ -284,6 +284,12 @@ int aeron_image_poll(aeron_image_t *image, aeron_fragment_handler_t handler, voi
 
     while (fragments_read < fragment_limit && offset < capacity)
     {
+        AERON_GET_ACQUIRE(is_closed, image->is_closed);
+        if (is_closed)
+        {
+            break;
+        }
+
         aeron_data_header_t *frame = (aeron_data_header_t *)(term_buffer + offset);
         int32_t frame_length, frame_offset;
 
@@ -356,6 +362,12 @@ int aeron_image_controlled_poll(
 
     while (fragments_read < fragment_limit && offset < capacity)
     {
+        AERON_GET_ACQUIRE(is_closed, image->is_closed);
+        if (is_closed)
+        {
+            break;
+        }
+
         aeron_data_header_t *frame = (aeron_data_header_t *)(term_buffer + offset);
         int32_t frame_length, frame_offset, aligned_frame_length;
 
@@ -461,6 +473,12 @@ int aeron_image_bounded_poll(
 
     while (fragments_read < fragment_limit && offset < limit_offset)
     {
+        AERON_GET_ACQUIRE(is_closed, image->is_closed);
+        if (is_closed)
+        {
+            break;
+        }
+
         aeron_data_header_t *frame = (aeron_data_header_t *)(term_buffer + offset);
         int32_t frame_length, frame_offset;
 
@@ -544,6 +562,12 @@ int aeron_image_bounded_controlled_poll(
 
     while (fragments_read < fragment_limit && offset < limit_offset)
     {
+        AERON_GET_ACQUIRE(is_closed, image->is_closed);
+        if (is_closed)
+        {
+            break;
+        }
+
         aeron_data_header_t *frame = (aeron_data_header_t *)(term_buffer + offset);
         int32_t frame_length, frame_offset, aligned_frame_length;
 
@@ -653,6 +677,12 @@ int64_t aeron_image_controlled_peek(
 
     while (offset < limit_offset)
     {
+        AERON_GET_ACQUIRE(is_closed, image->is_closed);
+        if (is_closed)
+        {
+            break;
+        }
+
         aeron_data_header_t *frame = (aeron_data_header_t *)(term_buffer + offset);
         int32_t frame_length, frame_offset;
 

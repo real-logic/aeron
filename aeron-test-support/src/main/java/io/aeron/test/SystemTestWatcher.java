@@ -22,7 +22,11 @@ import io.aeron.cluster.service.ClusterTerminationException;
 import io.aeron.samples.SamplesUtil;
 import io.aeron.test.cluster.TestCluster;
 import io.aeron.test.driver.DriverOutputConsumer;
-import org.agrona.*;
+import org.agrona.CloseHelper;
+import org.agrona.IoUtil;
+import org.agrona.LangUtil;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableReference;
 import org.agrona.collections.Object2ObjectHashMap;
@@ -33,7 +37,6 @@ import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
-import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -50,7 +53,11 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.SimpleDateFormat;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Map;
+import java.util.Objects;
 import java.util.function.Predicate;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -60,8 +67,7 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, AfterEachCallback,
-    BeforeEachCallback
+public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, BeforeEachCallback
 {
     public static final Pattern PARAMETERISED_TEST_INDEX_PATTERN = Pattern.compile("\\[([0-9]+)].*");
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
@@ -91,7 +97,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
     private DataCollector dataCollector = new DataCollector();
     private final ArrayList<AutoCloseable> closeables = new ArrayList<>();
     private long startTimeNs;
-    private long endTimeNs;
 
     public SystemTestWatcher()
     {
@@ -168,20 +173,12 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         startTimeNs = System.nanoTime();
     }
 
+    @SuppressWarnings("MethodLength")
     public void afterTestExecution(final ExtensionContext context)
     {
-        endTimeNs = System.nanoTime();
+        final long endTimeNs = System.nanoTime();
         Thread.interrupted(); // clean the interrupted flag so that it does not prevent cleanup in the tests
-    }
 
-    @SuppressWarnings("methodlength")
-    public void afterEach(final ExtensionContext context)
-    {
-        if (0 == endTimeNs)
-        {
-            endTimeNs = System.nanoTime();
-        }
-        Thread.interrupted(); // clean the interrupted flag
         Throwable error = context.getExecutionException()
             .filter((t) -> !(t instanceof TestAbortedException))
             .orElse(null);

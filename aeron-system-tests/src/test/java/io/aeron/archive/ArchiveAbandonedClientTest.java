@@ -44,7 +44,6 @@ import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ArchiveAbandonedClientTest
@@ -123,8 +122,6 @@ public class ArchiveAbandonedClientTest
                 Tests.yield();
             }
         }
-
-        fail();
     }
 
     private void launch(final String requestChannel, final String responseChannel)

@@ -21,8 +21,8 @@ class NetworkSubscriptionLink extends SubscriptionLink
 {
     private final boolean isReliable;
     private final boolean isRejoin;
-    private final ReceiveChannelEndpoint channelEndpoint;
     private final boolean isResponse;
+    private final ReceiveChannelEndpoint channelEndpoint;
 
     NetworkSubscriptionLink(
         final long registrationId,
@@ -70,12 +70,11 @@ class NetworkSubscriptionLink extends SubscriptionLink
 
     boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final SubscriptionParams params)
     {
-        final boolean isExactWildcardOrSessionIdMatch =
-            hasSessionId == params.hasSessionId && (!hasSessionId || this.sessionId == params.sessionId);
-
         return channelEndpoint == this.channelEndpoint &&
             streamId == this.streamId &&
-            isExactWildcardOrSessionIdMatch;
+            hasSessionId == params.hasSessionId &&
+            isResponse == params.isResponse &&
+            isWildcardOrSessionIdMatch(params.sessionId);
     }
 
     boolean matches(final ReceiveChannelEndpoint channelEndpoint, final int streamId, final int sessionId)

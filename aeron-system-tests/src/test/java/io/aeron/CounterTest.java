@@ -384,6 +384,8 @@ class CounterTest
     @SuppressWarnings("indentation")
     void shouldReturnErrorIfANonStaticCounterExistsForTypeIdRegistrationId()
     {
+        testWatcher.ignoreErrorsMatching((error) -> error.contains("(-11) generic error, see message"));
+
         final Counter counter = clientA.addCounter(COUNTER_TYPE_ID, "test session-specific counter");
         assertNotEquals(NULL_VALUE, counter.registrationId());
         assertEquals(clientA.clientId(), clientA.countersReader().getCounterOwnerId(counter.id()));

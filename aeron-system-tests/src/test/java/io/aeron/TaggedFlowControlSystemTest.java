@@ -119,7 +119,7 @@ class TaggedFlowControlSystemTest
     @AfterEach
     void after()
     {
-        CloseHelper.closeAll(clientB, clientA, driverB, driverA);
+        CloseHelper.closeAll(subscriptionB, subscriptionA, publication, clientB, clientA, driverB, driverA);
     }
 
     private static Stream<Arguments> strategyConfigurations()
@@ -459,10 +459,8 @@ class TaggedFlowControlSystemTest
 
         subscriptionA = clientA.addSubscription(uriWithGroupTag, STREAM_ID);
 
-        while (!publication.isConnected())
-        {
-            Tests.sleep(1);
-        }
+        Tests.awaitConnected(publication);
+        Tests.awaitConnected(subscriptionA);
     }
 
     @Test

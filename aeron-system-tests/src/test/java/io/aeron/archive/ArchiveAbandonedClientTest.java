@@ -90,6 +90,11 @@ public class ArchiveAbandonedClientTest
     @InterruptAfter(10)
     void test(final String requestChannel, final String responseChannel)
     {
+        if (responseChannel.contains("control-mode=response"))
+        {
+            TestMediaDriver.notSupportedOnCMediaDriver("broken response channels");
+        }
+
         launch(requestChannel, responseChannel);
 
         final String channel = "aeron:ipc?ssc=true|term-length=128k";

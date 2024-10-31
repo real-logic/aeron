@@ -21,6 +21,8 @@ import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ReplayParams;
 import io.aeron.driver.MediaDriver;
+import io.aeron.test.EventLogExtension;
+import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
 import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
@@ -32,14 +34,17 @@ import org.agrona.concurrent.YieldingIdleStrategy;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.File;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+@ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ArchiveResponseClientTest
 {
     @RegisterExtension
@@ -81,8 +86,7 @@ public class ArchiveResponseClientTest
     @AfterEach
     void tearDown()
     {
-        CloseHelper.quietCloseAll(archive);
-        CloseHelper.quietCloseAll(driver);
+        CloseHelper.closeAll(archive, driver);
     }
 
     @Test
@@ -223,9 +227,16 @@ public class ArchiveResponseClientTest
             {
                 Tests.yield();
             }
-            assertNotEquals(Aeron.NULL_VALUE, aeronArchive.controlSessionId());
 
-            CloseHelper.close(aeronArchive);
+            try
+            {
+                assertNotEquals(Aeron.NULL_VALUE, aeronArchive.controlSessionId());
+                assertEquals(archive.context().archiveId(), aeronArchive.archiveId());
+            }
+            finally
+            {
+                CloseHelper.close(aeronArchive);
+            }
         }
     }
 }

@@ -29,6 +29,7 @@ import io.aeron.exceptions.TimeoutException;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
 import io.aeron.version.Versioned;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.LangUtil;
@@ -45,6 +46,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReentrantLock;
 
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.ArchiveProxy.DEFAULT_RETRY_ATTEMPTS;
 import static io.aeron.driver.Configuration.*;
 import static org.agrona.SystemUtil.getDurationInNanos;
@@ -1243,7 +1245,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             final int replaySessionId = (int)pollForResponse(lastCorrelationId);
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+            replayChannelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
         }
@@ -1297,7 +1299,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             final int replaySessionId = (int)pollForResponse(lastCorrelationId);
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+            replayChannelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             return aeron.addSubscription(
                 replayChannelUri.toString(), replayStreamId, availableImageHandler, unavailableImageHandler);
@@ -1351,7 +1353,7 @@ public final class AeronArchive implements AutoCloseable
             }
 
             final int replaySessionId = (int)pollForResponse(lastCorrelationId);
-            replayChannelUri.put(CommonContext.SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
+            replayChannelUri.put(SESSION_ID_PARAM_NAME, Integer.toString(replaySessionId));
 
             return aeron.addSubscription(replayChannelUri.toString(), replayStreamId);
         }
@@ -2917,6 +2919,7 @@ public final class AeronArchive implements AutoCloseable
     public static final class Context implements Cloneable
     {
         private static final VarHandle IS_CONCLUDED_VH;
+
         static
         {
             try
@@ -2942,7 +2945,7 @@ public final class AeronArchive implements AutoCloseable
         private int controlMtuLength = Configuration.controlMtuLength();
         private IdleStrategy idleStrategy;
         private Lock lock;
-        private String aeronDirectoryName = CommonContext.getAeronDirectoryName();
+        private String aeronDirectoryName = getAeronDirectoryName();
         private Aeron aeron;
         private ErrorHandler errorHandler;
         private CredentialsSupplier credentialsSupplier;
@@ -3012,8 +3015,16 @@ public final class AeronArchive implements AutoCloseable
                 lock = new ReentrantLock();
             }
 
-            controlRequestChannel = applyDefaultParams(controlRequestChannel);
-            controlResponseChannel = applyDefaultParams(controlResponseChannel);
+            final ChannelUri requestChannel = applyDefaultParams(controlRequestChannel);
+            final ChannelUri responseChannel = applyDefaultParams(controlResponseChannel);
+            if (!CONTROL_MODE_RESPONSE.equals(responseChannel.get(MDC_CONTROL_MODE_PARAM_NAME)))
+            {
+                final String sessionId = Integer.toString(BitUtil.generateRandomisedId());
+                requestChannel.put(SESSION_ID_PARAM_NAME, sessionId);
+                responseChannel.put(SESSION_ID_PARAM_NAME, sessionId);
+            }
+            controlRequestChannel = requestChannel.toString();
+            controlResponseChannel = responseChannel.toString();
         }
 
         /**
@@ -3048,7 +3059,7 @@ public final class AeronArchive implements AutoCloseable
         @Config
         public long messageTimeoutNs()
         {
-            return CommonContext.checkDebugTimeout(messageTimeoutNs, TimeUnit.NANOSECONDS);
+            return checkDebugTimeout(messageTimeoutNs, TimeUnit.NANOSECONDS);
         }
 
         /**
@@ -3527,26 +3538,26 @@ public final class AeronArchive implements AutoCloseable
                 "\n}";
         }
 
-        private String applyDefaultParams(final String channel)
+        private ChannelUri applyDefaultParams(final String channel)
         {
             final ChannelUri channelUri = ChannelUri.parse(channel);
 
-            if (!channelUri.containsKey(CommonContext.TERM_LENGTH_PARAM_NAME))
+            if (!channelUri.containsKey(TERM_LENGTH_PARAM_NAME))
             {
-                channelUri.put(CommonContext.TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
+                channelUri.put(TERM_LENGTH_PARAM_NAME, Integer.toString(controlTermBufferLength));
             }
 
-            if (!channelUri.containsKey(CommonContext.MTU_LENGTH_PARAM_NAME))
+            if (!channelUri.containsKey(MTU_LENGTH_PARAM_NAME))
             {
-                channelUri.put(CommonContext.MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
+                channelUri.put(MTU_LENGTH_PARAM_NAME, Integer.toString(controlMtuLength));
             }
 
-            if (!channelUri.containsKey(CommonContext.SPARSE_PARAM_NAME))
+            if (!channelUri.containsKey(SPARSE_PARAM_NAME))
             {
-                channelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
+                channelUri.put(SPARSE_PARAM_NAME, Boolean.toString(controlTermBufferSparse));
             }
 
-            return channelUri.toString();
+            return channelUri;
         }
     }
 

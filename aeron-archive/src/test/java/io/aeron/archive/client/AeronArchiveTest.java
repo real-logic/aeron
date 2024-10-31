@@ -16,6 +16,7 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive.Context;
@@ -30,6 +31,7 @@ import org.agrona.concurrent.NoOpLock;
 import org.agrona.concurrent.SystemNanoClock;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
@@ -37,6 +39,7 @@ import org.mockito.stubbing.Answer;
 
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.*;
 import static io.aeron.archive.client.AeronArchive.AsyncConnect.State.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -592,5 +595,135 @@ class AeronArchiveTest
         assertEquals(ArchiveException.GENERIC, exception.errorCode());
         assertEquals(Aeron.NULL_VALUE, exception.correlationId());
         verify(archiveProxy, times(1)).closeSession(controlSessionId);
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "aeron:udp?endpoint=localhost:3388|mtu=2048, " +
+            "aeron:udp?session-id=5|endpoint=localhost:0|sparse=true|mtu=1024",
+        "aeron:udp?endpoint=localhost:3388, " +
+            "aeron:udp?control=localhost:10000|control-mode=dynamic",
+        "aeron:udp?endpoint=localhost:3388, aeron:udp?control-mode=manual",
+        "aeron:ipc?alias=request|ssc=false|linger=0|session-id=42|sparse=false, " +
+            "aeron:ipc?term-length=64k|alias=response",
+    })
+    void shouldAddAUniqueSessionIdParameterToBothRequestAndResponseChannels(
+        final String requestChannel, final String responseChannel)
+    {
+        final int requestStreamId = 42;
+        final int responseStreamId = -19;
+        final Context context = new Context()
+            .aeron(aeron)
+            .ownsAeronClient(false)
+            .errorHandler(errorHandler)
+            .controlRequestChannel(requestChannel)
+            .controlRequestStreamId(requestStreamId)
+            .controlResponseChannel(responseChannel)
+            .controlResponseStreamId(responseStreamId)
+            .controlTermBufferSparse(false)
+            .controlTermBufferLength(128 * 1024)
+            .controlMtuLength(4096);
+
+        assertEquals(requestChannel, context.controlRequestChannel());
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseChannel, context.controlResponseChannel());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        context.conclude();
+
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        final ChannelUri actualRequestChannel = ChannelUri.parse(context.controlRequestChannel());
+        final ChannelUri actualResponseChannel = ChannelUri.parse(context.controlResponseChannel());
+        assertTrue(actualRequestChannel.containsKey(SESSION_ID_PARAM_NAME), "session-id was not added");
+        final String sessionId = actualRequestChannel.get(SESSION_ID_PARAM_NAME);
+        assertNotNull(sessionId);
+        assertEquals(sessionId, actualResponseChannel.get(SESSION_ID_PARAM_NAME));
+
+        ChannelUri.parse(requestChannel).forEachParameter((key, value) ->
+            assertEquals(!SESSION_ID_PARAM_NAME.equals(key) ? value : sessionId, actualRequestChannel.get(key)));
+
+        ChannelUri.parse(responseChannel).forEachParameter((key, value) ->
+            assertEquals(!SESSION_ID_PARAM_NAME.equals(key) ? value : sessionId, actualResponseChannel.get(key)));
+    }
+
+    @Test
+    void shouldNotAddASessionIdIfControlModeResponseIsSpecifiedOnTheResponseChannel()
+    {
+        final int requestStreamId = 100;
+        final int responseStreamId = 200;
+        final String requestChannel = "aeron:udp?endpoint=localhost:8080";
+        final String responseChannel = "aeron:udp?control-mode=response|control=localhost:10002";
+        final Context context = new Context()
+            .aeron(aeron)
+            .ownsAeronClient(false)
+            .errorHandler(errorHandler)
+            .controlRequestChannel(requestChannel)
+            .controlRequestStreamId(requestStreamId)
+            .controlResponseChannel(responseChannel)
+            .controlResponseStreamId(responseStreamId);
+
+        assertEquals(requestChannel, context.controlRequestChannel());
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseChannel, context.controlResponseChannel());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        context.conclude();
+
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        final ChannelUri actualRequestChannel = ChannelUri.parse(context.controlRequestChannel());
+        final ChannelUri actualResponseChannel = ChannelUri.parse(context.controlResponseChannel());
+        assertNull(actualRequestChannel.get(SESSION_ID_PARAM_NAME), "unexpected session-id on request channel");
+        assertNull(actualResponseChannel.get(SESSION_ID_PARAM_NAME), "unexpected session-id on response channel");
+
+        ChannelUri.parse(requestChannel)
+            .forEachParameter((key, value) -> assertEquals(value, actualRequestChannel.get(key)));
+
+        ChannelUri.parse(responseChannel)
+            .forEachParameter((key, value) -> assertEquals(value, actualResponseChannel.get(key)));
+    }
+
+    @Test
+    void shouldAddDefaultUriParametersIfNotSpecified()
+    {
+        final int requestStreamId = 10;
+        final int responseStreamId = 20;
+        final String requestChannel = "aeron:udp?endpoint=localhost:8080";
+        final String responseChannel = "aeron:udp?endpoint=localhost:0";
+        final Context context = new Context()
+            .aeron(aeron)
+            .ownsAeronClient(false)
+            .errorHandler(errorHandler)
+            .controlRequestChannel(requestChannel)
+            .controlRequestStreamId(requestStreamId)
+            .controlResponseChannel(responseChannel)
+            .controlResponseStreamId(responseStreamId)
+            .controlMtuLength(2048)
+            .controlTermBufferLength(256 * 1024)
+            .controlTermBufferSparse(true);
+
+        assertEquals(requestChannel, context.controlRequestChannel());
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseChannel, context.controlResponseChannel());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        context.conclude();
+
+        assertEquals(requestStreamId, context.controlRequestStreamId());
+        assertEquals(responseStreamId, context.controlResponseStreamId());
+
+        final ChannelUri actualRequestChannel = ChannelUri.parse(context.controlRequestChannel());
+        final ChannelUri actualResponseChannel = ChannelUri.parse(context.controlResponseChannel());
+        assertEquals(String.valueOf(context.controlMtuLength()), actualRequestChannel.get(MTU_LENGTH_PARAM_NAME));
+        assertEquals(String.valueOf(context.controlMtuLength()), actualResponseChannel.get(MTU_LENGTH_PARAM_NAME));
+        assertEquals(
+            String.valueOf(context.controlTermBufferLength()), actualRequestChannel.get(TERM_LENGTH_PARAM_NAME));
+        assertEquals(
+            String.valueOf(context.controlTermBufferLength()), actualResponseChannel.get(TERM_LENGTH_PARAM_NAME));
+        assertEquals(String.valueOf(context.controlTermBufferSparse()), actualRequestChannel.get(SPARSE_PARAM_NAME));
+        assertEquals(String.valueOf(context.controlTermBufferSparse()), actualResponseChannel.get(SPARSE_PARAM_NAME));
     }
 }

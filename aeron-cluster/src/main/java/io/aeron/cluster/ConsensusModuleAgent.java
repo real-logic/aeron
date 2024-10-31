@@ -2005,7 +2005,8 @@ final class ConsensusModuleAgent
 
                         if (null == election && ConsensusModule.State.ACTIVE == state)
                         {
-                            enterElection(logAdapter.isLogEndOfStreamAt(position), "log recording stopped");
+                            final boolean isEos = logAdapter.isLogEndOfStreamAt(position);
+                            enterElection(isEos, "log recording stopped: eos=" + isEos);
                             return workCount;
                         }
                     }

@@ -44,6 +44,7 @@ import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.fail;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 public class ArchiveAbandonedClientTest
@@ -54,6 +55,10 @@ public class ArchiveAbandonedClientTest
     Path tempDir;
 
     private TestMediaDriver driver;
+    private Archive archive;
+    private Aeron aeron;
+    private AeronArchive client1;
+    private AeronArchive client2;
 
     @BeforeEach
     void setUp()
@@ -74,7 +79,7 @@ public class ArchiveAbandonedClientTest
     @AfterEach
     void tearDown()
     {
-        CloseHelper.close(driver);
+        CloseHelper.closeAll(client1, client2, aeron, archive, driver);
     }
 
     @ParameterizedTest
@@ -83,8 +88,46 @@ public class ArchiveAbandonedClientTest
         "aeron:udp?endpoint=localhost:10001, aeron:udp?endpoint=localhost:10002",
         "aeron:udp?endpoint=localhost:10001, aeron:udp?control=localhost:10002|control-mode=response",
     })
-    @InterruptAfter(1000)
+    @InterruptAfter(10)
     void test(final String requestChannel, final String responseChannel)
+    {
+        launch(requestChannel, responseChannel);
+
+        final String channel = "aeron:ipc?ssc=true|term-length=128k";
+        final int streamId = 444;
+        final ExclusivePublication recordedPublication =
+            client1.addRecordedExclusivePublication(channel, streamId);
+        final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
+        ThreadLocalRandom.current().nextBytes(buffer.byteArray());
+
+        final CountersReader counters = aeron.countersReader();
+        final int recordingCounterId = Tests.awaitRecordingCounterId(
+            counters, recordedPublication.sessionId(), client1.archiveId());
+        final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
+
+        final int archiveResponseSubscriptionCounterId =
+            client1.controlResponsePoller().subscription().imageAtIndex(0).subscriberPositionId();
+
+        // ensure at least one full term of archive responses is generated in order to trigger blocking
+        final int controlTermBufferLength = archive.context().controlTermBufferLength();
+        while (counters.getCounterValue(archiveResponseSubscriptionCounterId) < controlTermBufferLength)
+        {
+            final int length = ThreadLocalRandom.current().nextInt(buffer.capacity());
+            while (recordedPublication.offer(buffer, 0, length) < 0)
+            {
+                Tests.yield();
+            }
+
+            while (client1.getMaxRecordedPosition(recordingId) < recordedPublication.position())
+            {
+                Tests.yield();
+            }
+        }
+
+        fail();
+    }
+
+    private void launch(final String requestChannel, final String responseChannel)
     {
         final int requestStreamId = 111;
         final int responseStreamId = 222;
@@ -106,53 +149,22 @@ public class ArchiveAbandonedClientTest
             .aeronDirectoryName(driver.aeronDirectoryName())
             .useConductorAgentInvoker(true);
 
-        final int controlTermBufferLength = 64 * 1024;
         final AeronArchive.Context aeronArchiveContext = new AeronArchive.Context()
             .controlRequestChannel(requestChannel)
             .controlRequestStreamId(requestStreamId)
             .controlResponseChannel(responseChannel)
             .controlResponseStreamId(responseStreamId)
-            .controlTermBufferLength(controlTermBufferLength)
+            .controlTermBufferLength(64 * 1024)
             .controlTermBufferSparse(true);
 
-        try (Archive archive = Archive.launch(archiveContext);
-            Aeron aeron = Aeron.connect(aeronCtx);
-            AeronArchive aeronArchive =
-                AeronArchive.connect(aeronArchiveContext.aeron(aeron).ownsAeronClient(false).clone());
-            AeronArchive slowClient = AeronArchive.connect(aeronArchiveContext.clone()))
-        {
-            assertEquals(archive.context().archiveId(), aeronArchive.archiveId());
-            assertEquals(archive.context().archiveId(), slowClient.archiveId());
+        archive = Archive.launch(archiveContext);
+        systemTestWatcher.dataCollector().add(archive.context().archiveDir());
 
-            final String channel = "aeron:ipc?ssc=true|term-length=128k";
-            final int streamId = 444;
-            final ExclusivePublication recordedPublication =
-                aeronArchive.addRecordedExclusivePublication(channel, streamId);
-            final UnsafeBuffer buffer = new UnsafeBuffer(new byte[1024]);
-            ThreadLocalRandom.current().nextBytes(buffer.byteArray());
+        aeron = Aeron.connect(aeronCtx);
+        client1 = AeronArchive.connect(aeronArchiveContext.clone().aeron(aeron).ownsAeronClient(false));
+        client2 = AeronArchive.connect(aeronArchiveContext.clone().aeron(aeron).ownsAeronClient(false));
 
-            final CountersReader counters = aeron.countersReader();
-            final int recordingCounterId = Tests.awaitRecordingCounterId(
-                counters, recordedPublication.sessionId(), aeronArchive.archiveId());
-            final long recordingId = RecordingPos.getRecordingId(counters, recordingCounterId);
-
-            final int archiveResponseSubscriptionCounterId =
-                aeronArchive.controlResponsePoller().subscription().imageAtIndex(0).subscriberPositionId();
-
-            // ensure at least one full term of archive responses is generated in order to trigger blocking
-            while (counters.getCounterValue(archiveResponseSubscriptionCounterId) < controlTermBufferLength)
-            {
-                final int length = ThreadLocalRandom.current().nextInt(buffer.capacity());
-                while (recordedPublication.offer(buffer, 0, length) < 0)
-                {
-                    Tests.yield();
-                }
-
-                while (aeronArchive.getMaxRecordedPosition(recordingId) < recordedPublication.position())
-                {
-                    Tests.yield();
-                }
-            }
-        }
+        assertEquals(archive.context().archiveId(), client1.archiveId());
+        assertEquals(archive.context().archiveId(), client2.archiveId());
     }
 }

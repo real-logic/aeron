@@ -3956,6 +3956,7 @@ public final class AeronArchive implements AutoCloseable
         replayParams.replayToken(replayToken);
         final Subscription replaySubscription = aeron.addSubscription(replayChannel, replayStreamId);
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder(context.controlRequestChannel())
+            .sessionId((Integer)null)
             .responseCorrelationId(replaySubscription.registrationId())
             .termId((Integer)null).initialTermId((Integer)null).termOffset((Integer)null)
             .termLength(64 * 1024)
@@ -4025,6 +4026,7 @@ public final class AeronArchive implements AutoCloseable
 
         replayParams.replayToken(replayToken);
         final ChannelUriStringBuilder uriBuilder = new ChannelUriStringBuilder(context.controlRequestChannel())
+            .sessionId((Integer)null)
             .responseCorrelationId(replayParams.subscriptionRegistrationId())
             .termId((Integer)null).initialTermId((Integer)null).termOffset((Integer)null)
             .termLength(64 * 1024)

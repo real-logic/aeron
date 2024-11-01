@@ -37,6 +37,7 @@ import org.agrona.concurrent.errors.ErrorConsumer;
 import org.agrona.concurrent.errors.ErrorLogReader;
 import org.agrona.concurrent.ringbuffer.RingBufferDescriptor;
 import org.agrona.concurrent.status.CountersReader;
+import org.junit.jupiter.api.extension.AfterEachCallback;
 import org.junit.jupiter.api.extension.AfterTestExecutionCallback;
 import org.junit.jupiter.api.extension.BeforeEachCallback;
 import org.junit.jupiter.api.extension.ExtensionContext;
@@ -67,7 +68,11 @@ import static java.nio.charset.StandardCharsets.UTF_8;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecutionCallback, BeforeEachCallback
+public class SystemTestWatcher implements
+    DriverOutputConsumer,
+    AfterTestExecutionCallback,
+    BeforeEachCallback,
+    AfterEachCallback
 {
     public static final Pattern PARAMETERISED_TEST_INDEX_PATTERN = Pattern.compile("\\[([0-9]+)].*");
     private static final String CLUSTER_TERMINATION_EXCEPTION = ClusterTerminationException.class.getName();
@@ -278,7 +283,6 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         }
         finally
         {
-            deleteAllLocations(error);
             if (null != error)
             {
                 System.out.println("*** Complete stack trace: ");
@@ -286,6 +290,11 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
                 LangUtil.rethrowUnchecked(error);
             }
         }
+    }
+
+    public void afterEach(final ExtensionContext context) throws Exception
+    {
+        deleteAllLocations();
     }
 
     private void setTerminationExpected()
@@ -540,7 +549,7 @@ public class SystemTestWatcher implements DriverOutputConsumer, AfterTestExecuti
         return error;
     }
 
-    private void deleteAllLocations(final Throwable error)
+    private void deleteAllLocations()
     {
         for (final Path path : dataCollector.cleanupLocations())
         {

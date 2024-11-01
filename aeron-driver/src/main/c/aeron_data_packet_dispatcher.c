@@ -182,7 +182,7 @@ int aeron_data_packet_dispatcher_add_subscription(aeron_data_packet_dispatcher_t
             return -1;
         }
 
-        if (aeron_data_packet_dispatcher_stream_interest_init(stream_interest, false) < 0 ||
+        if (aeron_data_packet_dispatcher_stream_interest_init(stream_interest, true) < 0 ||
             aeron_int64_to_ptr_hash_map_put(&dispatcher->session_by_stream_id_map, stream_id, stream_interest) < 0)
         {
             AERON_APPEND_ERR("%s", "Failed to add stream_interest to session_by_stream_id_map");

@@ -292,7 +292,7 @@ public class SystemTestWatcher implements
         }
     }
 
-    public void afterEach(final ExtensionContext context) throws Exception
+    public void afterEach(final ExtensionContext context)
     {
         deleteAllLocations();
     }

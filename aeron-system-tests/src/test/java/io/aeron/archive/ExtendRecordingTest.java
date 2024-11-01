@@ -42,7 +42,6 @@ import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.ExpandableArrayBuffer;
-import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.concurrent.status.CountersReader;
 import org.hamcrest.Matcher;
@@ -51,12 +50,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.api.io.TempDir;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InOrder;
 import org.mockito.Mockito;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -64,7 +64,8 @@ import static io.aeron.archive.codecs.RecordingSignal.*;
 import static io.aeron.archive.codecs.SourceLocation.LOCAL;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static org.agrona.BitUtil.SIZE_OF_INT;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -99,7 +100,6 @@ class ExtendRecordingTest
     private TestMediaDriver driver;
     private Archive archive;
     private Aeron aeron;
-    private File archiveDir;
     private AeronArchive aeronArchive;
 
     private final RecordingSignalConsumer mockRecordingSignalConsumer = mock(RecordingSignalConsumer.class);
@@ -108,14 +108,9 @@ class ExtendRecordingTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     @BeforeEach
-    void before()
+    void before(@TempDir final Path tempDir)
     {
         final String aeronDirectoryName = CommonContext.generateRandomDirName();
-
-        if (null == archiveDir)
-        {
-            archiveDir = new File(SystemUtil.tmpDirName(), "archive");
-        }
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .aeronDirectoryName(aeronDirectoryName)
@@ -127,10 +122,11 @@ class ExtendRecordingTest
         final Archive.Context archiveCtx = TestContexts.localhostArchive()
             .catalogCapacity(ArchiveSystemTests.CATALOG_CAPACITY)
             .aeronDirectoryName(aeronDirectoryName)
-            .archiveDir(archiveDir)
+            .archiveDir(tempDir.resolve("archive").toFile())
             .fileSyncLevel(0)
             .segmentFileLength(TERM_MIN_LENGTH)
-            .threadingMode(ArchiveThreadingMode.SHARED);
+            .threadingMode(ArchiveThreadingMode.SHARED)
+            .deleteArchiveOnStart(true);
 
         driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
         systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());
@@ -204,7 +200,7 @@ class ExtendRecordingTest
 
         final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(10);
         assertEquals(
-            1L, aeronArchive.listRecordingsForUri(0, 1, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector.reset()));
+            1L, aeronArchive.listRecordingsForUri(0, 10, "alias=" + MY_ALIAS, RECORDED_STREAM_ID, collector.reset()));
         final RecordingDescriptor recording = collector.descriptors().get(0);
         assertEquals(recordingId, recording.recordingId());
 
@@ -426,7 +422,7 @@ class ExtendRecordingTest
         assertEquals(startIndex + count, received.get());
     }
 
-    void pollForRecordingSignal(final AeronArchive aeronArchive)
+    private void pollForRecordingSignal(final AeronArchive aeronArchive)
     {
         while (0 == aeronArchive.pollForRecordingSignals())
         {

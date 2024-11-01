@@ -72,11 +72,14 @@ static inline bool aeron_subscription_link_matches(
     const aeron_receive_channel_endpoint_t *endpoint,
     int32_t stream_id,
     bool has_session_id,
-    int32_t session_id)
+    int32_t session_id,
+    bool is_response)
 {
     return link->endpoint == endpoint &&
         link->stream_id == stream_id &&
-        (link->has_session_id == has_session_id && (!has_session_id || link->session_id == session_id));
+        link->has_session_id == has_session_id &&
+        link->is_response == is_response &&
+        ((!has_session_id && !is_response) || link->session_id == session_id);
 }
 
 static inline bool aeron_subscription_link_matches_allowing_wildcard(
@@ -143,11 +146,17 @@ static bool aeron_driver_conductor_has_clashing_subscription(
     for (size_t i = 0, length = conductor->network_subscriptions.length; i < length; i++)
     {
         aeron_subscription_link_t *link = &conductor->network_subscriptions.array[i];
-        bool matches_tag = AERON_URI_INVALID_TAG != endpoint->conductor_fields.udp_channel->tag_id ||
-            link->endpoint->conductor_fields.udp_channel->tag_id == endpoint->conductor_fields.udp_channel->tag_id;
+        aeron_udp_channel_t *udp_channel = endpoint->conductor_fields.udp_channel;
+        bool matches_tag = AERON_URI_INVALID_TAG != udp_channel->tag_id ||
+            link->endpoint->conductor_fields.udp_channel->tag_id == udp_channel->tag_id;
 
         if (matches_tag && aeron_subscription_link_matches(
-            link, endpoint, stream_id, params->has_session_id, params->session_id))
+            link,
+            endpoint,
+            stream_id,
+            params->has_session_id,
+            params->session_id,
+            AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == udp_channel->control_mode))
         {
             if (params->is_reliable != link->is_reliable)
             {
@@ -158,8 +167,8 @@ static bool aeron_driver_conductor_has_clashing_subscription(
                     value,
                     link->channel_length,
                     link->channel,
-                    (int)endpoint->conductor_fields.udp_channel->uri_length,
-                    endpoint->conductor_fields.udp_channel->original_uri);
+                    (int)udp_channel->uri_length,
+                    udp_channel->original_uri);
                 return true;
             }
 
@@ -172,8 +181,8 @@ static bool aeron_driver_conductor_has_clashing_subscription(
                     value,
                     link->channel_length,
                     link->channel,
-                    (int)endpoint->conductor_fields.udp_channel->uri_length,
-                    endpoint->conductor_fields.udp_channel->original_uri);
+                    (int)udp_channel->uri_length,
+                    udp_channel->original_uri);
                 return true;
             }
         }
@@ -4500,10 +4509,9 @@ int aeron_driver_conductor_on_add_network_subscription_complete(
         {
             aeron_publication_image_t *image = conductor->publication_images.array[i].image;
 
-            if (endpoint == image->conductor_fields.endpoint &&
-                command->stream_id == image->stream_id &&
-                aeron_publication_image_is_accepting_subscriptions(image) &&
-                (!link->has_session_id || (link->session_id == image->session_id)))
+            if (aeron_subscription_link_matches_allowing_wildcard(
+                link, image->conductor_fields.endpoint, image->stream_id, image->session_id) &&
+                aeron_publication_image_is_accepting_subscriptions(image))
             {
                 if (aeron_driver_conductor_link_subscribable(
                     conductor,

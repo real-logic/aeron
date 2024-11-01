@@ -1545,7 +1545,7 @@ public final class AeronArchive implements AutoCloseable
     /**
      * Get the stop position for a recording.
      *
-     * @param recordingId of the active recording for which the position is required.
+     * @param recordingId of the recording for which the position is required.
      * @return the stop position, or {@link #NULL_POSITION} if still active.
      * @see #getRecordingPosition(long)
      */
@@ -1573,10 +1573,11 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
-     * Get the stop or active recorded position of a recording.
+     * Get the max recorded position of a recording. For active recordings it will be the recording position,
+     * and for inactive recordings it will be the stop position.
      *
-     * @param recordingId of the recording that the stop of active recording position is being requested for.
-     * @return the length of the recording.
+     * @param recordingId of the recording for which the position is required.
+     * @return the max recorded position of the recording.
      * @since 1.44.0
      */
     public long getMaxRecordedPosition(final long recordingId)
@@ -1591,7 +1592,7 @@ public final class AeronArchive implements AutoCloseable
 
             if (!archiveProxy.getMaxRecordedPosition(recordingId, lastCorrelationId, controlSessionId))
             {
-                throw new ArchiveException("failed to send get recorded length request");
+                throw new ArchiveException("failed to send get max recorded position request");
             }
 
             return pollForResponse(lastCorrelationId);

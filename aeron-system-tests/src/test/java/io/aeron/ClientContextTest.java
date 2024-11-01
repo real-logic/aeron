@@ -53,6 +53,7 @@ class ClientContextTest
     void before()
     {
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .aeronDirectoryName(CommonContext.generateRandomDirName())
             .dirDeleteOnStart(true)
             .dirDeleteOnShutdown(true)
             .threadingMode(ThreadingMode.SHARED);
@@ -121,7 +122,7 @@ class ClientContextTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = {"", "my-test-client"})
+    @ValueSource(strings = { "", "my-test-client" })
     @InterruptAfter(10)
     void shouldAddClientInfoToTheHeartbeatTimestampCounter(final String clientName)
     {

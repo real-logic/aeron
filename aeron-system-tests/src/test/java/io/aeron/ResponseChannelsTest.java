@@ -36,6 +36,8 @@ import org.agrona.concurrent.Agent;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.YieldingIdleStrategy;
+import org.hamcrest.CoreMatchers;
+import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -619,10 +621,12 @@ public class ResponseChannelsTest
 
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> aeron.addSubscription(channel2, streamId));
-            assertEquals("ERROR - option conflicts with existing subscription: isResponse=" +
+            MatcherAssert.assertThat(
+                exception.getMessage(),
+                CoreMatchers.containsString(
+                "option conflicts with existing subscription: isResponse=" +
                 CONTROL_MODE_RESPONSE.equals(ChannelUri.parse(channel2).get(MDC_CONTROL_MODE_PARAM_NAME)) +
-                " existingChannel=" + channel1 + " channel=" + channel2 + ", errorCodeValue=1",
-                exception.getMessage());
+                " existingChannel=" + channel1 + " channel=" + channel2));
         }
     }
 

@@ -774,11 +774,10 @@ TEST_F(DriverConductorNetworkTest, shouldFailToAddPublicationWithAtsEnabled)
 TEST_F(DriverConductorNetworkTest, shouldFailToAddSubscriptionWithAtsEnabled)
 {
     int64_t client_id = nextCorrelationId();
-    int64_t pub_id = nextCorrelationId();
+    int64_t sub_id = nextCorrelationId();
 
-    ASSERT_EQ(addNetworkSubscription(client_id, pub_id, CHANNEL_1 "|ats=true", STREAM_ID_1), 0);
+    ASSERT_EQ(addNetworkSubscription(client_id, sub_id, CHANNEL_1 "|ats=true", STREAM_ID_1), 0);
     doWorkUntilDone();
-    EXPECT_CALL(m_mockCallbacks, broadcastToClient(_, _, _));
     EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _));
-    readAllBroadcastsFromConductor(mock_broadcast_handler);
+    EXPECT_EQ(1, readAllBroadcastsFromConductor(mock_broadcast_handler));
 }

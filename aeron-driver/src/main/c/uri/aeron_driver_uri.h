@@ -81,11 +81,6 @@ int aeron_publication_params_validate_mtu_for_sndbuf(
     size_t context_socket_sndbuf,
     size_t os_default_socket_sndbuf);
 
-int aeron_subscription_params_validate_initial_window_for_rcvbuf(
-    aeron_driver_uri_subscription_params_t *params,
-    size_t endpoint_socket_rcvbuf,
-    size_t os_default_socket_rcvbuf);
-
 int aeron_driver_uri_get_timestamp_offset(aeron_uri_t *uri, const char *key, int32_t *offset);
 const char *aeron_driver_uri_get_offset_info(int32_t offset);
 

@@ -475,32 +475,6 @@ int aeron_publication_params_validate_mtu_for_sndbuf(
     return 0;
 }
 
-int aeron_subscription_params_validate_initial_window_for_rcvbuf(
-    aeron_driver_uri_subscription_params_t *params,
-    size_t endpoint_socket_rcvbuf,
-    size_t os_default_socket_rcvbuf)
-{
-    if (0 != endpoint_socket_rcvbuf && endpoint_socket_rcvbuf < params->initial_window_length)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "Initial window greater than SO_SNDBUF for channel: rcv-wnd=%" PRIu64 " so-rcvbuf=%" PRIu64,
-            params->initial_window_length, endpoint_socket_rcvbuf);
-        return -1;
-    }
-
-    if (0 == endpoint_socket_rcvbuf && os_default_socket_rcvbuf < params->initial_window_length)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "Initial window greater than SO_SNDBUF for channel: rcv-wnd=%" PRIu64 " so-rcvbuf=%" PRIu64 " (OS default)",
-            params->initial_window_length, endpoint_socket_rcvbuf);
-        return -1;
-    }
-
-    return 0;
-}
-
 int aeron_driver_uri_get_timestamp_offset(aeron_uri_t *uri, const char *key, int32_t *offset)
 {
     *offset = AERON_NULL_VALUE;

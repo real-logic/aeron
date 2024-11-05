@@ -17,6 +17,7 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -40,17 +41,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.function.Supplier;
 
+import static io.aeron.CommonContext.*;
 import static java.nio.charset.StandardCharsets.UTF_8;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 public class ResponseChannelsTest
@@ -70,6 +71,7 @@ public class ResponseChannelsTest
     void setUp()
     {
         final MediaDriver.Context context = new MediaDriver.Context()
+            .aeronDirectoryName(generateRandomDirName())
             .publicationTermBufferLength(LogBufferDescriptor.TERM_MIN_LENGTH)
             .threadingMode(ThreadingMode.SHARED)
             .enableExperimentalFeatures(true);
@@ -598,6 +600,29 @@ public class ResponseChannelsTest
                     assertEquals(pubRspA.originalRegistrationId(), pubRspB.originalRegistrationId());
                 }
             }
+        }
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "aeron:udp?endpoint=localhost:8282, aeron:udp?endpoint=localhost:8282|control-mode=response",
+        "aeron:udp?endpoint=localhost:5555|control-mode=response, aeron:udp?endpoint=localhost:5555",
+    })
+    void shouldRejectSubscriptionIfResponseConfigurationDoesNotMatch(final String channel1, final String channel2)
+    {
+        watcher.ignoreErrorsMatching(s -> s.contains("option conflicts with existing subscription"));
+
+        final int streamId = 42;
+        try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(driver1.aeronDirectoryName())))
+        {
+            assertNotNull(aeron.addSubscription(channel1, streamId));
+
+            final RegistrationException exception =
+                assertThrowsExactly(RegistrationException.class, () -> aeron.addSubscription(channel2, streamId));
+            assertEquals("ERROR - option conflicts with existing subscription: isResponse=" +
+                CONTROL_MODE_RESPONSE.equals(ChannelUri.parse(channel2).get(MDC_CONTROL_MODE_PARAM_NAME)) +
+                " existingChannel=" + channel1 + " channel=" + channel2 + ", errorCodeValue=1",
+                exception.getMessage());
         }
     }
 

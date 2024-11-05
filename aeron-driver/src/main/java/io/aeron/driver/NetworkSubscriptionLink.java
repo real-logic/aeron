@@ -50,7 +50,6 @@ class NetworkSubscriptionLink extends SubscriptionLink
         return isRejoin;
     }
 
-    @Override
     boolean isResponse()
     {
         return isResponse;
@@ -73,7 +72,6 @@ class NetworkSubscriptionLink extends SubscriptionLink
         return channelEndpoint == this.channelEndpoint &&
             streamId == this.streamId &&
             hasSessionId == params.hasSessionId &&
-            isResponse == params.isResponse &&
             isWildcardOrSessionIdMatch(params.sessionId);
     }
 

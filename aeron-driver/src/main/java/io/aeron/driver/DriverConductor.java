@@ -2007,6 +2007,14 @@ public final class DriverConductor implements Agent
                             " existingChannel=" + subscription.channel() + " channel=" +
                             udpChannel.originalUriString());
                     }
+
+                    if (params.isResponse != subscription.isResponse())
+                    {
+                        throw new InvalidChannelException(
+                            "option conflicts with existing subscription: isResponse=" + params.isResponse +
+                            " existingChannel=" + subscription.channel() + " channel=" +
+                            udpChannel.originalUriString());
+                    }
                 }
             }
         }

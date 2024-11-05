@@ -72,14 +72,12 @@ static inline bool aeron_subscription_link_matches(
     const aeron_receive_channel_endpoint_t *endpoint,
     int32_t stream_id,
     bool has_session_id,
-    int32_t session_id,
-    bool is_response)
+    int32_t session_id)
 {
     return link->endpoint == endpoint &&
         link->stream_id == stream_id &&
         link->has_session_id == has_session_id &&
-        link->is_response == is_response &&
-        ((!has_session_id && !is_response) || link->session_id == session_id);
+        (!has_session_id || link->session_id == session_id);
 }
 
 static inline bool aeron_subscription_link_matches_allowing_wildcard(
@@ -155,8 +153,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             endpoint,
             stream_id,
             params->has_session_id,
-            params->session_id,
-            params->is_response))
+            params->session_id))
         {
             if (params->is_reliable != link->is_reliable)
             {
@@ -178,6 +175,20 @@ static bool aeron_driver_conductor_has_clashing_subscription(
                 AERON_SET_ERR(
                     EINVAL,
                     "option conflicts with existing subscription: rejoin=%s existingChannel=%.*s channel=%.*s",
+                    value,
+                    link->channel_length,
+                    link->channel,
+                    (int)udp_channel->uri_length,
+                    udp_channel->original_uri);
+                return true;
+            }
+
+            if (params->is_response != link->is_response)
+            {
+                const char *value = params->is_response ? "true" : "false";
+                AERON_SET_ERR(
+                    EINVAL,
+                    "option conflicts with existing subscription: isResponse=%s existingChannel=%.*s channel=%.*s",
                     value,
                     link->channel_length,
                     link->channel,

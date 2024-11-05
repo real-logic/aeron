@@ -421,6 +421,11 @@ int aeron_driver_uri_subscription_params(
         return -1;
     }
 
+    params->is_response =
+        (AERON_URI_UDP == uri->type &&
+        NULL != uri->params.udp.control_mode &&
+        strcmp(uri->params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0);
+
     return 0;
 }
 

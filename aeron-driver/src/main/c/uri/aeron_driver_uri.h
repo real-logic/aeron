@@ -56,6 +56,7 @@ typedef struct aeron_driver_uri_subscription_params_stct
     bool has_session_id;
     int32_t session_id;
     size_t initial_window_length;
+    bool is_response;
 }
 aeron_driver_uri_subscription_params_t;
 

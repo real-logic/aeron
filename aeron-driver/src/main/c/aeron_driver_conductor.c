@@ -156,7 +156,7 @@ static bool aeron_driver_conductor_has_clashing_subscription(
             stream_id,
             params->has_session_id,
             params->session_id,
-            AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE == udp_channel->control_mode))
+            params->is_response))
         {
             if (params->is_reliable != link->is_reliable)
             {

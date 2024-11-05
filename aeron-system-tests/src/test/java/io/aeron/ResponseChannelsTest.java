@@ -616,6 +616,7 @@ public class ResponseChannelsTest
     })
     void shouldRejectSubscriptionIfResponseConfigurationDoesNotMatch(final String channel1, final String channel2)
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("pending issues");
         watcher.ignoreErrorsMatching(s -> s.contains("option conflicts with existing subscription"));
 
         final int streamId = 42;

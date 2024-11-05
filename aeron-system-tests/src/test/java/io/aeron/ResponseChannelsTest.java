@@ -609,8 +609,10 @@ public class ResponseChannelsTest
     @CsvSource({
         "aeron:udp?endpoint=localhost:8282, aeron:udp?endpoint=localhost:8282|control-mode=response",
         "aeron:udp?control=localhost:8282, aeron:udp?control=localhost:8282|control-mode=response",
+        "aeron:udp?control=localhost:8282, aeron:udp?control-mode=response|control=localhost:8282",
         "aeron:udp?endpoint=localhost:5555|control-mode=response, aeron:udp?endpoint=localhost:5555",
         "aeron:udp?control=localhost:5555|control-mode=response, aeron:udp?control=localhost:5555",
+        "aeron:udp?control-mode=response|control=localhost:5555, aeron:udp?control=localhost:5555",
     })
     void shouldRejectSubscriptionIfResponseConfigurationDoesNotMatch(final String channel1, final String channel2)
     {

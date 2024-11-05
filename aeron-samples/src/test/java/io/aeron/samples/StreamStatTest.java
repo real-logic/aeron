@@ -82,7 +82,7 @@ class StreamStatTest
 
     @Test
     @SuppressWarnings("MethodLength")
-    @InterruptAfter(5)
+    @InterruptAfter(10)
     void shouldCollectStreamStats()
     {
         final ExclusivePublication pub1 = aeron.addExclusivePublication(
@@ -123,9 +123,9 @@ class StreamStatTest
         Tests.awaitConnected(sub4);
 
         final int sub2RcvPosCounterId = findCounterIdByStream(
-            aeron.countersReader(), ReceiverPos.RECEIVER_POS_TYPE_ID, pub2.streamId());
+            aeron.countersReader(), pub2.streamId());
         final int sub4RcvPosCounterId = findCounterIdByStream(
-            aeron.countersReader(), ReceiverPos.RECEIVER_POS_TYPE_ID, pub4.streamId());
+            aeron.countersReader(), pub4.streamId());
 
         final UnsafeBuffer msg = new UnsafeBuffer(new byte[128]);
         ThreadLocalRandom.current().nextBytes(msg.byteArray());
@@ -151,6 +151,7 @@ class StreamStatTest
 
         final Subscription sub5 = aeron.addSubscription(pub4.channel(), pub4.streamId());
         assertNotSame(sub4, sub5);
+        Tests.awaitConnected(sub4);
         final CountingFragmentHandler sub1Handler = new CountingFragmentHandler(sub1);
         final CountingFragmentHandler sub2Handler = new CountingFragmentHandler(sub2);
         final CountingFragmentHandler sub4Handler = new CountingFragmentHandler(sub4);
@@ -233,7 +234,7 @@ class StreamStatTest
         assertStreamPosition(entry.getValue().get(7), SubscriberPos.SUBSCRIBER_POSITION_TYPE_ID, 1716702413824L);
     }
 
-    private int findCounterIdByStream(final CountersReader countersReader, final int typeId, final int streamId)
+    private int findCounterIdByStream(final CountersReader countersReader, final int streamId)
     {
         final MutableInteger counterId = new MutableInteger(-1);
 
@@ -241,8 +242,9 @@ class StreamStatTest
             (counterId1, typeId1, keyBuffer, label) ->
             {
                 final int counterStreamId = keyBuffer.getInt(StreamCounter.STREAM_ID_OFFSET);
-                if (typeId1 == typeId && counterStreamId == streamId)
+                if (ReceiverPos.RECEIVER_POS_TYPE_ID == typeId1 && streamId == counterStreamId)
                 {
+                    assertEquals(-1, counterId.intValue(), () -> "multiple rcv-pos found for streamId=" + streamId);
                     counterId.set(counterId1);
                 }
             });

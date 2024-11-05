@@ -34,11 +34,16 @@ extern "C"
 #include "../TestArchive.h"
 #include "aeron_archive_client/controlResponse.h"
 
-testing::AssertionResult EqualOrErrmsg(const int x, const int y) {
-  if (x == y)
-    return testing::AssertionSuccess();
-  else
-    return testing::AssertionFailure() << aeron_errmsg();
+testing::AssertionResult EqualOrErrmsg(const int x, const int y)
+{
+    if (x == y)
+    {
+        return testing::AssertionSuccess();
+    }
+    else
+    {
+        return testing::AssertionFailure() << aeron_errmsg();
+    }
 }
 
 #define ASSERT_EQ_ERR(__x, __y) ASSERT_TRUE(EqualOrErrmsg((__x), (__y)))
@@ -74,7 +79,8 @@ static aeron_archive_encoded_credentials_t *encoded_credentials_supplier(void *c
     return ((credentials_supplier_clientd_t *)clientd)->credentials;
 }
 
-static aeron_archive_encoded_credentials_t *encoded_credentials_on_challenge(aeron_archive_encoded_credentials_t *encoded_challenge, void *clientd)
+static aeron_archive_encoded_credentials_t *encoded_credentials_on_challenge(
+    aeron_archive_encoded_credentials_t *encoded_challenge, void *clientd)
 {
     return ((credentials_supplier_clientd_t *)clientd)->on_challenge_credentials;
 }
@@ -91,10 +97,7 @@ void recording_signal_consumer(
 {
     auto cd = (recording_signal_consumer_clientd_t *)clientd;
     cd->signals.insert(signal->recording_signal_code);
-
-    //fprintf(stderr, "RECORDING SIGNAL CODE :: %i\n", signal->recording_signal_code);
 }
-
 
 class AeronCArchiveTestBase
 {
@@ -430,7 +433,8 @@ public:
             dest_aeron_dir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
 
         ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_dest_ctx));
-        ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_dest_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+        ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+            m_dest_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
         ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
             m_dest_ctx,
             encoded_credentials_supplier,
@@ -540,7 +544,6 @@ protected:
     bool m_debug = true;
 
     const uint64_t m_idle_duration_ns = UINT64_C(1000) * UINT64_C(1000); /* 1ms */
-    //const uint64_t m_idle_duration_ns = UINT64_C(5) * UINT64_C(1000) * UINT64_C(1000); /* 5ms */
 
     aeron_archive_context_t *m_ctx = nullptr;
     aeron_archive_t *m_archive = nullptr;
@@ -676,7 +679,8 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -718,7 +722,8 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchiveWithPrebuiltAeron)
     aeron_t *aeron;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -766,7 +771,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -796,7 +802,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithPrebuiltAeron)
     aeron_t *aeron;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -838,7 +845,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveAndCallInvoker)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -871,7 +879,8 @@ TEST_F(AeronCArchiveTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -956,7 +965,8 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
     ehc.message[0] = '\0';
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         ctx,
         encoded_credentials_supplier,
@@ -999,14 +1009,16 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
             0,
             1000,
             &hdr);
-        aeron_archive_client_controlResponse_set_controlSessionId(&controlResponse, aeron_archive_control_session_id(archive));
+        aeron_archive_client_controlResponse_set_controlSessionId(
+            &controlResponse, aeron_archive_control_session_id(archive));
         aeron_archive_client_controlResponse_set_correlationId(&controlResponse, 9999999); // this should NOT match
         aeron_archive_client_controlResponse_set_relevantId(&controlResponse, 1234);
         aeron_archive_client_controlResponse_set_code(&controlResponse, aeron_archive_client_controlResponseCode_ERROR);
         const char *err_msg = "fancy error message";
         aeron_archive_client_controlResponse_put_errorMessage(&controlResponse, err_msg, strlen(err_msg) + 1);
 
-        uint64_t len = aeron_archive_client_messageHeader_encoded_length() + aeron_archive_client_controlResponse_encoded_length(&controlResponse);
+        uint64_t len = aeron_archive_client_messageHeader_encoded_length() +
+            aeron_archive_client_controlResponse_encoded_length(&controlResponse);
 
         // the following prints out the char buffer definition used by the C++ version of this test
         bool printErrorMessageHex = false;
@@ -1960,7 +1972,8 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
 
         aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_CONTROL_KEY, control_endpoint);
-        aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE);
+        aeron_uri_string_builder_put(
+            &builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY, AERON_UDP_CHANNEL_CONTROL_MODE_DYNAMIC_VALUE);
         aeron_uri_string_builder_put(&builder, AERON_URI_FC_KEY, "tagged,g:99901/1,t:5s");
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, termLength);
 
@@ -2024,7 +2037,8 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         aeron_uri_string_builder_init_new(&builder);
 
         aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
-        aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE);
+        aeron_uri_string_builder_put(
+            &builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id);
 
         aeron_uri_string_builder_sprint(&builder, subscription_channel, AERON_MAX_PATH + 1);
@@ -2133,7 +2147,8 @@ TEST_F(AeronCArchiveTest, shouldFailForIncorrectInitialCredentials)
     credentials_supplier_clientd_t bad_creds_clientd = { &bad_creds, nullptr };
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -2151,7 +2166,8 @@ TEST_F(AeronCArchiveTest, shouldBeAbleToHandleBeingChallenged)
     credentials_supplier_clientd_t creds_clientd = { &creds, &challenge_creds };
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -2169,7 +2185,8 @@ TEST_F(AeronCArchiveTest, shouldExceptionForIncorrectChallengeCredentials)
     credentials_supplier_clientd_t creds_clientd = { &creds, &bad_challenge_creds };
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -2569,7 +2586,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateThenReplay)
     recording_signal_consumer_clientd_t rsc_cd;
     rsc_cd.signals.clear();
 
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_recording_signal_consumer(
+        m_dest_ctx, recording_signal_consumer, &rsc_cd));
 
     connect();
 
@@ -2702,7 +2720,8 @@ TEST_P(AeronCArchiveParamTest, shouldRecordReplicateThenStop)
     recording_signal_consumer_clientd_t rsc_cd;
     rsc_cd.signals.clear();
 
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_recording_signal_consumer(
+        m_dest_ctx, recording_signal_consumer, &rsc_cd));
 
     connect();
 
@@ -2813,7 +2832,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
     recording_signal_consumer_clientd_t rsc_cd;
     rsc_cd.signals.clear();
 
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
+    ASSERT_EQ_ERR(
+        0, aeron_archive_context_set_recording_signal_consumer(m_dest_ctx, recording_signal_consumer, &rsc_cd));
 
     connect();
 
@@ -2883,7 +2903,8 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
         subscription_id));
 
     int64_t found_stop_position;
-    do {
+    do
+    {
         ASSERT_EQ_ERR(0, aeron_archive_get_stop_position(
             &found_stop_position,
             m_archive,
@@ -2959,7 +2980,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithResponseChannels)
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         "aeron:udp?control-mode=response|control=localhost:10002"));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -2983,7 +3005,8 @@ TEST_P(AeronCArchiveParamTest, shouldReplayWithResponseChannel)
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -3114,7 +3137,8 @@ TEST_P(AeronCArchiveParamTest, shouldStartReplayWithResponseChannel)
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -3250,7 +3274,8 @@ TEST_F(AeronCArchiveTest, shouldDisconnectAfterStopAllReplays)
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
-    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
+        m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
         m_ctx,
         encoded_credentials_supplier,
@@ -3395,12 +3420,14 @@ TEST_P(AeronCArchiveParamTest, shouldRecordAndExtend)
         if (tryStop)
         {
             bool stopped;
-            ASSERT_EQ_ERR(0, aeron_archive_try_stop_recording_channel_and_stream(&stopped, m_archive, recordingChannel2, m_recordingStreamId));
+            ASSERT_EQ_ERR(0, aeron_archive_try_stop_recording_channel_and_stream(
+                &stopped, m_archive, recordingChannel2, m_recordingStreamId));
             EXPECT_TRUE(stopped);
         }
         else
         {
-            ASSERT_EQ_ERR(0, aeron_archive_stop_recording_channel_and_stream(m_archive, recordingChannel2, m_recordingStreamId));
+            ASSERT_EQ_ERR(0, aeron_archive_stop_recording_channel_and_stream(
+                m_archive, recordingChannel2, m_recordingStreamId));
         }
 
         ASSERT_EQ_ERR(0, aeron_subscription_close(subscription, nullptr, nullptr));

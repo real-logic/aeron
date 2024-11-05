@@ -205,35 +205,6 @@ public:
             const std::string aeronPath = m_aeronDir;
             const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
 
-            /*
-            {
-                const CncFileReader reader = aeron::CncFileReader::mapExisting(m_aeronDir.c_str());
-                printErrors(aeronPath, m_stream);
-            }
-
-            {
-                std::string archiveDatFilename = m_archiveDir + AERON_FILE_SEP + "archive-mark.dat";
-                const MemoryMappedFile::ptr_t ptr = util::MemoryMappedFile::mapExistingReadOnly(archiveDatFilename.c_str());
-                AtomicBuffer errorBuffer{ptr->getMemoryPtr() + 8192, 1024 * 1024};
-
-                const int count = ErrorLogReader::read(
-                    errorBuffer,
-                    [&](
-                        std::int32_t observationCount,
-                        std::int64_t firstObservationTimestamp,
-                        std::int64_t lastObservationTimestamp,
-                        const std::string &encodedException)
-                    {
-                        m_stream << "***\n" << observationCount
-                                 << " observations for:\n " << encodedException.c_str() << std::endl;
-                    },
-                    0);
-
-                m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
-            }
-             */
-
-            //if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
             if (aeron_context_request_driver_termination(aeronPath.c_str(), nullptr, 0))
             {
                 m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
@@ -272,27 +243,6 @@ public:
             m_stream.flush();
         }
     }
-
-    /*
-    static void printErrors(const std::string &aeronPath, std::ostream &out)
-    {
-        const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
-
-        int count = reader.readErrorLog(
-            [&](
-                std::int32_t observationCount,
-                std::int64_t firstObservationTimestamp,
-                std::int64_t lastObservationTimestamp,
-                const std::string &encodedException)
-            {
-                out << "***\n" << observationCount
-                         << " observations for:\n " << encodedException.c_str() << std::endl;
-            },
-            0);
-
-        out << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
-    }
-     */
 
 private:
     const std::string m_java = JAVA_EXECUTABLE;          // Defined in CMakeLists.txt

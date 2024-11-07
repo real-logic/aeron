@@ -381,7 +381,7 @@ public final class Receiver implements Agent
                 publicationImage.streamId() == streamId &&
                 publicationImage.sessionId() == sessionId)
             {
-                publicationImage.stopStatusMessages();
+                publicationImage.stopStatusMessagesIfNotActive();
             }
         }
     }

@@ -361,6 +361,6 @@ inline int64_t aeron_publication_image_join_position(aeron_publication_image_t *
     return position;
 }
 
-void aeron_publication_image_stop_status_messages(aeron_publication_image_t *image);
+void aeron_publication_image_stop_status_messages_if_not_active(aeron_publication_image_t *image);
 
 #endif //AERON_PUBLICATION_IMAGE_H

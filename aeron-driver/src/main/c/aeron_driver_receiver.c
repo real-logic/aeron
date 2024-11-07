@@ -510,16 +510,16 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
 
 void aeron_driver_receiver_disconnect_inactive_image(
     aeron_driver_receiver_t *receiver,
-    aeron_receive_channel_endpoint_t *endpoint,
-    int32_t stream_id,
-    int32_t session_id)
+    const aeron_receive_channel_endpoint_t *endpoint,
+    const int32_t stream_id,
+    const int32_t session_id)
 {
     for (size_t i = 0, length = receiver->images.length; i < length; i++)
     {
         aeron_publication_image_t *image = receiver->images.array[i].image;
-        if (image->endpoint == endpoint && image->session_id == session_id && image->stream_id)
+        if (endpoint == image->endpoint && stream_id == image->stream_id && session_id == image->session_id)
         {
-            aeron_publication_image_stop_status_messages(image);
+            aeron_publication_image_stop_status_messages_if_not_active(image);
         }
     }
 }

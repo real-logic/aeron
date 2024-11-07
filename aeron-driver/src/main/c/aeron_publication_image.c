@@ -1149,14 +1149,12 @@ void aeron_publication_image_remove_response_session_id(aeron_publication_image_
     aeron_publication_image_set_response_session_id(image, AERON_PUBLICATION_RESPONSE_NULL_RESPONSE_SESSION_ID);
 }
 
-void aeron_publication_image_stop_status_messages(aeron_publication_image_t *image)
+void aeron_publication_image_stop_status_messages_if_not_active(aeron_publication_image_t *image)
 {
-    if (AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
+    if (AERON_PUBLICATION_IMAGE_STATE_ACTIVE != image->conductor_fields.state)
     {
-        return;
+        image->time_of_last_sm_ns = INT64_MAX;
     }
-
-    image->time_of_last_sm_ns = INT64_MAX;
 }
 
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);

@@ -19,6 +19,13 @@
 #include "string"
 #include "util/Export.h"
 
+#ifdef major
+#undef major
+#endif
+#ifdef minor
+#undef minor
+#endif
+
 namespace aeron
 {
 

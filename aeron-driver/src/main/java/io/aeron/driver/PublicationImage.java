@@ -21,6 +21,7 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.exceptions.AeronEvent;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
@@ -939,6 +940,17 @@ public final class PublicationImage
         rejectionReason = reason;
     }
 
+    void stopStatusMessages()
+    {
+        if (State.ACTIVE == state)
+        {
+            errorHandler.onError(new AeronEvent("Tried to stop messages on ACTIVE image=" + this));
+            return;
+        }
+
+        timeOfLastSmNs = Long.MAX_VALUE;
+    }
+
     private void state(final State state)
     {
         this.state = state;
@@ -1183,5 +1195,18 @@ public final class PublicationImage
     {
         final String timeoutStr = channelEndpoint.subscriptionUdpChannel().channelUri().get(paramName);
         return null != timeoutStr ? SystemUtil.parseDuration(paramName, timeoutStr) : defaultValueNs;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "PublicationImage{" +
+            "state=" + state +
+            ", sourceIdentity='" + sourceIdentity + '\'' +
+            ", streamId=" + streamId +
+            ", sessionId=" + sessionId +
+            '}';
     }
 }

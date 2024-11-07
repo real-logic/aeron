@@ -892,6 +892,7 @@ final class ConsensusModuleAgent
                     clusterClock.time(),
                     memberId,
                     logPublisher.sessionId(),
+                    ctx.appVersion(),
                     false);
             }
         }

@@ -1202,6 +1202,7 @@ class Election
                 timestamp,
                 thisMember.id(),
                 logSessionId,
+                ctx.appVersion(),
                 isLeaderStartup);
         }
     }

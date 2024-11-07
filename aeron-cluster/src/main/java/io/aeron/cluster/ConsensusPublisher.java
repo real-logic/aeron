@@ -181,6 +181,7 @@ final class ConsensusPublisher
         final long timestamp,
         final int leaderMemberId,
         final int logSessionId,
+        final int appVersion,
         final boolean isStartup)
     {
         if (null == publication)
@@ -214,6 +215,7 @@ final class ConsensusPublisher
                     .timestamp(timestamp)
                     .leaderMemberId(leaderMemberId)
                     .logSessionId(logSessionId)
+                    .appVersion(appVersion)
                     .isStartup(isStartup ? BooleanType.TRUE : BooleanType.FALSE);
 
                 bufferClaim.commit();

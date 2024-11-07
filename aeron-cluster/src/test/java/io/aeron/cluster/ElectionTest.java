@@ -140,11 +140,12 @@ class ElectionTest
     {
         final long leadershipTermId = NULL_VALUE;
         final long logPosition = 0;
+        final int appVersion = -98;
         final ClusterMember[] clusterMembers = prepareClusterMembers();
         final ClusterMember candidateMember = clusterMembers[0];
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
 
-        ctx.appointedLeaderId(candidateMember.id());
+        ctx.appointedLeaderId(candidateMember.id()).appVersion(appVersion);
 
         final Election election = newElection(leadershipTermId, logPosition, clusterMembers, candidateMember);
 
@@ -203,6 +204,7 @@ class ElectionTest
             clock.nanoTime(),
             candidateMember.id(),
             LOG_SESSION_ID,
+            appVersion,
             election.isLeaderStartup());
 
         verify(consensusPublisher).newLeadershipTerm(
@@ -218,6 +220,7 @@ class ElectionTest
             clock.nanoTime(),
             candidateMember.id(),
             LOG_SESSION_ID,
+            appVersion,
             election.isLeaderStartup());
 
         when(recordingLog.isUnknown(candidateTermId)).thenReturn(Boolean.TRUE);
@@ -1381,6 +1384,8 @@ class ElectionTest
         final ClusterMember liveFollower = clusterMembers[1];
         final int leaderId = thisMember.id();
         final int followerId = liveFollower.id();
+        final int appVersion = 888;
+        ctx.appVersion(appVersion);
 
         when(consensusModuleAgent.role()).thenReturn(Cluster.Role.LEADER);
         when(consensusModuleAgent.logRecordingId()).thenReturn(RECORDING_ID);
@@ -1444,6 +1449,7 @@ class ElectionTest
             clock.nanoTime(),
             leaderId,
             LOG_SESSION_ID,
+            appVersion,
             election.isLeaderStartup());
 
         verify(consensusPublisher).newLeadershipTerm(
@@ -1459,6 +1465,7 @@ class ElectionTest
             clock.nanoTime(),
             leaderId,
             LOG_SESSION_ID,
+            appVersion,
             election.isLeaderStartup());
 
         // Begin replay once a quorum of followers has caught up.

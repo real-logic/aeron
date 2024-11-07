@@ -722,7 +722,7 @@ public final class PublicationImage
     {
         int workCount = 0;
         final long changeNumber = (long)END_SM_CHANGE_VH.getAcquire(this);
-        final boolean hasSmTimedOut = (nowNs - smTimeoutNs) < timeOfLastSmNs;
+        final boolean hasSmTimedOut = (nowNs - smTimeoutNs) > timeOfLastSmNs;
 
         if (null != rejectionReason)
         {

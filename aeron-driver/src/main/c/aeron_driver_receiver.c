@@ -508,6 +508,22 @@ void aeron_driver_receiver_on_remove_destination(void *clientd, void *item)
     }
 }
 
+void aeron_driver_receiver_disconnect_inactive_image(
+    aeron_driver_receiver_t *receiver,
+    aeron_receive_channel_endpoint_t *endpoint,
+    int32_t stream_id,
+    int32_t session_id)
+{
+    for (size_t i = 0, length = receiver->images.length; i < length; i++)
+    {
+        aeron_publication_image_t *image = receiver->images.array[i].image;
+        if (image->endpoint == endpoint && image->session_id == session_id && image->stream_id)
+        {
+            aeron_publication_image_stop_status_messages(image);
+        }
+    }
+}
+
 void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
 {
     aeron_driver_receiver_t *receiver = (aeron_driver_receiver_t *)clientd;
@@ -525,6 +541,7 @@ void aeron_driver_receiver_on_add_publication_image(void *clientd, void *item)
     }
     else
     {
+        aeron_driver_receiver_disconnect_inactive_image(receiver, image->endpoint, image->stream_id, image->session_id);
         receiver->images.array[receiver->images.length++].image = cmd->image;
     }
 }

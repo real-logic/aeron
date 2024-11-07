@@ -703,7 +703,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
     int work_count = 0;
     int64_t change_number;
     AERON_GET_ACQUIRE(change_number, image->end_sm_change);
-    const bool has_sm_timed_out = now_ns > (image->time_of_last_sm_ns + image->sm_timeout_ns);
+    const bool has_sm_timed_out = (now_ns - image->sm_timeout_ns) > image->time_of_last_sm_ns;
 
     if (NULL != image->invalidation_reason)
     {
@@ -1147,6 +1147,16 @@ void aeron_publication_image_invalidate(aeron_publication_image_t *image, int32_
 void aeron_publication_image_remove_response_session_id(aeron_publication_image_t *image)
 {
     aeron_publication_image_set_response_session_id(image, AERON_PUBLICATION_RESPONSE_NULL_RESPONSE_SESSION_ID);
+}
+
+void aeron_publication_image_stop_status_messages(aeron_publication_image_t *image)
+{
+    if (AERON_PUBLICATION_IMAGE_STATE_ACTIVE == image->conductor_fields.state)
+    {
+        return;
+    }
+
+    image->time_of_last_sm_ns = INT64_MAX;
 }
 
 extern bool aeron_publication_image_is_heartbeat(const uint8_t *buffer, size_t length);

@@ -20,4 +20,4 @@ jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.10.
 [plugins]
 versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }
 bnd = { id = "biz.aQute.bnd.builder", version = "7.0.0" }
-shadow = { id = "com.gradleup.shadow", version = "8.3.4" }
+shadow = { id = "com.gradleup.shadow", version = "8.3.5" }

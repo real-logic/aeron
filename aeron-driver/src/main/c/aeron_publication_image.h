@@ -132,7 +132,7 @@ typedef struct aeron_publication_image_stct
 
     int64_t last_sm_change_number;
     int64_t last_sm_position;
-    int64_t time_of_last_sm_ns;
+    int64_t next_sm_deadline_ns;
     int64_t sm_timeout_ns;
 
     int64_t time_of_last_packet_ns;

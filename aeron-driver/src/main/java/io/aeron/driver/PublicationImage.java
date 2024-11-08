@@ -145,7 +145,7 @@ public final class PublicationImage
     private long lastSmChangeNumber;
     private long lastSmPosition;
     private long lastOverrunThreshold;
-    private long timeOfLastSmNs;
+    private long nextSmDeadlineNs;
     private final long smTimeoutNs;
     private final long maxReceiverWindowLength;
 
@@ -494,7 +494,7 @@ public final class PublicationImage
 
             if (isSendingEosSm)
             {
-                timeOfLastSmNs = nowNs - smTimeoutNs - 1;
+                nextSmDeadlineNs = nowNs - 1;
             }
 
             state(State.DRAINING);
@@ -705,7 +705,7 @@ public final class PublicationImage
                 timeOfLastStateChangeNs = nowNs;
 
                 isSendingEosSm = true;
-                timeOfLastSmNs = nowNs - smTimeoutNs - 1;
+                nextSmDeadlineNs = nowNs - 1;
                 state(State.DRAINING);
             }
         }
@@ -721,7 +721,7 @@ public final class PublicationImage
     {
         int workCount = 0;
         final long changeNumber = (long)END_SM_CHANGE_VH.getAcquire(this);
-        final boolean hasSmTimedOut = (nowNs - smTimeoutNs) > timeOfLastSmNs;
+        final boolean hasSmTimedOut = nowNs > nextSmDeadlineNs;
 
         if (null != rejectionReason)
         {
@@ -730,7 +730,7 @@ public final class PublicationImage
                 channelEndpoint.sendErrorFrame(
                     imageConnections, sessionId, streamId, GENERIC_ERROR.value(), rejectionReason);
 
-                timeOfLastSmNs = nowNs;
+                nextSmDeadlineNs = nowNs + smTimeoutNs;
                 workCount++;
             }
 
@@ -765,7 +765,7 @@ public final class PublicationImage
                 lastSmPosition = smPosition;
                 lastOverrunThreshold = smPosition + (termLength >> 1);
                 lastSmChangeNumber = changeNumber;
-                timeOfLastSmNs = nowNs;
+                nextSmDeadlineNs = nowNs + smTimeoutNs;
 
                 updateActiveTransportCount();
             }
@@ -943,7 +943,7 @@ public final class PublicationImage
     {
         if (State.ACTIVE != state)
         {
-            timeOfLastSmNs = Long.MAX_VALUE;
+            nextSmDeadlineNs = Long.MAX_VALUE;
         }
     }
 

@@ -169,6 +169,7 @@ public final class PublicationImage
     private final int initialTermId;
     private final short flags;
     private final boolean isReliable;
+    private boolean smEnabled = true;
 
     private boolean isRebuilding = true;
     private volatile boolean isReceiverReleaseTriggered = false;
@@ -721,7 +722,7 @@ public final class PublicationImage
     {
         int workCount = 0;
         final long changeNumber = (long)END_SM_CHANGE_VH.getAcquire(this);
-        final boolean hasSmTimedOut = nowNs > nextSmDeadlineNs;
+        final boolean hasSmTimedOut = smEnabled && nextSmDeadlineNs - nowNs < 0;
 
         if (null != rejectionReason)
         {
@@ -943,7 +944,7 @@ public final class PublicationImage
     {
         if (State.ACTIVE != state)
         {
-            nextSmDeadlineNs = Long.MAX_VALUE;
+            smEnabled = false;
         }
     }
 

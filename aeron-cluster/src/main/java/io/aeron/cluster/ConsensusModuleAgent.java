@@ -2505,7 +2505,8 @@ final class ConsensusModuleAgent
                     serviceCount,
                     ctx.leaderArchiveControlChannel(),
                     ctx.archiveContext().controlRequestStreamId(),
-                    ctx.replicationChannel());
+                    ctx.replicationChannel(),
+                    ctx.fileSyncLevel());
             }
 
             NodeControl.ToggleState.reset(nodeControlToggle);
@@ -3760,7 +3761,8 @@ final class ConsensusModuleAgent
             serviceCount,
             ctx.leaderArchiveControlChannel(),
             ctx.archiveContext().controlRequestStreamId(),
-            ctx.replicationChannel()))
+            ctx.replicationChannel(),
+            ctx.fileSyncLevel()))
         {
             while (!standbySnapshotReplicator.isComplete())
             {
@@ -3794,7 +3796,8 @@ final class ConsensusModuleAgent
 
             if (standbySnapshotReplicator.isComplete())
             {
-                ctx.snapshotCounter().increment();
+                recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
+                ctx.snapshotCounter().incrementOrdered();
                 CloseHelper.quietClose(standbySnapshotReplicator);
                 standbySnapshotReplicator = null;
             }

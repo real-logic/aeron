@@ -2324,7 +2324,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
                         ctx.serviceCount(),
                         ctx.leaderArchiveControlChannel(),
                         ctx.archiveContext().controlRequestStreamId(),
-                        ctx.replicationChannel());
+                        ctx.replicationChannel(),
+                        ctx.fileSyncLevel());
                 }
                 NodeControl.ToggleState.reset(nodeControlToggle);
                 break;
@@ -3549,7 +3550,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
             ctx.serviceCount(),
             ctx.leaderArchiveControlChannel(),
             ctx.archiveContext().controlRequestStreamId(),
-            ctx.replicationChannel()))
+            ctx.replicationChannel(),
+            ctx.fileSyncLevel()))
         {
             while (!standbySnapshotReplicator.isComplete())
             {
@@ -3583,7 +3585,8 @@ final class ConsensusModuleAgent implements Agent, TimerService.TimerHandler, Co
 
             if (standbySnapshotReplicator.isComplete())
             {
-                ctx.snapshotCounter().increment();
+                recoveryPlan = recordingLog.createRecoveryPlan(archive, ctx.serviceCount(), Aeron.NULL_VALUE);
+                ctx.snapshotCounter().incrementOrdered();
                 CloseHelper.quietClose(standbySnapshotReplicator);
                 standbySnapshotReplicator = null;
             }

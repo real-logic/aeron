@@ -96,7 +96,7 @@ final class DriverNameResolverCache implements AutoCloseable
         {
             final CacheEntry entry = listOfEntries.get(i);
 
-            if (nowMs > entry.deadlineMs)
+            if (entry.deadlineMs - nowMs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(listOfEntries, i, lastIndex--);
                 cacheEntriesCounter.setOrdered(listOfEntries.size());

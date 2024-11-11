@@ -158,7 +158,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
     {
         int workCount = 0;
 
-        if (nowMs > workDeadlineMs)
+        if (workDeadlineMs - nowMs < 0)
         {
             workDeadlineMs = nowMs + WORK_INTERVAL_MS;
             workCount += transport.poll(this, nowMs);

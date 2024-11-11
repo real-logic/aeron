@@ -40,6 +40,7 @@ class StandbySnapshotReplicator implements AutoCloseable
     private final String archiveControlChannel;
     private final int archiveControlStreamId;
     private final String replicationChannel;
+    private final int fileSyncLevel;
     private final Object2ObjectHashMap<String, String> errorsByEndpoint = new Object2ObjectHashMap<>();
     private MultipleRecordingReplication recordingReplication;
     private ArrayList<SnapshotReplicationEntry> snapshotsToReplicate;
@@ -53,7 +54,8 @@ class StandbySnapshotReplicator implements AutoCloseable
         final int serviceCount,
         final String archiveControlChannel,
         final int archiveControlStreamId,
-        final String replicationChannel)
+        final String replicationChannel,
+        final int fileSyncLevel)
     {
         this.memberId = memberId;
         this.archive = archive;
@@ -62,6 +64,7 @@ class StandbySnapshotReplicator implements AutoCloseable
         this.archiveControlChannel = archiveControlChannel;
         this.archiveControlStreamId = archiveControlStreamId;
         this.replicationChannel = replicationChannel;
+        this.fileSyncLevel = fileSyncLevel;
     }
 
     static StandbySnapshotReplicator newInstance(
@@ -71,7 +74,8 @@ class StandbySnapshotReplicator implements AutoCloseable
         final int serviceCount,
         final String archiveControlChannel,
         final int archiveControlStreamId,
-        final String replicationChannel)
+        final String replicationChannel,
+        final int fileSyncLevel)
     {
         final AeronArchive archive = AeronArchive.connect(archiveCtx.clone().errorHandler(null));
         final StandbySnapshotReplicator standbySnapshotReplicator = new StandbySnapshotReplicator(
@@ -81,7 +85,8 @@ class StandbySnapshotReplicator implements AutoCloseable
             serviceCount,
             archiveControlChannel,
             archiveControlStreamId,
-            replicationChannel);
+            replicationChannel,
+            fileSyncLevel);
         archive.context().recordingSignalConsumer(standbySnapshotReplicator::onSignal);
         return standbySnapshotReplicator;
     }
@@ -163,7 +168,7 @@ class StandbySnapshotReplicator implements AutoCloseable
                     entry.timestamp,
                     entry.serviceId);
             }
-            recordingLog.force(0);
+            recordingLog.force(fileSyncLevel);
 
             CloseHelper.quietClose(recordingReplication);
             recordingReplication = null;

@@ -42,11 +42,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 class StandbySnapshotReplicatorTest
 {
@@ -57,6 +53,7 @@ class StandbySnapshotReplicatorTest
     private final String replicationChannel = "aeron:udp?endpoint=host0:0";
     private final AeronArchive.Context ctx = new AeronArchive.Context();
     private final int memberId = 12;
+    private final int fileSyncLevel = 1;
 
     private final AeronArchive mockArchive = mock(AeronArchive.class);
     private final MultipleRecordingReplication mockMultipleRecordingReplication0 = mock(
@@ -88,7 +85,7 @@ class StandbySnapshotReplicatorTest
         when(mockMultipleRecordingReplication0.completedDstRecordingId(anyLong())).thenAnswer(
             (invocation) -> dstRecordingIds.get(invocation.<Long>getArgument(0)));
 
-        try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
+        try (RecordingLog recordingLog = spy(new RecordingLog(clusterDir, true)))
         {
             recordingLog.appendSnapshot(1, 0, 0, logPositionOldest, 1_000_000_000L, SERVICE_ID);
             recordingLog.appendSnapshot(2, 0, 0, logPositionOldest, 1_000_000_000L, 0);
@@ -118,7 +115,8 @@ class StandbySnapshotReplicatorTest
                     serviceCount,
                     archiveControlChannel,
                     archiveControlStreamId,
-                    replicationChannel);
+                    replicationChannel,
+                    fileSyncLevel);
 
                 when(mockMultipleRecordingReplication0.isComplete()).thenReturn(true);
 
@@ -137,6 +135,7 @@ class StandbySnapshotReplicatorTest
                 verify(mockMultipleRecordingReplication0).addRecording(1L, NULL_RECORDING_ID, NULL_POSITION);
                 verify(mockMultipleRecordingReplication0).addRecording(2L, NULL_RECORDING_ID, NULL_POSITION);
                 verify(mockMultipleRecordingReplication0).poll(nowNs);
+                verify(recordingLog).force(fileSyncLevel);
             }
         }
 
@@ -178,7 +177,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             standbySnapshotReplicator.poll(0);
             verify(mockArchive).pollForRecordingSignals();
@@ -209,7 +209,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             standbySnapshotReplicator.poll(0);
             assertTrue(standbySnapshotReplicator.isComplete());
@@ -261,7 +262,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             when(mockMultipleRecordingReplication0.poll(anyLong())).thenThrow(new ClusterException("fail"));
             when(mockMultipleRecordingReplication1.isComplete()).thenReturn(true);
@@ -322,7 +324,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             when(mockMultipleRecordingReplication1.isComplete()).thenReturn(true);
 
@@ -384,7 +387,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             standbySnapshotReplicator.poll(nowNs);
             standbySnapshotReplicator.poll(nowNs);
@@ -441,7 +445,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             standbySnapshotReplicator.poll(nowNs);
             standbySnapshotReplicator.poll(nowNs);
@@ -486,7 +491,8 @@ class StandbySnapshotReplicatorTest
                 1,
                 archiveControlChannel,
                 archiveControlStreamId,
-                replicationChannel);
+                replicationChannel,
+                fileSyncLevel);
 
             standbySnapshotReplicator.poll(nowNs);
             standbySnapshotReplicator.poll(nowNs);

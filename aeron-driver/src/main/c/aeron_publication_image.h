@@ -138,6 +138,8 @@ typedef struct aeron_publication_image_stct
     int64_t time_of_last_packet_ns;
     const char *invalidation_reason;
 
+    bool is_sm_enabled;
+
     volatile int64_t response_session_id;
 
     volatile bool is_end_of_stream;

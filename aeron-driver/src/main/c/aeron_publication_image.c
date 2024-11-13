@@ -319,6 +319,7 @@ int aeron_publication_image_create(
     _image->last_overrun_threshold = initial_position + (term_buffer_length / 2);
     _image->time_of_last_packet_ns = now_ns;
     _image->next_sm_deadline_ns = 0;
+    _image->is_sm_enabled = true;
     _image->conductor_fields.clean_position = initial_position;
     _image->conductor_fields.time_of_last_state_change_ns = now_ns;
 
@@ -703,7 +704,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
     int work_count = 0;
     int64_t change_number;
     AERON_GET_ACQUIRE(change_number, image->end_sm_change);
-    const bool has_sm_timed_out = now_ns > image->next_sm_deadline_ns;
+    const bool has_sm_timed_out = image->is_sm_enabled && image->next_sm_deadline_ns < now_ns;
 
     if (NULL != image->invalidation_reason)
     {
@@ -1153,7 +1154,7 @@ void aeron_publication_image_stop_status_messages_if_not_active(aeron_publicatio
 {
     if (AERON_PUBLICATION_IMAGE_STATE_ACTIVE != image->conductor_fields.state)
     {
-        image->next_sm_deadline_ns = INT64_MAX;
+        image->is_sm_enabled = false;
     }
 }
 

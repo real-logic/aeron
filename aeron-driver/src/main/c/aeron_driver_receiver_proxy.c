@@ -151,7 +151,7 @@ void aeron_driver_receiver_proxy_on_request_setup(
 {
     aeron_command_subscription_t cmd =
         {
-            .base = { .func = aeron_driver_receiver_on_remove_subscription_by_session, .item = NULL },
+            .base = { .func = aeron_driver_receiver_on_request_setup, .item = NULL },
             .endpoint = endpoint,
             .stream_id = stream_id,
             .session_id = session_id

@@ -427,6 +427,28 @@ public class CommonContext implements Cloneable
     public static final String MAX_RESEND_PARAM_NAME = "max-resend";
 
     /**
+     * Property name to use to set the secure random algorithm to be used by the Aeron component.
+     */
+    public static final String SECURE_RANDOM_ALGORITHM_PROP_NAME = "aeron.secure.random.algorithm";
+
+    /**
+     * The default secure random algorithm to be used.
+     */
+    public static final String SECURE_RANDOM_ALGORITHM_DEFAULT = "NativePRNGNonBlocking";
+
+    /**
+     * Get the configured value for the secure random algorithm, falling back to the default if not supplied.
+     *
+     * @return the secure random algorithm
+     * @see #SECURE_RANDOM_ALGORITHM_PROP_NAME
+     * @see #SECURE_RANDOM_ALGORITHM_DEFAULT
+     */
+    public static String getSecureRandomAlgorithm()
+    {
+        return System.getProperty(SECURE_RANDOM_ALGORITHM_PROP_NAME, SECURE_RANDOM_ALGORITHM_DEFAULT);
+    }
+
+    /**
      * Get the current fallback logger based on the supplied property.
      *
      * @return the configured PrintStream.

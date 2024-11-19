@@ -46,6 +46,8 @@ import java.lang.invoke.VarHandle;
 import java.nio.channels.FileChannel;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
+import java.security.NoSuchAlgorithmException;
+import java.security.SecureRandom;
 import java.util.Objects;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ThreadFactory;
@@ -58,6 +60,7 @@ import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
 import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
 import static io.aeron.archive.Archive.Configuration.ERROR_BUFFER_LENGTH_DEFAULT;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
+import static io.aeron.exceptions.AeronException.Category.ERROR;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
 import static java.lang.System.getProperty;
 import static java.nio.charset.StandardCharsets.US_ASCII;
@@ -1064,6 +1067,7 @@ public final class Archive implements AutoCloseable
         private Counter totalReadBytesCounter;
         private Counter totalReadTimeCounter;
         private Counter maxReadTimeCounter;
+        private String secureRandomAlgorithm = CommonContext.getSecureRandomAlgorithm();
 
         /**
          * Perform a shallow copy of the object.
@@ -3463,6 +3467,61 @@ public final class Archive implements AutoCloseable
         {
             this.authorisationServiceSupplier = authorisationServiceSupplier;
             return this;
+        }
+
+        /**
+         * Get the secure random algorithm should be used by various Aeron components.
+         *
+         * @return the secure random algorithm to be used.
+         * @see #secureRandomAlgorithm(String)
+         */
+        public String secureRandomAlgorithm()
+        {
+            return secureRandomAlgorithm;
+        }
+
+        /**
+         * Define which secure random algorithm should be used by various Aeron components. This string will be passed
+         * to {@link java.security.SecureRandom#getInstance(String)}, with one exception. The special case of
+         * <code>strong</code> (case-insensitive) will use {@link SecureRandom#getInstanceStrong()}
+         *
+         * @param algorithm the algorithm to be used or <code>strong</code>
+         * @return this for the fluent API.
+         * @see CommonContext#getSecureRandomAlgorithm()
+         * @see CommonContext#SECURE_RANDOM_ALGORITHM_PROP_NAME
+         * @see CommonContext#SECURE_RANDOM_ALGORITHM_DEFAULT
+         */
+        public Context secureRandomAlgorithm(final String algorithm)
+        {
+            this.secureRandomAlgorithm = algorithm;
+            return this;
+        }
+
+        /**
+         * Get the configured instance of SecureRandom using {@link SecureRandom#getInstanceStrong()} if
+         * <code>strong</code> is specified.
+         *
+         * @return instance of SecureRandom
+         * @throws AeronException if there is a problem resolving the algorithm
+         */
+        public SecureRandom secureRandom()
+        {
+            try
+            {
+                if ("strong".equalsIgnoreCase(secureRandomAlgorithm))
+                {
+                    return SecureRandom.getInstanceStrong();
+                }
+                else
+                {
+                    return SecureRandom.getInstance(secureRandomAlgorithm);
+                }
+            }
+            catch (final NoSuchAlgorithmException ex)
+            {
+                throw new AeronException(
+                    "unable to create SecureRandom for algorithm=" + secureRandomAlgorithm, ex, ERROR);
+            }
         }
 
         CountDownLatch abortLatch()

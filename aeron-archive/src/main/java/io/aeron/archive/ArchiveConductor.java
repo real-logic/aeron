@@ -139,7 +139,7 @@ abstract class ArchiveConductor
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
         cachedEpochClock.update(epochClock.time());
 
-        random = stronglySeededRandom();
+        random = ctx.secureRandom();
 
         authenticator = ctx.authenticatorSupplier().get();
         if (null == authenticator)

@@ -434,7 +434,8 @@ public class CommonContext implements Cloneable
     /**
      * The default secure random algorithm to be used.
      */
-    public static final String SECURE_RANDOM_ALGORITHM_DEFAULT = "NativePRNGNonBlocking";
+    public static final String SECURE_RANDOM_ALGORITHM_DEFAULT =
+        SystemUtil.isWindows() ? "Windows-PRNG" : "NativePRNGNonBlocking";
 
     /**
      * Get the configured value for the secure random algorithm, falling back to the default if not supplied.

@@ -33,6 +33,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.SystemUtil;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -779,7 +780,9 @@ class MultiDestinationSubscriptionTest
         "aeron:udp?endpoint=localhost:8889" })
     void shouldNotReuseEndpointAcrossMultipleSubscriptionsIfAtLeastOneIsMds(final String channel)
     {
-        testWatcher.ignoreErrorsMatching((err) -> err.contains("Address already in use"));
+        final String errorMsg = SystemUtil.isWindows() && TestMediaDriver.shouldRunCMediaDriver() ?
+            "failed to bind to address" : "Address already in use";
+        testWatcher.ignoreErrorsMatching((err) -> err.contains(errorMsg));
         launch(mock(ErrorHandler.class));
 
         try (Subscription sub1 = clientA.addSubscription(channel, STREAM_ID);
@@ -787,7 +790,7 @@ class MultiDestinationSubscriptionTest
         {
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> mdsSubscription.addDestination(sub1.channel()));
-            assertThat(exception.getMessage(), containsString("Address already in use"));
+            assertThat(exception.getMessage(), containsString(errorMsg));
 
             Tests.await(() -> 1 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }
@@ -798,7 +801,7 @@ class MultiDestinationSubscriptionTest
 
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> clientA.addSubscription(channel, STREAM_ID));
-            assertThat(exception.getMessage(), containsString("Address already in use"));
+            assertThat(exception.getMessage(), containsString(errorMsg));
 
             Tests.await(() -> 2 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }
@@ -809,7 +812,7 @@ class MultiDestinationSubscriptionTest
             mdsSubscription1.addDestination(channel);
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> mdsSubscription2.addDestination(channel));
-            assertThat(exception.getMessage(), containsString("Address already in use"));
+            assertThat(exception.getMessage(), containsString(errorMsg));
 
             Tests.await(() -> 3 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }

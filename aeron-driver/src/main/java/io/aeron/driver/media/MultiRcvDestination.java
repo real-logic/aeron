@@ -33,17 +33,15 @@ final class MultiRcvDestination
 
     private ReceiveDestinationTransport[] transports = EMPTY_TRANSPORTS;
 
-    void closeTransports(final DataTransportPoller poller)
+    void closeTransports(final ReceiveChannelEndpoint endpoint, final DataTransportPoller poller)
     {
         for (final ReceiveDestinationTransport transport : transports)
         {
             if (null != transport)
             {
+                poller.cancelRead(endpoint, transport);
                 transport.closeTransport();
-                if (null != poller)
-                {
-                    poller.selectNowWithoutProcessing();
-                }
+                poller.selectNowWithoutProcessing();
             }
         }
     }

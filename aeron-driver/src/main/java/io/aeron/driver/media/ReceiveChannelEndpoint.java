@@ -298,7 +298,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     {
         if (null != multiRcvDestination)
         {
-            multiRcvDestination.closeTransports(poller);
+            multiRcvDestination.closeTransports(this, poller);
         }
     }
 
@@ -1135,6 +1135,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             ", udpChannel=" + udpChannel +
             ", connectAddress=" + connectAddress +
             ", isClosed=" + isClosed +
+            ", multiRcvDestination=" + multiRcvDestination +
             '}';
     }
 }

@@ -17,6 +17,9 @@ package io.aeron;
 
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.driver.status.ReceiveLocalSocketAddress;
+import io.aeron.driver.status.SystemCounterDescriptor;
+import io.aeron.exceptions.RegistrationException;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.logbuffer.LogBufferDescriptor;
@@ -30,8 +33,10 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
+import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
+import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -39,13 +44,18 @@ import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.nio.file.Path;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.function.Supplier;
 
+import static io.aeron.AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
@@ -762,6 +772,109 @@ class MultiDestinationSubscriptionTest
         assertEquals(1, subscription.imageCount());
         assertEquals(2, subscription.imageAtIndex(0).activeTransportCount());
         verifyFragments(fragmentHandler, numMessagesToSend);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "aeron:udp?endpoint=localhost:8889" })
+    void shouldNotReuseEndpointAcrossMultipleSubscriptionsIfAtLeastOneIsMds(final String channel)
+    {
+        testWatcher.ignoreErrorsMatching((err) -> err.contains("Address already in use"));
+        launch(mock(ErrorHandler.class));
+
+        try (Subscription sub1 = clientA.addSubscription(channel, STREAM_ID);
+            Subscription mdsSubscription = clientA.addSubscription("aeron:udp?control-mode=manual", STREAM_ID))
+        {
+            final RegistrationException exception =
+                assertThrowsExactly(RegistrationException.class, () -> mdsSubscription.addDestination(sub1.channel()));
+            assertThat(exception.getMessage(), containsString("Address already in use"));
+
+            Tests.await(() -> 1 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
+        }
+
+        try (Subscription mdsSubscription = clientA.addSubscription("aeron:udp?control-mode=manual", STREAM_ID))
+        {
+            mdsSubscription.addDestination(channel);
+
+            final RegistrationException exception =
+                assertThrowsExactly(RegistrationException.class, () -> clientA.addSubscription(channel, STREAM_ID));
+            assertThat(exception.getMessage(), containsString("Address already in use"));
+
+            Tests.await(() -> 2 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
+        }
+
+        try (Subscription mdsSubscription1 = clientA.addSubscription("aeron:udp?control-mode=manual", STREAM_ID);
+            Subscription mdsSubscription2 = clientA.addSubscription("aeron:udp?control-mode=manual", STREAM_ID))
+        {
+            mdsSubscription1.addDestination(channel);
+            final RegistrationException exception =
+                assertThrowsExactly(RegistrationException.class, () -> mdsSubscription2.addDestination(channel));
+            assertThat(exception.getMessage(), containsString("Address already in use"));
+
+            Tests.await(() -> 3 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
+        }
+    }
+
+    @Test
+    void shouldCleanupMdcDestinationWhenSubscriptionIsClosed()
+    {
+        launch(mock(ErrorHandler.class));
+
+        final CountersReader countersReader = clientA.countersReader();
+        final MutableInteger receiveSocketCount = new MutableInteger();
+        final CountersReader.MetaData socketAddressCapture = (counterId, typeId, keyBuffer, label) ->
+        {
+            if (AeronCounters.DRIVER_LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID == typeId &&
+                label.startsWith(ReceiveLocalSocketAddress.NAME))
+            {
+                receiveSocketCount.increment();
+            }
+        };
+
+        try (Publication pub1 = clientA.addExclusivePublication("aeron:udp?endpoint=localhost:8889", STREAM_ID);
+            Publication pub2 = clientA.addExclusivePublication(
+                "aeron:udp?control=localhost:5555|control-mode=dynamic", STREAM_ID))
+        {
+            final long registrationId;
+            try (Subscription mdsSubscription = clientA.addSubscription("aeron:udp?control-mode=manual", STREAM_ID))
+            {
+                registrationId = mdsSubscription.registrationId();
+                mdsSubscription.addDestination("aeron:udp?endpoint=localhost:8889");
+                mdsSubscription.addDestination("aeron:udp?control=localhost:5555|endpoint=localhost:0");
+
+                Tests.awaitConnected(pub1);
+                Tests.awaitConnected(pub2);
+                Tests.awaitConnected(mdsSubscription);
+
+                final int length = ThreadLocalRandom.current().nextInt(1, buffer.capacity());
+                while (pub1.offer(buffer, 0, length) < 0)
+                {
+                    Tests.yield();
+                }
+
+                final int length2 = ThreadLocalRandom.current().nextInt(1, buffer.capacity());
+                while (pub2.offer(buffer, 0, length2) < 0)
+                {
+                    Tests.yield();
+                }
+
+                countersReader.forEach(socketAddressCapture);
+                assertEquals(2, receiveSocketCount.intValue());
+                assertNotEquals(CountersReader.NULL_COUNTER_ID, countersReader.findByTypeIdAndRegistrationId(
+                    DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID, registrationId));
+            }
+
+            Tests.await(() ->
+            {
+                Tests.sleep(10);
+                receiveSocketCount.set(0);
+                countersReader.forEach(socketAddressCapture);
+                return 0 == receiveSocketCount.intValue();
+            });
+
+            assertEquals(CountersReader.NULL_COUNTER_ID, countersReader.findByTypeIdAndRegistrationId(
+                DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID, registrationId));
+        }
     }
 
     private void pollForFragment(final Subscription subscription, final FragmentHandler handler)

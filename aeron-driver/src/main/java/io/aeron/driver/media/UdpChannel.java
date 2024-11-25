@@ -900,12 +900,24 @@ public final class UdpChannel
             validateConfiguration(uri);
 
             final String endpointValue = uri.get(ENDPOINT_PARAM_NAME);
-            return SocketAddressParser.isMulticastAddress(endpointValue);
+            return isMulticastEndpoint(endpointValue);
         }
         catch (final Exception ex)
         {
             throw new InvalidChannelException(ex);
         }
+    }
+
+    /**
+     * Check if the endpoint is multicast.
+     *
+     * @param endpoint to check.
+     * @return {@code true} if the destination uses multicast address.
+     * @since 1.47.0
+     */
+    public static boolean isMulticastEndpoint(final String endpoint)
+    {
+        return SocketAddressParser.isMulticastAddress(endpoint);
     }
 
     /**

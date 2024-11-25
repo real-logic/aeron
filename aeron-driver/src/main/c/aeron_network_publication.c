@@ -964,8 +964,9 @@ int aeron_network_publication_update_pub_pos_and_lmt(aeron_network_publication_t
         }
         else if (*publication->pub_lmt_position.value_addr > snd_pos)
         {
-            size_t term_length = (size_t)publication->term_length_mask + 1;
+            aeron_network_publication_update_connected_status(publication, false);
             aeron_counter_set_ordered(publication->pub_lmt_position.value_addr, snd_pos);
+            size_t term_length = (size_t)publication->term_length_mask + 1;
             aeron_network_publication_clean_buffer(publication, snd_pos - (int64_t)term_length);
             work_count = 1;
         }

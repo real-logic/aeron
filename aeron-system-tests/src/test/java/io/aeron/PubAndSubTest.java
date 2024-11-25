@@ -68,12 +68,14 @@ import static org.mockito.Mockito.*;
 class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
-    private static final String UDP_UNICAST_RI = "aeron:udp?endpoint=localhost:24325";
-    private static final String UDP_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
     private static List<String> channels()
     {
-        return asList(UDP_UNICAST_RI, UDP_MULTICAST_URI, IPC_URI);
+        return asList(
+            "aeron:udp?endpoint=localhost:24325",
+            "aeron:udp?endpoint=localhost:24325|session=id=55555",
+            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost",
+            IPC_URI);
     }
 
     @RegisterExtension
@@ -1176,7 +1178,7 @@ class PubAndSubTest
     }
 
     @ParameterizedTest
-    @ValueSource(strings = { UDP_UNICAST_RI, UDP_MULTICAST_URI })
+    @MethodSource("channels")
     void shouldMarkPublicationNotConnectedWhenItLoosesAllSubscribers(final String channel)
     {
         TestMediaDriver.notSupportedOnCMediaDriver("publication image state management");

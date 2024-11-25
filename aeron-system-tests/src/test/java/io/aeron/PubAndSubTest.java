@@ -1179,6 +1179,8 @@ class PubAndSubTest
     @ValueSource(strings = { UDP_UNICAST_RI, UDP_MULTICAST_URI })
     void shouldMarkPublicationNotConnectedWhenItLoosesAllSubscribers(final String channel)
     {
+        TestMediaDriver.notSupportedOnCMediaDriver("publication image state management");
+
         context.timerIntervalNs(MILLISECONDS.toNanos(1500))
             .publicationConnectionTimeoutNs(SECONDS.toNanos(2));
         launch(channel);

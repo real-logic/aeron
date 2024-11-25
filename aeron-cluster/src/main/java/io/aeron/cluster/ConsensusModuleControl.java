@@ -109,4 +109,12 @@ public interface ConsensusModuleControl
      * @return commit position counter id.
      */
     int commitPositionCounterId();
+
+    /**
+     * Numeric id for the cluster (used when running multiple clusters on the same media driver).
+     *
+     * @return numeric id for the cluster.
+     * @see ConsensusModule.Context#clusterId(int)
+     */
+    int clusterId();
 }

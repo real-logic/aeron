@@ -518,6 +518,14 @@ final class ConsensusModuleAgent
         return ctx.commitPositionCounter().id();
     }
 
+    /**
+     * {@inheritDoc}
+     */
+    public int clusterId()
+    {
+        return ctx.clusterId();
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {

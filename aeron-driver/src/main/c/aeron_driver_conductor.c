@@ -3694,6 +3694,14 @@ int aeron_driver_conductor_do_work(void *clientd)
     const int64_t now_ms = aeron_clock_cached_epoch_time(conductor->context->cached_clock);
     int work_count = 0;
 
+    if (now_ns > conductor->timeout_check_deadline_ns)
+    {
+        aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
+        aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
+        aeron_driver_conductor_on_check_for_blocked_driver_commands(conductor, now_ns);
+        conductor->timeout_check_deadline_ns = now_ns + (int64_t)conductor->context->timer_interval_ns;
+        work_count++;
+    }
     if (!conductor->async_client_command_in_flight)
     {
         work_count += (int)aeron_mpsc_rb_controlled_read(
@@ -3704,20 +3712,10 @@ int aeron_driver_conductor_do_work(void *clientd)
         aeron_driver_conductor_on_rb_command_queue,
         conductor,
         AERON_COMMAND_DRAIN_LIMIT);
-    work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
 
-    if (now_ns > conductor->timeout_check_deadline_ns)
+    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
     {
-        aeron_mpsc_rb_consumer_heartbeat_time(&conductor->to_driver_commands, now_ms);
-        aeron_driver_conductor_on_check_managed_resources(conductor, now_ns, now_ms);
-        aeron_driver_conductor_on_check_for_blocked_driver_commands(conductor, now_ns);
-        conductor->timeout_check_deadline_ns = now_ns + (int64_t)conductor->context->timer_interval_ns;
-        work_count++;
-    }
-
-    for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
-    {
-        work_count += aeron_ipc_publication_update_pub_pos_and_lmt(conductor->ipc_publications.array[i].publication);
+        aeron_publication_image_track_rebuild(conductor->publication_images.array[i].image, now_ns);
     }
 
     for (size_t i = 0, length = conductor->network_publications.length; i < length; i++)
@@ -3726,13 +3724,13 @@ int aeron_driver_conductor_do_work(void *clientd)
             aeron_network_publication_update_pub_pos_and_lmt(conductor->network_publications.array[i].publication);
     }
 
-    for (size_t i = 0, length = conductor->publication_images.length; i < length; i++)
+    for (size_t i = 0, length = conductor->ipc_publications.length; i < length; i++)
     {
-        aeron_publication_image_track_rebuild(conductor->publication_images.array[i].image, now_ns);
+        work_count += aeron_ipc_publication_update_pub_pos_and_lmt(conductor->ipc_publications.array[i].publication);
     }
 
+    work_count += conductor->name_resolver.do_work_func(&conductor->name_resolver, now_ms);
     work_count += aeron_driver_conductor_free_end_of_life_resources(conductor);
-
     work_count += aeron_executor_process_completions(&conductor->executor, 1);
 
     return work_count;

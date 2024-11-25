@@ -861,8 +861,12 @@ public final class PublicationImage
 
     boolean isAcceptingSubscriptions()
     {
-        return subscriberPositions.length > 0 &&
-            (State.INIT == state || State.ACTIVE == state || (State.DRAINING == state && !isDrained()));
+        if (subscriberPositions.length > 0)
+        {
+            final State state = this.state;
+            return State.INIT == state || State.ACTIVE == state || (State.DRAINING == state && !isDrained());
+        }
+        return false;
     }
 
     long joinPosition()

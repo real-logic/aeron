@@ -748,6 +748,11 @@ public final class NetworkPublication
             }
             else if (publisherLimit.get() > senderPosition)
             {
+                if (isConnected)
+                {
+                    LogBufferDescriptor.isConnected(metaDataBuffer, false);
+                    isConnected = false;
+                }
                 publisherLimit.setOrdered(senderPosition);
                 cleanBufferTo(senderPosition - termBufferLength);
                 workCount = 1;

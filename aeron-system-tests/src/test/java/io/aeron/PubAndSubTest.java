@@ -27,6 +27,7 @@ import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.collections.MutableBoolean;
 import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -47,7 +48,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
 import java.util.concurrent.ThreadLocalRandom;
-import java.util.concurrent.TimeUnit;
 import java.util.function.Supplier;
 
 import static io.aeron.SystemTests.verifyLossOccurredForStream;
@@ -55,7 +55,11 @@ import static io.aeron.logbuffer.FrameDescriptor.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.computeFragmentedFrameLength;
 import static io.aeron.protocol.DataHeaderFlyweight.*;
 import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.agrona.BitUtil.SIZE_OF_INT;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.lessThan;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.api.Assumptions.assumeFalse;
 import static org.mockito.Mockito.*;
@@ -64,22 +68,22 @@ import static org.mockito.Mockito.*;
 class PubAndSubTest
 {
     private static final String IPC_URI = "aeron:ipc";
+    private static final String UDP_UNICAST_RI = "aeron:udp?endpoint=localhost:24325";
+    private static final String UDP_MULTICAST_URI = "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost";
 
     private static List<String> channels()
     {
-        return asList(
-            "aeron:udp?endpoint=localhost:24325",
-            "aeron:udp?endpoint=224.20.30.39:24326|interface=localhost",
-            IPC_URI);
+        return asList(UDP_UNICAST_RI, UDP_MULTICAST_URI, IPC_URI);
     }
 
     @RegisterExtension
     final SystemTestWatcher watcher = new SystemTestWatcher();
 
     private static final int STREAM_ID = 1001;
-    private static final ThreadingMode THREADING_MODE = ThreadingMode.SHARED;
 
-    private final MediaDriver.Context context = new MediaDriver.Context();
+    private final MediaDriver.Context context = new MediaDriver.Context()
+        .publicationConnectionTimeoutNs(MILLISECONDS.toNanos(500))
+        .timerIntervalNs(MILLISECONDS.toNanos(100));
 
     private Aeron publishingClient;
     private Aeron subscribingClient;
@@ -93,11 +97,7 @@ class PubAndSubTest
 
     private void launch(final String channel)
     {
-        context
-            .dirDeleteOnStart(true)
-            .threadingMode(THREADING_MODE)
-            .publicationConnectionTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-            .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100));
+        context.dirDeleteOnStart(true).threadingMode(ThreadingMode.SHARED);
 
         driver = TestMediaDriver.launch(context, watcher);
         watcher.dataCollector().add(driver.context().aeronDirectory());
@@ -151,7 +151,7 @@ class PubAndSubTest
     }
 
     @ParameterizedTest
-    @ValueSource(ints = {1408, 128})
+    @ValueSource(ints = { 1408, 128 })
     void shouldSendAndReceiveMessage(final int mtu)
     {
         launch("aeron:udp?endpoint=localhost:24325|mtu=" + mtu);
@@ -275,7 +275,7 @@ class PubAndSubTest
                 fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(500));
+            MILLISECONDS.toNanos(500));
 
         final InOrder inOrder = inOrder(fragmentHandler);
 
@@ -436,7 +436,7 @@ class PubAndSubTest
                 fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(900));
+            MILLISECONDS.toNanos(900));
 
         verify(fragmentHandler, times(numMessagesToSend)).onFragment(
             any(DirectBuffer.class),
@@ -578,7 +578,7 @@ class PubAndSubTest
                 fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(500));
+            MILLISECONDS.toNanos(500));
 
         verify(fragmentHandler, times(messagesToReceive)).onFragment(
             any(DirectBuffer.class),
@@ -673,7 +673,7 @@ class PubAndSubTest
                 fragmentsRead.value += fragments;
             },
             Integer.MAX_VALUE,
-            TimeUnit.MILLISECONDS.toNanos(500));
+            MILLISECONDS.toNanos(500));
 
         verify(fragmentHandler, times(numFramesToExpect)).onFragment(
             any(DirectBuffer.class),
@@ -1173,6 +1173,46 @@ class PubAndSubTest
                 }
             }
         }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { UDP_UNICAST_RI, UDP_MULTICAST_URI })
+    void shouldMarkPublicationNotConnectedWhenItLoosesAllSubscribers(final String channel)
+    {
+        context.timerIntervalNs(MILLISECONDS.toNanos(1500))
+            .publicationConnectionTimeoutNs(SECONDS.toNanos(2));
+        launch(channel);
+        Tests.awaitConnected(publication);
+        Tests.awaitConnected(subscription);
+
+        final BufferClaim bufferClaim = new BufferClaim();
+        final ThreadLocalRandom random = ThreadLocalRandom.current();
+        while (publication.tryClaim(random.nextInt(1, 1000), bufferClaim) < 0)
+        {
+            Tests.yield();
+        }
+        final int msgLength = bufferClaim.length();
+        bufferClaim.buffer().setMemory(bufferClaim.offset(), msgLength, (byte)random.nextInt());
+        bufferClaim.commit();
+
+        final MutableBoolean received = new MutableBoolean();
+        final FragmentHandler fragmentHandler = (buffer, offset, length, header) ->
+        {
+            received.set(true);
+            assertEquals(msgLength, length);
+        };
+        while (0 == subscription.poll(fragmentHandler, 1))
+        {
+            Tests.yield();
+        }
+        assertTrue(received.get());
+
+        subscription.close();
+
+        final long startNs = System.nanoTime();
+        Tests.await(() -> !publication.isConnected());
+        final long durationNs = System.nanoTime() - startNs;
+        assertThat(durationNs, lessThan(driver.context().timerIntervalNs() / 2));
     }
 
     private static void verifyFragment(

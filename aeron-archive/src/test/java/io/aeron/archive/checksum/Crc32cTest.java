@@ -17,8 +17,6 @@ package io.aeron.archive.checksum;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
-import org.junit.jupiter.api.condition.JRE;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.Method;
@@ -30,7 +28,6 @@ import static io.aeron.archive.checksum.Crc32c.INSTANCE;
 import static org.agrona.BufferUtil.address;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@EnabledForJreRange(min = JRE.JAVA_9)
 class Crc32cTest
 {
     private Constructor<?> constructor;

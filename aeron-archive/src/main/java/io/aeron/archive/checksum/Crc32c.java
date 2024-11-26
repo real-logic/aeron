@@ -30,6 +30,7 @@ import static java.lang.invoke.MethodType.methodType;
  * <em>Note: Available only on JDK 9+.</em>
  * </p>
  */
+// TODO: Replace with Agrona classes when released
 final class Crc32c implements Checksum
 {
     public static final Crc32c INSTANCE = new Crc32c();

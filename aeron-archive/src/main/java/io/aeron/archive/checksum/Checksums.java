@@ -15,13 +15,16 @@
  */
 package io.aeron.archive.checksum;
 
-import java.util.Objects;
+import org.agrona.Strings;
 
 /**
  * Factory and common methods for working with {@link Checksum} instances.
  */
 public final class Checksums
 {
+    private static final Checksum CRC_32 = Crc32.INSTANCE;
+    private static final Checksum CRC_32C = Crc32c.INSTANCE;
+
     /**
      * Returns an instance of {@link Checksum} that computes CRC-32 checksums.
      *
@@ -29,7 +32,7 @@ public final class Checksums
      */
     public static Checksum crc32()
     {
-        return Crc32.INSTANCE;
+        return CRC_32;
     }
 
     /**
@@ -39,15 +42,15 @@ public final class Checksums
      */
     public static Checksum crc32c()
     {
-        return Crc32c.INSTANCE;
+        return CRC_32C;
     }
 
     /**
      * Factory method to create an instance of the {@link Checksum} interface.
      *
-     * @param className fully qualified class name of the {@link Checksum} implementation.
+     * @param className fully qualified class name or an alias of the {@link Checksum} implementation.
      * @return a {@link Checksum} instance.
-     * @throws NullPointerException     if {@code className == null}.
+     * @throws IllegalArgumentException if {@code className == null} or empty.
      * @throws IllegalStateException    if an attempt was made to acquire CRC-32C while running on JDK 8.
      * @throws IllegalArgumentException if an error occurs while creating a {@link Checksum} instance.
      * @throws ClassCastException       if created instance does not implement the {@link Checksum} interface.
@@ -55,28 +58,35 @@ public final class Checksums
      */
     public static Checksum newInstance(final String className)
     {
-        Objects.requireNonNull(className, "className is required!");
+        if (Strings.isEmpty(className))
+        {
+            throw new IllegalArgumentException("className is empty");
+        }
 
-        if (Crc32.class.getName().equals(className))
+        return switch (className)
         {
-            return crc32();
-        }
-        else if (Crc32c.class.getName().equals(className))
-        {
-            return crc32c();
-        }
-        else
-        {
-            try
+            case "CRC-32":
+            case "io.aeron.archive.checksum.Crc32":
+            case "org.agrona.checksum.Crc32":
+                yield crc32();
+            case "CRC-32C":
+            case "io.aeron.archive.checksum.Crc32c":
+            case "org.agrona.checksum.Crc32c":
+                yield crc32c();
+            default:
             {
-                final Class<?> klass = Class.forName(className);
-                final Object instance = klass.getDeclaredConstructor().newInstance();
-                return (Checksum)instance;
+                try
+                {
+                    final Class<?> klass = Class.forName(className);
+                    final Object instance = klass.getDeclaredConstructor().newInstance();
+                    yield (Checksum)instance;
+                }
+                catch (final ReflectiveOperationException ex)
+                {
+                    throw new IllegalArgumentException(
+                        "failed to create Checksum instance for class: " + className, ex);
+                }
             }
-            catch (final ReflectiveOperationException ex)
-            {
-                throw new IllegalArgumentException("failed to create Checksum instance for class: " + className, ex);
-            }
-        }
+        };
     }
 }

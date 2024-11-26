@@ -25,6 +25,7 @@ import java.util.zip.CRC32;
 /**
  * Implementation of the {@link Checksum} interface that computes CRC-32 checksum.
  */
+// TODO: Replace with Agrona classes when released
 final class Crc32 implements Checksum
 {
     private static final MethodHandle UPDATE_BYTE_BUFFER;

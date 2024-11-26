@@ -16,45 +16,51 @@
 package io.aeron.archive.checksum;
 
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.EnabledForJreRange;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.NullAndEmptySource;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.*;
-import static org.junit.jupiter.api.condition.JRE.JAVA_9;
 
 class ChecksumsTest
 {
     @Test
     void crc32()
     {
-        assertSame(Crc32.INSTANCE, Checksums.crc32());
+        final Checksum instance = Checksums.crc32();
+        assertNotNull(instance);
+        assertSame(instance, Checksums.crc32());
     }
 
-    @EnabledForJreRange(min = JAVA_9)
     @Test
     void crc32c()
     {
-        assertSame(Crc32c.INSTANCE, Checksums.crc32c());
+        final Checksum instance = Checksums.crc32c();
+        assertNotNull(instance);
+        assertSame(instance, Checksums.crc32c());
     }
 
-    @Test
-    void newInstanceReturnsSameInstanceOfCrc32()
+    @ParameterizedTest
+    @ValueSource(strings = { "CRC-32", "io.aeron.archive.checksum.Crc32", "org.agrona.checksum.Crc32" })
+    void newInstanceReturnsSameInstanceOfCrc32(final String alias)
     {
-        assertSame(Crc32.INSTANCE, Checksums.newInstance(Crc32.class.getName()));
+        assertSame(Checksums.crc32(), Checksums.newInstance(alias));
     }
 
-    @EnabledForJreRange(min = JAVA_9)
-    @Test
-    void newInstanceReturnsSameInstanceOfCrc32c()
+    @ParameterizedTest
+    @ValueSource(strings = { "CRC-32C", "io.aeron.archive.checksum.Crc32c", "org.agrona.checksum.Crc32c" })
+    void newInstanceReturnsSameInstanceOfCrc32c(final String alias)
     {
-        assertSame(Crc32c.INSTANCE, Checksums.newInstance(Crc32c.class.getName()));
+        assertSame(Checksums.crc32c(), Checksums.newInstance(alias));
     }
 
-    @Test
-    void newInstanceThrowsNullPointerExceptionIfClassNameIsNull()
+    @ParameterizedTest
+    @NullAndEmptySource
+    void newInstanceThrowsNullPointerExceptionIfClassNameIsNull(final String alias)
     {
-        assertThrows(NullPointerException.class, () -> Checksums.newInstance(null));
+        assertThrows(IllegalArgumentException.class, () -> Checksums.newInstance(alias));
     }
 
     @Test

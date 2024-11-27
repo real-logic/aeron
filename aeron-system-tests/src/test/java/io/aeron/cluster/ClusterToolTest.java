@@ -245,7 +245,7 @@ class ClusterToolTest
         try (RecordingLog recordingLog = new RecordingLog(clusterDir, true))
         {
             recordingLog.appendTerm(21, 0, 100, 100);
-            recordingLog.appendSnapshot(0, 0, 0, 0, 200, 0);
+            recordingLog.appendSnapshot(0, 0, 100, 0, 200, 0);
             recordingLog.appendTerm(21, 1, 1024, 200);
         }
 

@@ -706,9 +706,23 @@ public final class RecordingLog implements AutoCloseable
                 return result;
             }
 
+            result = Long.compare(e1.termBaseLogPosition, e2.termBaseLogPosition);
+            if (0 != result)
+            {
+                return result;
+            }
+
             result = Integer.compare(e1.type, e2.type);
             if (0 != result)
             {
+                if (ENTRY_TYPE_SNAPSHOT == e1.type)
+                {
+                    return 1;
+                }
+                else if (ENTRY_TYPE_SNAPSHOT == e2.type)
+                {
+                    return -1;
+                }
                 return result;
             }
 
@@ -724,7 +738,7 @@ public final class RecordingLog implements AutoCloseable
                     return result;
                 }
 
-                return Integer.compare(e2.serviceId, e1.serviceId);
+                return Integer.compare(e2.serviceId, e1.serviceId); // reverse serviceId order
             }
         };
 
@@ -871,7 +885,7 @@ public final class RecordingLog implements AutoCloseable
                 cacheIndexByLeadershipTermIdMap.put(entry.leadershipTermId, i);
             }
 
-            if (isInvalidSnapshot(entry))
+            if (!entry.isValid && (ENTRY_TYPE_SNAPSHOT == entry.type || ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type))
             {
                 invalidSnapshots.add(i);
             }
@@ -1202,7 +1216,7 @@ public final class RecordingLog implements AutoCloseable
         validateRecordingId(recordingId);
 
         if (!restoreInvalidSnapshot(
-            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
+            ENTRY_TYPE_SNAPSHOT, recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
         {
             append(
                 ENTRY_TYPE_SNAPSHOT,
@@ -1250,7 +1264,13 @@ public final class RecordingLog implements AutoCloseable
         }
 
         if (!restoreInvalidSnapshot(
-            recordingId, leadershipTermId, termBaseLogPosition, logPosition, timestamp, serviceId))
+            ENTRY_TYPE_STANDBY_SNAPSHOT,
+            recordingId,
+            leadershipTermId,
+            termBaseLogPosition,
+            logPosition,
+            timestamp,
+            serviceId))
         {
             append(
                 ENTRY_TYPE_STANDBY_SNAPSHOT,
@@ -1311,7 +1331,7 @@ public final class RecordingLog implements AutoCloseable
                 {
                     cacheIndexByLeadershipTermIdMap.remove(leadershipTermId);
                 }
-                else if (ENTRY_TYPE_SNAPSHOT == entry.type)
+                else if (ENTRY_TYPE_SNAPSHOT == entry.type || ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
                 {
                     invalidSnapshots.add(i);
                 }
@@ -1590,6 +1610,7 @@ public final class RecordingLog implements AutoCloseable
     }
 
     private boolean restoreInvalidSnapshot(
+        final int snapshotEntryType,
         final long recordingId,
         final long leadershipTermId,
         final long termBaseLogPosition,
@@ -1602,7 +1623,8 @@ public final class RecordingLog implements AutoCloseable
             final int entryCacheIndex = invalidSnapshots.getInt(i);
             final Entry entry = entriesCache.get(entryCacheIndex);
 
-            if (matchesEntry(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
+            if (snapshotEntryType == entry.type &&
+                matchesEntry(entry, leadershipTermId, termBaseLogPosition, logPosition, serviceId))
             {
                 final Entry validatedEntry = new Entry(
                     recordingId,
@@ -1611,7 +1633,7 @@ public final class RecordingLog implements AutoCloseable
                     logPosition,
                     timestamp,
                     serviceId,
-                    ENTRY_TYPE_SNAPSHOT,
+                    snapshotEntryType,
                     null,
                     true,
                     entry.position,

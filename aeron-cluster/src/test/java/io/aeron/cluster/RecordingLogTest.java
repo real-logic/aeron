@@ -471,10 +471,10 @@ class RecordingLogTest
                 new RecordingLog.Entry(7, 1, 501, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 10),
                 entries.get(10));
             assertEquals(
-                new RecordingLog.Entry(10, 2, 1000, NULL_POSITION, 5, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 8),
+                new RecordingLog.Entry(6, 2, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 9),
                 entries.get(11));
             assertEquals(
-                new RecordingLog.Entry(6, 2, 500, 999, 0, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 9),
+                new RecordingLog.Entry(10, 2, 1000, NULL_POSITION, 5, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 8),
                 entries.get(12));
             final RecordingLog.Entry latestSnapshot = recordingLog.getLatestSnapshot(SERVICE_ID);
             assertNotNull(latestSnapshot);
@@ -625,20 +625,27 @@ class RecordingLogTest
     @Test
     void entriesInTheRecordingLogShouldBeSorted()
     {
+        final String archiveEndpoint = "aeron:udp?endpoint=localhost:8080";
         final List<RecordingLog.Entry> sortedList = new ArrayList<>();
         sortedList.add(new RecordingLog.Entry(0, 0, 0, 90, 0, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 0));
-        sortedList.add(new RecordingLog.Entry(0, 1, 100, 1_000_000, 10, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 1));
+        sortedList.add(new RecordingLog.Entry(0, 1, 0, 777, 42, 2, ENTRY_TYPE_SNAPSHOT, null, true, 11));
         sortedList.add(new RecordingLog.Entry(0, 1, 90, 400, 9, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 8));
+        sortedList.add(new RecordingLog.Entry(0, 1, 100, 1000000, 10, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 1));
         sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 1, ENTRY_TYPE_SNAPSHOT, null, false, 2));
         sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, 0, ENTRY_TYPE_SNAPSHOT, null, false, 4));
         sortedList.add(new RecordingLog.Entry(0, 1, 111, 222, 12, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, false, 3));
-        sortedList.add(new RecordingLog.Entry(0, 1, 0, 777, 42, 2, ENTRY_TYPE_SNAPSHOT, null, true, 11));
-        sortedList.add(
-            new RecordingLog.Entry(0, 2, 1_000_000, 500, 1_000_000, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 6));
         sortedList.add(new RecordingLog.Entry(0, 2, 400, 500, 20, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 7));
+        sortedList.add(new RecordingLog.Entry(
+            0, 2, 400, 1400, 200, 1, ENTRY_TYPE_STANDBY_SNAPSHOT, archiveEndpoint, true, 14));
+        sortedList.add(new RecordingLog.Entry(
+            0, 2, 400, 1400, 200, 0, ENTRY_TYPE_STANDBY_SNAPSHOT, archiveEndpoint, true, 15));
+        sortedList.add(new RecordingLog.Entry(
+            0, 2, 400, 1400, 200, SERVICE_ID, ENTRY_TYPE_STANDBY_SNAPSHOT, archiveEndpoint, true, 13));
         sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 1, ENTRY_TYPE_SNAPSHOT, null, false, 10));
         sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, 0, ENTRY_TYPE_SNAPSHOT, null, true, 12));
         sortedList.add(new RecordingLog.Entry(0, 2, 400, 1400, 200, SERVICE_ID, ENTRY_TYPE_SNAPSHOT, null, true, 9));
+        sortedList.add(
+            new RecordingLog.Entry(0, 2, 1_000_000, 500, 1_000_000, NULL_VALUE, ENTRY_TYPE_TERM, null, false, 6));
         sortedList.add(new RecordingLog.Entry(0, 3, 500, NULL_VALUE, 30, NULL_VALUE, ENTRY_TYPE_TERM, null, true, 5));
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
@@ -665,6 +672,10 @@ class RecordingLogTest
             recordingLog.appendSnapshot(0, 2, 400, 1400, 200, 0);
 
             recordingLog.invalidateEntry(2, 10);
+
+            recordingLog.appendStandbySnapshot(0, 2, 400, 1400, 200, SERVICE_ID, archiveEndpoint);
+            recordingLog.appendStandbySnapshot(0, 2, 400, 1400, 200, 1, archiveEndpoint);
+            recordingLog.appendStandbySnapshot(0, 2, 400, 1400, 200, 0, archiveEndpoint);
 
             assertEquals(sortedList, recordingLog.entries()); // in memory view
 

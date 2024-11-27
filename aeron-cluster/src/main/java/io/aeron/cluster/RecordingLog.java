@@ -169,7 +169,7 @@ public final class RecordingLog implements AutoCloseable
          * @param type                of the entry as a log of a term or a snapshot.
          * @param archiveEndpoint     archive where the snapshot is located, if
          *                            <code>entryType == ENTRY_TYPE_STANDBY_SNAPSHOT</code>.
-         * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(long, int)}
+         * @param isValid             indicates if the entry is valid, {@link RecordingLog#invalidateEntry(int)}
          *                            marks it invalid.
          * @param position            of the entry on disk.
          * @param entryIndex          of the entry on disk.
@@ -1021,7 +1021,7 @@ public final class RecordingLog implements AutoCloseable
                 final Entry entry = entriesCache.get(i);
                 if (isValidSnapshot(entry) && entry.serviceId == serviceId)
                 {
-                    invalidateEntry(entry.leadershipTermId, entry.entryIndex);
+                    invalidateEntry(i);
                     serviceId++;
                 }
                 else
@@ -1307,42 +1307,18 @@ public final class RecordingLog implements AutoCloseable
         }
     }
 
-    /**
-     * Invalidate an entry in the log, so it is no longer valid. Be careful that the recording log is not left in an
-     * invalid state for recovery.
-     *
-     * @param leadershipTermId to match for validation.
-     * @param entryIndex       reached in the leadership term.
-     * @see #invalidateLatestSnapshot()
-     */
-    public void invalidateEntry(final long leadershipTermId, final int entryIndex)
+    void invalidateEntry(final int index)
     {
-        Entry invalidEntry = null;
+        final Entry invalidEntry = entriesCache.get(index).invalidate();
+        entriesCache.set(index, invalidEntry);
 
-        for (int i = entriesCache.size() - 1; i >= 0; i--)
+        if (ENTRY_TYPE_TERM == invalidEntry.type)
         {
-            final Entry entry = entriesCache.get(i);
-            if (entry.leadershipTermId == leadershipTermId && entry.entryIndex == entryIndex)
-            {
-                invalidEntry = entry.invalidate();
-                entriesCache.set(i, invalidEntry);
-
-                if (ENTRY_TYPE_TERM == entry.type)
-                {
-                    cacheIndexByLeadershipTermIdMap.remove(leadershipTermId);
-                }
-                else if (ENTRY_TYPE_SNAPSHOT == entry.type || ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type)
-                {
-                    invalidSnapshots.add(i);
-                }
-
-                break;
-            }
+            cacheIndexByLeadershipTermIdMap.remove(invalidEntry.leadershipTermId);
         }
-
-        if (null == invalidEntry)
+        else if (ENTRY_TYPE_SNAPSHOT == invalidEntry.type || ENTRY_TYPE_STANDBY_SNAPSHOT == invalidEntry.type)
         {
-            throw new ClusterException("unknown entry index: " + entryIndex);
+            invalidSnapshots.add(index);
         }
 
         final int invalidEntryType = ENTRY_TYPE_INVALID_FLAG | invalidEntry.type;

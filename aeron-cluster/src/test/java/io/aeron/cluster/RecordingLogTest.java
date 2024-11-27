@@ -130,8 +130,8 @@ class RecordingLogTest
             recordingLog.appendSnapshot(5, 1L, 0, 999L, 0, 0);
             recordingLog.appendSnapshot(6, 1L, 0, 999L, 0, SERVICE_ID);
 
-            recordingLog.invalidateEntry(1L, 2);
-            recordingLog.invalidateEntry(1L, 3);
+            recordingLog.invalidateEntry(2);
+            recordingLog.invalidateEntry(3);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
@@ -168,7 +168,7 @@ class RecordingLogTest
             assertNotNull(lastTerm);
             assertEquals(999L, lastTerm.termBaseLogPosition);
 
-            recordingLog.invalidateEntry(removedLeadershipTerm, 6);
+            recordingLog.invalidateEntry(6);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
@@ -350,8 +350,8 @@ class RecordingLogTest
             recordingLog.appendSnapshot(5L, 1L, 10, 888L, 0, 0);
             recordingLog.appendSnapshot(6L, 1L, 10, 888L, 0, SERVICE_ID);
 
-            recordingLog.invalidateEntry(1L, 2);
-            recordingLog.invalidateEntry(1L, 3);
+            recordingLog.invalidateEntry(2);
+            recordingLog.invalidateEntry(3);
         }
 
         try (RecordingLog recordingLog = new RecordingLog(tempDir, true))
@@ -529,7 +529,7 @@ class RecordingLogTest
         {
             recordingLog.appendTerm(3, 1, 0, 0);
             recordingLog.appendSnapshot(10, 1, 0, 56, 42, SERVICE_ID);
-            recordingLog.invalidateEntry(1, 1);
+            recordingLog.invalidateEntry(1);
 
             recordingLog.commitLogPosition(1, 200);
             recordingLog.appendTerm(3, 2, 200, 555);
@@ -612,7 +612,7 @@ class RecordingLogTest
             recordingLog.appendTerm(8, 0, 0, 0);
             recordingLog.appendTerm(8, 1, 1, 1);
 
-            recordingLog.invalidateEntry(0, 0);
+            recordingLog.invalidateEntry(0);
             recordingLog.appendTerm(8, 0, 100, 100);
 
             final ClusterException exception = assertThrows(ClusterException.class,
@@ -658,8 +658,8 @@ class RecordingLogTest
             recordingLog.appendTerm(0, 3, 500, 30);
             recordingLog.appendTerm(0, 2, 1_000_000, 1_000_000);
 
-            recordingLog.invalidateEntry(1, 1);
-            recordingLog.invalidateEntry(2, 6);
+            recordingLog.invalidateEntry(1);
+            recordingLog.invalidateEntry(5);
 
             recordingLog.appendTerm(0, 2, 400, 20);
             recordingLog.appendTerm(0, 1, 90, 9);
@@ -671,7 +671,7 @@ class RecordingLogTest
             recordingLog.appendSnapshot(0, 1, 0, 777, 42, 2);
             recordingLog.appendSnapshot(0, 2, 400, 1400, 200, 0);
 
-            recordingLog.invalidateEntry(2, 10);
+            recordingLog.invalidateEntry(8);
 
             recordingLog.appendStandbySnapshot(0, 2, 400, 1400, 200, SERVICE_ID, archiveEndpoint);
             recordingLog.appendStandbySnapshot(0, 2, 400, 1400, 200, 1, archiveEndpoint);

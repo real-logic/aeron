@@ -51,6 +51,7 @@ aeron_uri_params_t;
 #define AERON_URI_TERM_ID_KEY "term-id"
 #define AERON_URI_TERM_OFFSET_KEY "term-offset"
 
+#define AERON_URI_ALIAS_KEY "alias"
 #define AERON_URI_TERM_LENGTH_KEY "term-length"
 #define AERON_URI_LINGER_TIMEOUT_KEY "linger"
 #define AERON_URI_MTU_LENGTH_KEY "mtu"

@@ -148,9 +148,9 @@ int aeron_uri_string_builder_put(aeron_uri_string_builder_t *builder, const char
         return -1;
     }
 
-    if (strchr(key, '?') != NULL ||
-        strchr(key, '|') != NULL ||
-        strchr(key, '=') != NULL)
+    if (NULL != strchr(key, '?') ||
+        NULL != strchr(key, '|') ||
+        NULL != strchr(key, '='))
     {
         AERON_SET_ERR(EINVAL, "%s", "key cannot contain '?', '|' or '='");
         return -1;
@@ -158,9 +158,9 @@ int aeron_uri_string_builder_put(aeron_uri_string_builder_t *builder, const char
 
     if (NULL != value)
     {
-        if (strchr(value, '?') != NULL ||
-            strchr(value, '|') != NULL ||
-            strchr(value, '=') != NULL)
+        if (NULL != strchr(value, '?') ||
+            NULL != strchr(value, '|') ||
+            NULL != strchr(value, '='))
         {
             AERON_SET_ERR(EINVAL, "%s", "value cannot contain '?', '|' or '='");
             return -1;
@@ -198,18 +198,18 @@ int aeron_uri_string_builder_put(aeron_uri_string_builder_t *builder, const char
 
 int aeron_uri_string_builder_put_int32(aeron_uri_string_builder_t *builder, const char *key, int32_t value)
 {
-    char buffer[15];
+    char buffer[12];
 
-    snprintf(buffer, 15, "%i", value);
+    snprintf(buffer, sizeof(buffer), "%" PRIi32, value);
 
     return aeron_uri_string_builder_put(builder, key, buffer);
 }
 
 int aeron_uri_string_builder_put_int64(aeron_uri_string_builder_t *builder, const char *key, int64_t value)
 {
-    char buffer[15];
+    char buffer[21];
 
-    snprintf(buffer, 15, "%" PRIi64, value);
+    snprintf(buffer, sizeof(buffer), "%" PRIi64, value);
 
     return aeron_uri_string_builder_put(builder, key, buffer);
 }
@@ -233,6 +233,7 @@ typedef struct aeron_uri_string_builder_print_context_stct
     char *buffer;
     size_t buffer_len;
     size_t offset;
+    int result;
     const char *delimiter;
 }
 aeron_uri_string_builder_print_context_t;
@@ -242,20 +243,24 @@ static void aeron_uri_string_builder_print(void *clientd, const char *key, size_
     aeron_uri_string_builder_print_context_t *ctx = (aeron_uri_string_builder_print_context_t *)clientd;
     aeron_uri_string_builder_entry_t *entry = (aeron_uri_string_builder_entry_t *)value;
 
-    if (strcmp(AERON_URI_STRING_BUILDER_PREFIX_KEY, entry->key) == 0 ||
+    if (ctx->result < 0 ||
+        strcmp(AERON_URI_STRING_BUILDER_PREFIX_KEY, entry->key) == 0 ||
         strcmp(AERON_URI_STRING_BUILDER_MEDIA_KEY, entry->key) == 0)
     {
         return;
     }
 
-    ctx->offset += snprintf(
-        ctx->buffer + ctx->offset,
-        ctx->buffer_len - ctx->offset,
-        "%s%s=%s",
-        ctx->delimiter,
-        entry->key,
-        entry->value);
+    int result = snprintf(
+        ctx->buffer + ctx->offset, ctx->buffer_len - ctx->offset, "%s%s=%s", ctx->delimiter, entry->key, entry->value);
 
+    if (result < 0)
+    {
+        ctx->result = result;
+        AERON_SET_ERR(result, "Failed to print next uri item: %s", entry->key);
+        return;
+    }
+
+    ctx->offset += (size_t)result;
     ctx->delimiter = "|";
 }
 
@@ -266,6 +271,7 @@ int aeron_uri_string_builder_sprint(aeron_uri_string_builder_t *builder, char *b
     ctx.buffer = buffer;
     ctx.buffer_len = buffer_len;
     ctx.offset = 0;
+    ctx.result = 0;
     ctx.delimiter = "?";
 
     aeron_uri_string_builder_entry_t *entry;
@@ -277,26 +283,39 @@ int aeron_uri_string_builder_sprint(aeron_uri_string_builder_t *builder, char *b
 
     if (NULL != entry)
     {
-        ctx.offset += snprintf(
-            ctx.buffer + ctx.offset,
-            ctx.buffer_len - ctx.offset,
-            "%s:", entry->value);
+        int result = snprintf(ctx.buffer + ctx.offset, ctx.buffer_len - ctx.offset, "%s:", entry->value);
+        if (result < 0)
+        {
+            AERON_SET_ERR(result, "Failed to print uri prefix: %s", entry->value);
+            return -1;
+        }
+
+        ctx.offset += (size_t)result;
     }
 
-   entry = aeron_str_to_ptr_hash_map_get(
+    entry = aeron_str_to_ptr_hash_map_get(
         &builder->params,
         AERON_URI_STRING_BUILDER_MEDIA_KEY,
         strlen(AERON_URI_STRING_BUILDER_MEDIA_KEY));
 
-    ctx.offset += snprintf(
-        ctx.buffer + ctx.offset,
-        ctx.buffer_len - ctx.offset,
-        "aeron:%s",
-        entry == NULL ? "unknown" : entry->value);
+    if (NULL == entry)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "No media defined in the uri");
+        return -1;
+    }
+
+    int result = snprintf(ctx.buffer + ctx.offset, ctx.buffer_len - ctx.offset, "aeron:%s", entry->value);
+    if (result < 0)
+    {
+        AERON_SET_ERR(result, "Failed to print uri media: %s", entry->value);
+        return -1;
+    }
+
+    ctx.offset += (size_t)result;
 
     aeron_str_to_ptr_hash_map_for_each(&builder->params, aeron_uri_string_builder_print, &ctx);
 
-    return 0;
+    return ctx.result;
 }
 
 int aeron_uri_string_builder_set_initial_position(
@@ -322,7 +341,10 @@ int aeron_uri_string_builder_set_initial_position(
 
     if (aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_LENGTH_KEY, term_length) < 0 ||
         aeron_uri_string_builder_put_int32(builder, AERON_URI_INITIAL_TERM_ID_KEY, initial_term_id) < 0 ||
-        aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_ID_KEY, (position >> bits_to_shift) + initial_term_id) < 0 ||
+        aeron_uri_string_builder_put_int32(
+            builder,
+            AERON_URI_TERM_ID_KEY,
+            (position >> bits_to_shift) + initial_term_id) < 0 ||
         aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_OFFSET_KEY, position & (term_length - 1)) < 0)
     {
         AERON_APPEND_ERR("%s", "");

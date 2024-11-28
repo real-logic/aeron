@@ -25,49 +25,174 @@
 #include "aeron_archive_recording_signal.h"
 #include "aeron_archive_replay_params.h"
 
-#include "aeronc.h"
 #include "aeron_alloc.h"
 #include "aeron_agent.h"
 #include "aeron_counters.h"
 #include "util/aeron_error.h"
 #include "uri/aeron_uri_string_builder.h"
+#include "command/aeron_control_protocol.h"
 
 #define ENSURE_NOT_REENTRANT_CHECK_RETURN(_aa, _rc) \
 do { \
     if ((_aa)->is_in_callback) \
     { \
-        AERON_SET_ERR(-1, "%s", "client cannot be invoked within callback"); \
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "client cannot be invoked within callback"); \
         return (_rc); \
     } \
 } while (0)
 
-struct aeron_archive_stct
+static void aeron_archive_handle_control_response_with_error_handler(
+    aeron_archive_context_t *ctx, aeron_archive_control_response_poller_t *poller)
 {
-    bool owns_ctx;
-    aeron_archive_context_t *ctx;
-    aeron_mutex_t lock;
-    aeron_archive_proxy_t *archive_proxy;
-    bool owns_control_response_subscription;
-    aeron_subscription_t *subscription; // shared by various pollers
-    aeron_archive_control_response_poller_t *control_response_poller;
-    aeron_archive_recording_descriptor_poller_t *recording_descriptor_poller;
-    aeron_archive_recording_subscription_descriptor_poller_t *recording_subscription_descriptor_poller;
-    int64_t control_session_id;
-    int64_t archive_id;
-    bool is_in_callback;
-};
+    aeron_archive_context_invoke_error_handler(
+        ctx, poller->correlation_id, (int32_t)poller->relevant_id, poller->error_message);
+}
 
-int aeron_archive_poll_for_response(
-    int64_t *relevant_id_p,
+static void aeron_archive_dispatch_recording_signal(aeron_archive_t *aeron_archive)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    aeron_archive_recording_signal_t signal;
+
+    signal.control_session_id = poller->control_session_id;
+    signal.recording_id = poller->recording_id;
+    signal.subscription_id = poller->subscription_id;
+    signal.position = poller->position;
+    signal.recording_signal_code = poller->recording_signal_code;
+
+    aeron_archive->is_in_callback = true;
+
+    aeron_archive_recording_signal_dispatch_signal(aeron_archive->ctx, &signal);
+
+    aeron_archive->is_in_callback = false;
+}
+
+static int aeron_archive_poll_next_response(
     aeron_archive_t *aeron_archive,
     const char *operation_name,
-    int64_t correlation_id);
+    int64_t correlation_id,
+    int64_t deadline_ns)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
 
-int aeron_archive_poll_for_response_allowing_error(
+    while (true)
+    {
+        int fragments = aeron_archive_control_response_poller_poll(poller);
+
+        if (fragments < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        if (poller->is_poll_complete)
+        {
+            if (poller->is_recording_signal &&
+                poller->control_session_id == aeron_archive->control_session_id)
+            {
+                aeron_archive_dispatch_recording_signal(aeron_archive);
+
+                continue;
+            }
+
+            break;
+        }
+
+        if (fragments > 0)
+        {
+            continue;
+        }
+
+        {
+            if (!aeron_subscription_is_connected(poller->subscription))
+            {
+                AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "subscription to archive is not connected");
+                return -1;
+            }
+        }
+
+        if (aeron_nano_clock() > deadline_ns)
+        {
+            AERON_SET_ERR(ETIMEDOUT, "%s awaiting response - correlationId=%" PRIi64, operation_name, correlation_id);
+            return -1;
+        }
+
+        aeron_archive_idle(aeron_archive);
+
+        aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
+    }
+
+    return 0;
+}
+
+static int aeron_archive_poll_for_response_allowing_error(
     bool *success_p,
     aeron_archive_t *aeron_archive,
     const char *operation_name,
-    int64_t correlation_id);
+    int64_t correlation_id,
+    int32_t expected_error_code)
+{
+    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
+
+    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
+
+    while (true)
+    {
+        if (aeron_archive_poll_next_response(
+            aeron_archive,
+            operation_name,
+            correlation_id,
+            deadline_ns) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            return -1;
+        }
+
+        // make sure the session id matches
+        if (poller->control_session_id != aeron_archive->control_session_id)
+        {
+            aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
+            continue;
+        }
+
+        if (poller->is_code_error)
+        {
+            if (poller->correlation_id == correlation_id)
+            {
+                if (poller->relevant_id == expected_error_code)
+                {
+                    *success_p = false;
+                    return 0;
+                }
+
+                // got an error, and the correlation ids match
+                AERON_SET_ERR(
+                    -AERON_ERROR_CODE_GENERIC_ERROR,
+                    "response for correlationId=%" PRIi64 ", errorCode=%" PRIi64 ", error: %s",
+                    correlation_id,
+                    poller->relevant_id,
+                    poller->error_message);
+
+                return -1;
+            }
+            else if (NULL != aeron_archive->ctx->error_handler)
+            {
+                aeron_archive_handle_control_response_with_error_handler(aeron_archive->ctx, poller);
+            }
+        }
+        else if (poller->correlation_id == correlation_id)
+        {
+            if (!poller->is_code_ok)
+            {
+                AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "unexpected response code: %i", poller->code_value);
+                return -1;
+            }
+
+            *success_p = true;
+            return 0;
+        }
+    }
+}
 
 int aeron_archive_poll_for_descriptors(
     int32_t *count_p,
@@ -86,8 +211,6 @@ int aeron_archive_poll_for_subscription_descriptors(
     int32_t subscription_count,
     aeron_archive_recording_subscription_descriptor_consumer_func_t recording_subscription_descriptor_consumer,
     void *recording_subscription_descriptor_consumer_clientd);
-
-void aeron_archive_dispatch_recording_signal(aeron_archive_t *aeron_archive);
 
 int aeron_archive_replay_via_response_channel(
     aeron_subscription_t **subscription_p,
@@ -116,8 +239,6 @@ int aeron_archive_initiate_replay_via_response_channel(
     int64_t deadline_ns);
 
 int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char *in, int32_t session_id);
-
-void aeron_archive_handle_control_response_with_error_handler(aeron_archive_t *aeron_archive);
 
 /* **************** */
 
@@ -285,15 +406,16 @@ int aeron_archive_poll_for_recording_signals(int32_t *count_p, aeron_archive_t *
             if (NULL == aeron_archive->ctx->error_handler)
             {
                 AERON_SET_ERR(
-                    (int32_t)poller->relevant_id,
-                    "correlation_id=%" PRIi64 " %s",
+                    -AERON_ERROR_CODE_GENERIC_ERROR,
+                    "response for correlationId=%" PRIi64 ", errorCode=%" PRIi64 ", error: %s",
                     poller->correlation_id,
+                    poller->relevant_id,
                     poller->error_message);
                 rc = -1;
             }
             else
             {
-                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
+               aeron_archive_handle_control_response_with_error_handler(aeron_archive->ctx, poller);
             }
         }
         else if (poller->is_recording_signal)
@@ -322,7 +444,7 @@ int aeron_archive_poll_for_error_response(aeron_archive_t *aeron_archive, char *
 
     if (!aeron_subscription_is_connected(aeron_archive->subscription))
     {
-        AERON_SET_ERR(-1, "%s", "subscription to archive is not connected");
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "subscription to archive is not connected");
         rc = -1;
         goto cleanup;
     }
@@ -373,14 +495,14 @@ int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
     {
         if (NULL == aeron_archive->ctx->error_handler)
         {
-            AERON_SET_ERR(-1, "%s", "not connected");
+            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "not connected");
             rc = -1;
         }
         else
         {
             aeron_archive->ctx->error_handler(
                 aeron_archive->ctx->error_handler_clientd,
-                -1,
+                AERON_ERROR_CODE_GENERIC_ERROR,
                 "not connected");
         }
 
@@ -405,15 +527,17 @@ int aeron_archive_check_for_error_response(aeron_archive_t *aeron_archive)
             if (NULL == aeron_archive->ctx->error_handler)
             {
                 AERON_SET_ERR(
-                    (int32_t)poller->relevant_id,
-                    "correlation_id=%" PRIi64 " %s",
+                    -AERON_ERROR_CODE_GENERIC_ERROR,
+                    "response for correlationId=%" PRIi64 ", errorCode=%" PRIi64 ", error: %s",
                     poller->correlation_id,
+                    poller->relevant_id,
                     poller->error_message);
+
                 rc = -1;
             }
             else
             {
-                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
+               aeron_archive_handle_control_response_with_error_handler(aeron_archive->ctx, poller);
             }
         }
         else if (poller->is_recording_signal)
@@ -468,7 +592,7 @@ int aeron_archive_add_recorded_publication(
     if (constants.original_registration_id != constants.registration_id)
     {
         // not original
-        AERON_SET_ERR(-1, "publication already added for channel=%s streamId=%" PRIi32, channel, stream_id);
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "publication already added for channel=%s streamId=%" PRIi32, channel, stream_id);
         return -1;
     }
 
@@ -806,7 +930,8 @@ int aeron_archive_try_stop_recording_subscription(
             stopped_p,
             aeron_archive,
             "AeronArchive::tryStopRecordingSubscription",
-            correlation_id);
+            correlation_id,
+            ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION);
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);
@@ -873,7 +998,8 @@ int aeron_archive_try_stop_recording_channel_and_stream(
             stopped_p,
             aeron_archive,
             "AeronArchive::tryStopRecordingChannelAndStream",
-            correlation_id);
+            correlation_id,
+            ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION);
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);
@@ -1685,7 +1811,8 @@ int aeron_archive_try_stop_replication(
             stopped_p,
             aeron_archive,
             "AeronArchive::tryStopReplication",
-            correlation_id);
+            correlation_id,
+            ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION);
     }
 
     aeron_mutex_unlock(&aeron_archive->lock);
@@ -1901,64 +2028,6 @@ aeron_subscription_t *aeron_archive_get_and_own_control_response_subscription(ae
 
 /* **************** */
 
-int aeron_archive_poll_next_response(
-    aeron_archive_t *aeron_archive,
-    const char *operation_name,
-    int64_t correlation_id,
-    int64_t deadline_ns)
-{
-    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
-
-    while (true)
-    {
-        int fragments = aeron_archive_control_response_poller_poll(poller);
-
-        if (fragments < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
-
-        if (poller->is_poll_complete)
-        {
-            if (poller->is_recording_signal &&
-                poller->control_session_id == aeron_archive->control_session_id)
-            {
-                aeron_archive_dispatch_recording_signal(aeron_archive);
-
-                continue;
-            }
-
-            break;
-        }
-
-        if (fragments > 0)
-        {
-            continue;
-        }
-
-        {
-            if (!aeron_subscription_is_connected(poller->subscription))
-            {
-                AERON_SET_ERR(-1, "%s", "subscription to archive is not connected");
-                return -1;
-            }
-        }
-
-        if (aeron_nano_clock() > deadline_ns)
-        {
-            AERON_SET_ERR(ETIMEDOUT, "%s awaiting response - correlationId=%" PRIi64, operation_name, correlation_id);
-            return -1;
-        }
-
-        aeron_archive_idle(aeron_archive);
-
-        aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
-    }
-
-    return 0;
-}
-
 int aeron_archive_poll_for_response(
     int64_t *relevant_id_p,
     aeron_archive_t *aeron_archive,
@@ -1994,22 +2063,23 @@ int aeron_archive_poll_for_response(
             {
                 // got an error, and the correlation ids match
                 AERON_SET_ERR(
-                    -1,
-                    "response for correlationId=%" PRIi64 ", error: %s",
+                    -AERON_ERROR_CODE_GENERIC_ERROR,
+                    "response for correlationId=%" PRIi64 ", errorCode=%" PRIi64 ", error: %s",
                     correlation_id,
+                    poller->relevant_id,
                     poller->error_message);
                 return -1;
             }
             else if (NULL != aeron_archive->ctx->error_handler)
             {
-                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
+               aeron_archive_handle_control_response_with_error_handler(aeron_archive->ctx, poller);
             }
         }
         else if (poller->correlation_id == correlation_id)
         {
             if (!poller->is_code_ok)
             {
-                AERON_SET_ERR(-1, "unexpected response code: %i", poller->code_value);
+                AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "unexpected response code: %i", poller->code_value);
                 return -1;
             }
 
@@ -2018,72 +2088,6 @@ int aeron_archive_poll_for_response(
                 *relevant_id_p = poller->relevant_id;
             }
 
-            return 0;
-        }
-    }
-}
-
-int aeron_archive_poll_for_response_allowing_error(
-    bool *success_p,
-    aeron_archive_t *aeron_archive,
-    const char *operation_name,
-    int64_t correlation_id)
-{
-    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
-
-    int64_t deadline_ns = aeron_nano_clock() + aeron_archive->ctx->message_timeout_ns;
-
-    while (true)
-    {
-        if (aeron_archive_poll_next_response(
-            aeron_archive,
-            operation_name,
-            correlation_id,
-            deadline_ns) < 0)
-        {
-            AERON_APPEND_ERR("%s", "");
-            return -1;
-        }
-
-        // make sure the session id matches
-        if (poller->control_session_id != aeron_archive->control_session_id)
-        {
-            aeron_archive_context_invoke_aeron_client(aeron_archive->ctx);
-            continue;
-        }
-
-        if (poller->is_code_error)
-        {
-            if (poller->correlation_id == correlation_id)
-            {
-                if (poller->relevant_id == ARCHIVE_ERROR_CODE_UNKNOWN_SUBSCRIPTION)
-                {
-                    *success_p = false;
-                    return 0;
-                }
-
-                // got an error, and the correlation ids match
-                AERON_SET_ERR(
-                    -1,
-                    "response for correlationId=%" PRIi64 ", error: %s",
-                    correlation_id,
-                    poller->error_message);
-                return -1;
-            }
-            else if (NULL != aeron_archive->ctx->error_handler)
-            {
-                aeron_archive_handle_control_response_with_error_handler(aeron_archive);
-            }
-        }
-        else if (poller->correlation_id == correlation_id)
-        {
-            if (!poller->is_code_ok)
-            {
-                AERON_SET_ERR(-1, "unexpected response code: %i", poller->code_value);
-                return -1;
-            }
-
-            *success_p = true;
             return 0;
         }
     }
@@ -2146,7 +2150,7 @@ int aeron_archive_poll_for_descriptors(
 
         if (!aeron_subscription_is_connected(aeron_archive->subscription))
         {
-            AERON_SET_ERR(-1, "%s", "not connected");
+            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "not connected");
             return -1;
         }
 
@@ -2218,7 +2222,7 @@ int aeron_archive_poll_for_subscription_descriptors(
 
         if (!aeron_subscription_is_connected(aeron_archive->subscription))
         {
-            AERON_SET_ERR(-1, "%s", "subscription is not connected");
+            AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "subscription is not connected");
             return -1;
         }
 
@@ -2230,25 +2234,6 @@ int aeron_archive_poll_for_subscription_descriptors(
 
         aeron_archive_idle(aeron_archive);
     }
-}
-
-void aeron_archive_dispatch_recording_signal(aeron_archive_t *aeron_archive)
-{
-    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
-
-    aeron_archive_recording_signal_t signal;
-
-    signal.control_session_id = poller->control_session_id;
-    signal.recording_id = poller->recording_id;
-    signal.subscription_id = poller->subscription_id;
-    signal.position = poller->position;
-    signal.recording_signal_code = poller->recording_signal_code;
-
-    aeron_archive->is_in_callback = true;
-
-    aeron_archive_recording_signal_dispatch_signal(aeron_archive->ctx, &signal);
-
-    aeron_archive->is_in_callback = false;
 }
 
 int aeron_archive_replay_via_response_channel(
@@ -2339,7 +2324,7 @@ int aeron_archive_start_replay_via_response_channel(
 {
     if (AERON_NULL_VALUE == params->subscription_registration_id)
     {
-        AERON_SET_ERR(-1, "%s", "must supply a valid subscription registration id");
+        AERON_SET_ERR(-AERON_ERROR_CODE_GENERIC_ERROR, "%s", "must supply a valid subscription registration id");
         return -1;
     }
 
@@ -2562,30 +2547,4 @@ int aeron_archive_channel_with_session_id(char *out, size_t out_len, const char 
     aeron_uri_string_builder_close(&builder);
 
     return rc;
-}
-
-// This assumes there's already been a check for the presence of the error_handler
-void aeron_archive_handle_control_response_with_error_handler(aeron_archive_t *aeron_archive)
-{
-    aeron_archive_control_response_poller_t *poller = aeron_archive->control_response_poller;
-
-    char *error_message;
-
-    size_t len = strlen(poller->error_message) + 50; // for the correlation id and room for some whitespace
-
-    aeron_alloc((void **)&error_message, len);
-
-    snprintf(
-        error_message,
-        len,
-        "correlation_id=%" PRIi64 " %s",
-        poller->correlation_id,
-        poller->error_message);
-
-    aeron_archive->ctx->error_handler(
-        aeron_archive->ctx->error_handler_clientd,
-        (int32_t)poller->relevant_id,
-        error_message);
-
-    aeron_free(error_message);
 }

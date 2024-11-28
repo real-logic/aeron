@@ -214,29 +214,14 @@ aeron_controlled_fragment_handler_action_t aeron_archive_recording_subscription_
                     }
                     else if (NULL != poller->ctx->error_handler)
                     {
-                        char *error_message;
-
                         struct aeron_archive_client_controlResponse_string_view string_view =
                             aeron_archive_client_controlResponse_get_errorMessage_as_string_view(&control_response);
 
-                        size_t len = string_view.length + 50; // for the correlation id and room for some whitespace
-
-                        aeron_alloc((void **)&error_message, len);
-
-                        snprintf(
-                            error_message,
-                            len,
-                            "correlation_id=%" PRIi64 " %.*s",
+                        aeron_archive_context_invoke_error_handler(
+                            poller->ctx,
                             poller->correlation_id,
-                            (int)string_view.length,
-                            string_view.data);
-
-                        poller->ctx->error_handler(
-                            poller->ctx->error_handler_clientd,
                             (int32_t)aeron_archive_client_controlResponse_relevantId(&control_response),
-                            error_message);
-
-                        aeron_free(error_message);
+                            string_view.data);
                     }
                 }
             }

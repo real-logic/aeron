@@ -16,18 +16,19 @@
 
 #include <errno.h>
 #include <stdio.h>
+#include <inttypes.h>
 
 #include "aeron_archive.h"
 #include "aeron_archive_context.h"
 
 #include "aeron_alloc.h"
 #include "util/aeron_error.h"
-
-#define AERON_ARCHIVE_CONTEXT_MESSAGE_TIMEOUT_NS_DEFAULT  (10 * 1000 * 1000 * 1000LL) // 10 seconds
-#define AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_CHANNEL_DEFAULT "aeron:udp?endpoint=localhost:8010"
-#define AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_STREAM_ID_DEFAULT (10)
-#define AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT "aeron:udp?endpoint=localhost:0"
-#define AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_STREAM_ID_DEFAULT (20)
+#include "util/aeron_parse_util.h"
+#include "aeron_agent.h"
+#include "protocol/aeron_udp_protocol.h"
+#include "concurrent/aeron_logbuffer_descriptor.h"
+#include "uri/aeron_uri_string_builder.h"
+#include "command/aeron_control_protocol.h"
 
 int aeron_archive_context_init(aeron_archive_context_t **ctx)
 {
@@ -49,22 +50,121 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     aeron_default_path(_ctx->aeron_directory_name, sizeof(_ctx->aeron_directory_name));
     _ctx->owns_aeron_client = false;
 
-
     _ctx->control_request_channel = NULL;
-    aeron_archive_context_set_control_request_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_CHANNEL_DEFAULT);
-
-    _ctx->control_request_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_REQUEST_STREAM_ID_DEFAULT;
+    _ctx->control_request_channel_length = 0;
+    _ctx->control_request_stream_id = AERON_ARCHIVE_CONTROL_STREAM_ID_DEFAULT;
 
     _ctx->control_response_channel = NULL;
-    aeron_archive_context_set_control_response_channel(_ctx, AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_CHANNEL_DEFAULT);
+    _ctx->control_response_channel_length = 0;
+    _ctx->control_response_stream_id = AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_DEFAULT;
 
-    _ctx->control_response_stream_id = AERON_ARCHIVE_CONTEXT_CONTROL_RESPONSE_STREAM_ID_DEFAULT;
+    _ctx->recording_events_channel = NULL;
+    _ctx->recording_events_channel_length = 0;
+    _ctx->recording_events_stream_id = AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_DEFAULT;
 
-    _ctx->message_timeout_ns = AERON_ARCHIVE_CONTEXT_MESSAGE_TIMEOUT_NS_DEFAULT;
+    _ctx->message_timeout_ns = AERON_ARCHIVE_MESSAGE_TIMEOUT_NS_DEFAULT;
+
+    _ctx->control_term_buffer_sparse = AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
+    _ctx->control_term_buffer_length = AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_DEFAULT;
+
+    // like in Java the default value of the control MTU is defined by the driver configuration
+    _ctx->control_mtu_length = aeron_config_parse_size64(
+        "AERON_MTU_LENGTH",
+        getenv("AERON_MTU_LENGTH"),
+        1408,
+        AERON_DATA_HEADER_LENGTH,
+        AERON_MAX_UDP_PAYLOAD_LENGTH);
+
+    char *value = NULL;
+
+    if ((value = getenv(AERON_DIR_ENV_VAR)))
+    {
+        int result = snprintf(_ctx->aeron_directory_name, AERON_MAX_PATH - 1, "%s", value);
+        if (result < 0)
+        {
+            AERON_SET_ERR(result, "Failed to set aeron.dir: %s", value);
+            goto error;
+        }
+    }
+
+    if ((value = getenv(AERON_ARCHIVE_CONTROL_CHANNEL_ENV_VAR)))
+    {
+        if (aeron_archive_context_set_control_request_channel(_ctx, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    _ctx->control_request_stream_id = aeron_config_parse_int32(
+        AERON_ARCHIVE_CONTROL_STREAM_ID_ENV_VAR,
+        getenv(AERON_ARCHIVE_CONTROL_STREAM_ID_ENV_VAR),
+        _ctx->control_request_stream_id,
+        INT32_MIN,
+        INT32_MAX);
+
+    if ((value = getenv(AERON_ARCHIVE_CONTROL_RESPONSE_CHANNEL_ENV_VAR)))
+    {
+        if (aeron_archive_context_set_control_response_channel(_ctx, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    _ctx->control_response_stream_id = aeron_config_parse_int32(
+        AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_ENV_VAR,
+        getenv(AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_ENV_VAR),
+        _ctx->control_response_stream_id,
+        INT32_MIN,
+        INT32_MAX);
+
+    if ((value = getenv(AERON_ARCHIVE_RECORDING_EVENTS_CHANNEL_ENV_VAR)))
+    {
+        if (aeron_archive_context_set_recording_events_channel(_ctx, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    _ctx->recording_events_stream_id = aeron_config_parse_int32(
+        AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_ENV_VAR,
+        getenv(AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_ENV_VAR),
+        _ctx->recording_events_stream_id,
+        INT32_MIN,
+        INT32_MAX);
+
+    _ctx->message_timeout_ns = aeron_config_parse_duration_ns(
+        AERON_ARCHIVE_MESSAGE_TIMEOUT_ENV_VAR,
+        getenv(AERON_ARCHIVE_MESSAGE_TIMEOUT_ENV_VAR),
+        _ctx->message_timeout_ns,
+        1000,
+        INT64_MAX);
+
+    _ctx->control_term_buffer_length = aeron_config_parse_size64(
+        AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_ENV_VAR,
+        getenv(AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_ENV_VAR),
+        _ctx->control_term_buffer_length,
+        AERON_LOGBUFFER_TERM_MIN_LENGTH,
+        AERON_LOGBUFFER_TERM_MAX_LENGTH);
+
+    _ctx->control_mtu_length = aeron_config_parse_size64(
+        AERON_ARCHIVE_CONTROL_MTU_LENGTH_ENV_VAR,
+        getenv(AERON_ARCHIVE_CONTROL_MTU_LENGTH_ENV_VAR),
+        _ctx->control_mtu_length,
+        AERON_DATA_HEADER_LENGTH,
+        AERON_MAX_UDP_PAYLOAD_LENGTH);
+
+    _ctx->control_term_buffer_sparse = aeron_parse_bool(
+        getenv(AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_ENV_VAR), _ctx->control_term_buffer_sparse);
 
     *ctx = _ctx;
-
     return 0;
+
+error:
+    aeron_free(_ctx);
+    return -1;
 }
 
 int aeron_archive_context_close(aeron_archive_context_t *ctx)
@@ -83,6 +183,7 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
 
         aeron_free(ctx->control_request_channel);
         aeron_free(ctx->control_response_channel);
+        aeron_free(ctx->recording_events_channel);
 
         aeron_free(ctx);
     }
@@ -103,44 +204,170 @@ int aeron_archive_context_duplicate(aeron_archive_context_t **dest_p, aeron_arch
     memcpy(_ctx, src, sizeof(aeron_archive_context_t));
 
     _ctx->control_request_channel = NULL;
-    aeron_archive_context_set_control_request_channel(_ctx, src->control_request_channel);
+    if (aeron_archive_context_set_control_request_channel(_ctx, src->control_request_channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     _ctx->control_response_channel = NULL;
-    aeron_archive_context_set_control_response_channel(_ctx, src->control_response_channel);
+    if(aeron_archive_context_set_control_response_channel(_ctx, src->control_response_channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    _ctx->recording_events_channel = NULL;
+    if (aeron_archive_context_set_recording_events_channel(_ctx, src->recording_events_channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
 
     *dest_p = _ctx;
 
     return 0;
 }
 
+static int aeron_archive_apply_default_parameters(aeron_archive_context_t *ctx, const char* uri, aeron_uri_string_builder_t *builder)
+{
+
+    if (aeron_uri_string_builder_init_on_string(builder, uri) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error;
+    }
+
+    if (NULL == aeron_uri_string_builder_get(builder, AERON_URI_TERM_LENGTH_KEY))
+    {
+        if (aeron_uri_string_builder_put_int32(builder, AERON_URI_TERM_LENGTH_KEY, (int32_t)ctx->control_term_buffer_length) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    if (NULL == aeron_uri_string_builder_get(builder, AERON_URI_MTU_LENGTH_KEY))
+    {
+        if (aeron_uri_string_builder_put_int32(builder, AERON_URI_MTU_LENGTH_KEY, (int32_t)ctx->control_mtu_length) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    if (NULL == aeron_uri_string_builder_get(builder, AERON_URI_SPARSE_TERM_KEY))
+    {
+        if (aeron_uri_string_builder_put(builder, AERON_URI_SPARSE_TERM_KEY, ctx->control_term_buffer_sparse ? "true" : "false") < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
+    }
+
+    return 0;
+
+error:
+    aeron_uri_string_builder_close(builder);
+    return -1;
+}
+
 int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 {
+    if (NULL == ctx->control_request_channel)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "control request channel is required");
+        goto error;
+    }
+
+    if (NULL == ctx->control_response_channel)
+    {
+        AERON_SET_ERR(EINVAL, "%s", "control response channel is required");
+        goto error;
+    }
+
     if (NULL == ctx->aeron)
     {
-        aeron_context_t *aeron_ctx;
+        ctx->owns_aeron_client = true;
 
+        aeron_context_t *aeron_ctx;
         if (aeron_context_init(&aeron_ctx) < 0 ||
             aeron_context_set_dir(aeron_ctx, ctx->aeron_directory_name) < 0 ||
             aeron_init(&ctx->aeron, aeron_ctx) < 0 ||
             aeron_start(ctx->aeron) < 0)
         {
             AERON_APPEND_ERR("%s", "");
-            goto cleanup;
+            goto error;
         }
-
-        ctx->owns_aeron_client = true;
     }
 
-    if (NULL == ctx->error_handler)
+    if (NULL == ctx->idle_strategy_func)
     {
-        ctx->error_handler = aeron_context_get_error_handler(aeron_context(ctx->aeron));
-        ctx->error_handler_clientd = aeron_context_get_error_handler_clientd(aeron_context(ctx->aeron));
+        if (NULL == (ctx->idle_strategy_func = aeron_idle_strategy_load(
+            "backoff",
+            &ctx->idle_strategy_state,
+            "AERON_ARCHIVE_IDLE_STRATEGY",
+            NULL)))
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
     }
+
+    aeron_uri_string_builder_t request_channel;
+    if (aeron_archive_apply_default_parameters(ctx, ctx->control_request_channel, &request_channel) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error;
+    }
+
+    aeron_uri_string_builder_t response_channel;
+    if (aeron_archive_apply_default_parameters(ctx, ctx->control_response_channel, &response_channel) < 0)
+    {
+        aeron_uri_string_builder_close(&request_channel);
+        AERON_APPEND_ERR("%s", "");
+        goto error;
+    }
+
+    const char* control_mode =
+        aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
+    if (NULL == control_mode ||
+        0 != strcmp(AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE, control_mode))
+    {
+        const int32_t session_id = aeron_randomised_int32();
+        if (aeron_uri_string_builder_put_int32(&request_channel, AERON_URI_SESSION_ID_KEY, session_id) < 0 ||
+            aeron_uri_string_builder_put_int32(&response_channel, AERON_URI_SESSION_ID_KEY, session_id) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error_close_uri_builders;
+        }
+    }
+
+    char uri[AERON_MAX_PATH];
+    if (aeron_uri_string_builder_sprint(&request_channel, uri, sizeof(uri)) < 0 ||
+        aeron_archive_context_set_control_request_channel(ctx, uri) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_close_uri_builders;
+    }
+
+    if (aeron_uri_string_builder_sprint(&response_channel, uri, sizeof(uri)) < 0 ||
+        aeron_archive_context_set_control_response_channel(ctx, uri) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error_close_uri_builders;
+    }
+
+    aeron_uri_string_builder_close(&request_channel);
+    aeron_uri_string_builder_close(&response_channel);
 
     return 0;
 
-cleanup:
-    if (NULL != ctx->aeron)
+error_close_uri_builders:
+    aeron_uri_string_builder_close(&request_channel);
+    aeron_uri_string_builder_close(&response_channel);
+error:
+    if (ctx->owns_aeron_client && NULL != ctx->aeron)
     {
         aeron_close(ctx->aeron);
     }
@@ -164,6 +391,29 @@ void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx)
     {
         ctx->delegating_invoker_func(ctx->delegating_invoker_func_clientd);
     }
+}
+
+void aeron_archive_context_invoke_error_handler(
+    aeron_archive_context_t *ctx, int64_t correlation_id, int32_t error_code, const char *error_message)
+{
+    size_t formatted_message_length = strlen(error_message) + 100;
+    char *formatted_error_message;
+    aeron_alloc((void **)&formatted_error_message, formatted_message_length);
+
+    snprintf(
+        formatted_error_message,
+        formatted_message_length,
+        "response for correlationId=%" PRIi64 ", errorCode=%" PRIi32 ", error: %s",
+        correlation_id,
+        error_code,
+        error_message);
+
+    ctx->error_handler(
+        ctx->error_handler_clientd,
+        AERON_ERROR_CODE_GENERIC_ERROR,
+        formatted_error_message);
+
+    aeron_free(formatted_error_message);
 }
 
 int aeron_archive_context_set_aeron(aeron_archive_context_t *ctx, aeron_t *aeron)
@@ -202,16 +452,40 @@ const char *aeron_archive_context_get_aeron_directory_name(aeron_archive_context
     return ctx->aeron_directory_name;
 }
 
-int aeron_archive_context_ensure_control_request_channel_size(aeron_archive_context_t *ctx, size_t len)
+static int aeron_archive_context_set_channel(char **target_channel, size_t *target_channel_length, const char *channel)
 {
-    if (len > ctx->control_request_channel_malloced_len)
+    if (NULL == channel)
     {
-        if (aeron_reallocf((void **)&ctx->control_request_channel, len) < 0)
+        aeron_free(*target_channel);
+        *target_channel = NULL;
+        *target_channel_length = 0;
+    }
+    else
+    {
+        const size_t channel_length = 1 + strlen(channel);
+        char *temp = *target_channel;
+
+        if (NULL == temp)
         {
-            AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate control_request_channel");
-            return -1;
+            if (aeron_alloc((void **)&temp, channel_length) < 0)
+            {
+                AERON_SET_ERR(ENOMEM, "%s", "unable to allocate control_response_channel");
+                return -1;
+            }
         }
-        ctx->control_request_channel_malloced_len = len;
+        else if (channel_length > *target_channel_length)
+        {
+            if (aeron_reallocf((void **)&temp, channel_length) < 0)
+            {
+                AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate control_response_channel");
+                return -1;
+            }
+        }
+
+        snprintf(temp, channel_length, "%s", channel);
+
+        *target_channel = temp;
+        *target_channel_length = channel_length;
     }
 
     return 0;
@@ -221,24 +495,8 @@ int aeron_archive_context_set_control_request_channel(
     aeron_archive_context_t *ctx,
     const char *control_request_channel)
 {
-    size_t control_request_channel_len = strlen(control_request_channel);
-    size_t len_with_terminator = control_request_channel_len + 1;
-
-    if (NULL == ctx->control_request_channel)
-    {
-        if (aeron_alloc((void **)&ctx->control_request_channel, len_with_terminator) < 0)
-        {
-            AERON_SET_ERR(ENOMEM, "%s", "unable to allocate control_request_channel");
-            return -1;
-        }
-        ctx->control_request_channel_malloced_len = len_with_terminator;
-    }
-
-    aeron_archive_context_ensure_control_request_channel_size(ctx, len_with_terminator);
-
-    snprintf(ctx->control_request_channel, ctx->control_request_channel_malloced_len, "%s", control_request_channel);
-
-    return 0;
+    return aeron_archive_context_set_channel(
+        &ctx->control_request_channel, &ctx->control_request_channel_length, control_request_channel);
 }
 
 const char *aeron_archive_context_get_control_request_channel(aeron_archive_context_t *ctx)
@@ -262,31 +520,8 @@ int aeron_archive_context_set_control_response_channel(
     aeron_archive_context_t *ctx,
     const char *control_response_channel)
 {
-    size_t control_response_channel_len = strlen(control_response_channel);
-    size_t len_with_terminator = control_response_channel_len + 1;
-
-    if (NULL == ctx->control_response_channel)
-    {
-        if (aeron_alloc((void **)&ctx->control_response_channel, len_with_terminator) < 0)
-        {
-            AERON_SET_ERR(ENOMEM, "%s", "unable to allocate control_response_channel");
-            return -1;
-        }
-        ctx->control_response_channel_malloced_len = len_with_terminator;
-    }
-    else if (len_with_terminator > ctx->control_response_channel_malloced_len)
-    {
-        if (aeron_reallocf((void **)&ctx->control_response_channel, len_with_terminator) < 0)
-        {
-            AERON_SET_ERR(ENOMEM, "%s", "unable to reallocate control_response_channel");
-            return -1;
-        }
-        ctx->control_response_channel_malloced_len = len_with_terminator;
-    }
-
-    snprintf(ctx->control_response_channel, ctx->control_response_channel_malloced_len, "%s", control_response_channel);
-
-    return 0;
+    return aeron_archive_context_set_channel(
+        &ctx->control_response_channel, &ctx->control_response_channel_length, control_response_channel);
 }
 
 const char *aeron_archive_context_get_control_response_channel(aeron_archive_context_t *ctx)
@@ -306,14 +541,75 @@ int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_conte
     return ctx->control_response_stream_id;
 }
 
-int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns)
+int aeron_archive_context_set_control_term_buffer_length(aeron_archive_context_t *ctx, size_t control_term_buffer_length)
+{
+    ctx->control_term_buffer_length = control_term_buffer_length;
+
+    return 0;
+}
+
+size_t aeron_archive_context_get_control_term_buffer_length(aeron_archive_context_t *ctx)
+{
+    return ctx->control_term_buffer_length;
+}
+
+int aeron_archive_context_set_control_term_buffer_sparse(aeron_archive_context_t *ctx, bool control_term_buffer_sparse)
+{
+    ctx->control_term_buffer_sparse = control_term_buffer_sparse;
+
+    return 0;
+}
+
+bool aeron_archive_context_get_control_term_buffer_sparse(aeron_archive_context_t *ctx)
+{
+    return ctx->control_term_buffer_sparse;
+}
+
+int aeron_archive_context_set_control_mtu_length(aeron_archive_context_t *ctx, size_t control_mtu_length)
+{
+    ctx->control_mtu_length = control_mtu_length;
+
+    return 0;
+}
+
+size_t aeron_archive_context_get_control_mtu_length(aeron_archive_context_t *ctx)
+{
+    return ctx->control_mtu_length;
+}
+
+int aeron_archive_context_set_recording_events_channel(
+    aeron_archive_context_t *ctx,
+    const char *recording_events_channel)
+{
+    return aeron_archive_context_set_channel(
+        &ctx->recording_events_channel, &ctx->recording_events_channel_length, recording_events_channel);
+}
+
+const char *aeron_archive_context_get_recording_events_channel(aeron_archive_context_t *ctx)
+{
+    return ctx->recording_events_channel;
+}
+
+int aeron_archive_context_set_recording_events_stream_id(aeron_archive_context_t *ctx, int32_t recording_events_stream_id)
+{
+    ctx->recording_events_stream_id = recording_events_stream_id;
+
+    return 0;
+}
+
+int32_t aeron_archive_context_get_recording_events_stream_id(aeron_archive_context_t *ctx)
+{
+    return ctx->recording_events_stream_id;
+}
+
+int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, uint64_t message_timeout_ns)
 {
     ctx->message_timeout_ns = message_timeout_ns;
 
     return 0;
 }
 
-int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx)
+uint64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx)
 {
     return ctx->message_timeout_ns;
 }

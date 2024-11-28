@@ -413,10 +413,40 @@ int aeron_archive_context_set_control_response_stream_id(aeron_archive_context_t
 int32_t aeron_archive_context_get_control_response_stream_id(aeron_archive_context_t *ctx);
 
 /**
+ * Specify the channel used for receiving recording events from the Aeron Archive.
+ */
+int aeron_archive_context_set_recording_events_channel(aeron_archive_context_t *ctx, const char *recording_events_channel);
+const char *aeron_archive_context_get_recording_events_channel(aeron_archive_context_t *ctx);
+
+/**
+ * Specify the stream id used for recording events channel.
+ */
+int aeron_archive_context_set_recording_events_stream_id(aeron_archive_context_t *ctx, int32_t recording_events_stream_id);
+int32_t aeron_archive_context_get_recording_events_stream_id(aeron_archive_context_t *ctx);
+
+/**
  * Specify the message timeout, in nanoseconds, to wait for sending or receiving a message.
  */
-int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, int64_t message_timeout_ns);
-int64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx);
+int aeron_archive_context_set_message_timeout_ns(aeron_archive_context_t *ctx, uint64_t message_timeout_ns);
+uint64_t aeron_archive_context_get_message_timeout_ns(aeron_archive_context_t *ctx);
+
+/**
+ * Specify the default term buffer length for the control request/response channels.
+ */
+int aeron_archive_context_set_control_term_buffer_length(aeron_archive_context_t *ctx, size_t control_term_buffer_length);
+size_t aeron_archive_context_get_control_term_buffer_length(aeron_archive_context_t *ctx);
+
+/**
+ * Specify the default MTU length for the control request/response channels.
+ */
+int aeron_archive_context_set_control_mtu_length(aeron_archive_context_t *ctx, size_t control_mtu_length);
+size_t aeron_archive_context_get_control_mtu_length(aeron_archive_context_t *ctx);
+
+/**
+ * Specify the default MTU length for the control request/response channels.
+ */
+int aeron_archive_context_set_control_term_buffer_sparse(aeron_archive_context_t *ctx, bool control_term_buffer_sparse);
+bool aeron_archive_context_get_control_term_buffer_sparse(aeron_archive_context_t *ctx);
 
 /**
  * Specify the idle strategy function and associated state used by the client between polling calls.

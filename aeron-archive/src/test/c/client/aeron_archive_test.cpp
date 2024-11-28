@@ -25,9 +25,13 @@
 extern "C"
 {
 #include "client/aeron_archive.h"
+#include "client/aeron_archive_client.h"
+#include "client/aeron_archive_context.h"
 #include "aeron_agent.h"
+#include "aeron_client.h"
 #include "aeron_counter.h"
 #include "uri/aeron_uri_string_builder.h"
+#include "util/aeron_env.h"
 #include <inttypes.h>
 }
 
@@ -153,6 +157,8 @@ public:
     void connect(void *recording_signal_consumer_clientd = nullptr)
     {
         ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+        ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
+        ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(m_ctx, "aeron:udp?endpoint=localhost:0"));
         ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
         ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
             m_ctx,
@@ -433,6 +439,8 @@ public:
             dest_aeron_dir, archiveDir, m_stream, controlChannel, replicationChannel, -7777);
 
         ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_dest_ctx));
+        ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_dest_ctx, controlChannel.c_str()));
+        ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(m_dest_ctx, "aeron:udp?endpoint=localhost:0"));
         ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
             m_dest_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
         ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -679,6 +687,8 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchive)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -722,6 +732,8 @@ TEST_F(AeronCArchiveTest, shouldAsyncConnectToArchiveWithPrebuiltAeron)
     aeron_t *aeron;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -771,6 +783,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchive)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -802,6 +816,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithPrebuiltAeron)
     aeron_t *aeron;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -845,6 +861,8 @@ TEST_F(AeronCArchiveTest, shouldConnectToArchiveAndCallInvoker)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -879,6 +897,8 @@ TEST_F(AeronCArchiveTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
     aeron_archive_t *archive = nullptr;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -888,70 +908,35 @@ TEST_F(AeronCArchiveTest, shouldObserveErrorOnBadDataOnControlResponseChannel)
         nullptr,
         &default_creds_clientd));
     ASSERT_EQ_ERR(0, aeron_archive_connect(&archive, ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_close(ctx));
 
-    ctx = aeron_archive_get_archive_context(archive);
-    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+    EXPECT_FALSE(aeron_archive_context_get_owns_aeron_client(ctx));
 
     aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
-    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+    EXPECT_TRUE(aeron_subscription_is_connected(subscription));
 
-    char resolved_uri[1000];
-    aeron_subscription_try_resolve_channel_endpoint_port(subscription, resolved_uri, 1000);
+    int64_t found_start_position;
+    EXPECT_EQ(-1, aeron_archive_get_start_position(&found_start_position, archive, INT64_MAX));
+    EXPECT_NE(
+        std::string::npos,
+        std::string(aeron_errmsg()).find("errorCode=5, error: unknown recording id: 9223372036854775807"));
 
-    m_aeron = aeron_archive_context_get_aeron(ctx);
-
-    aeron_publication_t *publication = addPublication(
-        resolved_uri,
-        aeron_archive_context_get_control_response_stream_id(ctx));
-
-    while (!aeron_publication_is_connected(publication))
-    {
-        idle();
-    }
-
-    {
-        char message[1000];
-        size_t len = snprintf(message, 1000, "this will hopefully cause an error");
-
-        while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
-        {
-            idle();
-        }
-    }
-
-    while (true)
-    {
-        int64_t found_start_position;
-        ASSERT_EQ_ERR(-1, aeron_archive_get_start_position(
-            &found_start_position,
-            archive,
-            1234)); // <-- should be an invalid recording id
-
-        if (std::string(aeron_errmsg()).find("found schema id") != std::string::npos)
-        {
-            break;
-        }
-
-        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
-    }
-
-    ASSERT_FALSE(std::string(aeron_errmsg()).find("that doesn't match expected") == std::string::npos);
-
-    ASSERT_EQ_ERR(0, aeron_archive_close(archive));
+    EXPECT_EQ(0, aeron_archive_close(archive));
+    EXPECT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 typedef struct error_handler_clientd_stct
 {
     bool called;
+    int err_code;
     char message[1000];
 }
-    error_handler_clientd_t;
+error_handler_clientd_t;
 
 void error_handler(void *clientd, int errcode, const char *message)
 {
     auto *ehc = (error_handler_clientd_t *)clientd;
     ehc->called = true;
+    ehc->err_code = errcode;
     snprintf(ehc->message, sizeof(ehc->message), "%s", message);
 }
 
@@ -965,6 +950,8 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
     ehc.message[0] = '\0';
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -974,110 +961,21 @@ TEST_F(AeronCArchiveTest, shouldCallErrorHandlerOnError)
         nullptr,
         &default_creds_clientd));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_error_handler(ctx, error_handler, &ehc));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_message_timeout_ns(ctx, 500000000));
     ASSERT_EQ_ERR(0, aeron_archive_connect(&archive, ctx));
-    ASSERT_EQ_ERR(0, aeron_archive_context_close(ctx));
 
-    ctx = aeron_archive_get_archive_context(archive);
-    ASSERT_TRUE(aeron_archive_context_get_owns_aeron_client(ctx));
+    EXPECT_TRUE(aeron_archive_proxy_get_start_position(archive->archive_proxy, 1000, 12345));
 
-    aeron_subscription_t *subscription = aeron_archive_get_control_response_subscription(archive);
-    ASSERT_TRUE(aeron_subscription_is_connected(subscription));
+    int64_t found_start_position;
+    EXPECT_EQ(-1, aeron_archive_poll_for_response(
+        &found_start_position, archive, "AeronArchive::getStartPosition", 2222));
 
-    char resolved_uri[1000];
-    aeron_subscription_try_resolve_channel_endpoint_port(subscription, resolved_uri, 1000);
+    EXPECT_TRUE(ehc.called);
+    EXPECT_EQ(AERON_ERROR_CODE_GENERIC_ERROR, ehc.err_code);
+    EXPECT_STREQ("response for correlationId=1000, errorCode=5, error: unknown recording id: 12345", ehc.message);
 
-    m_aeron = aeron_archive_context_get_aeron(ctx);
-
-    aeron_publication_t *publication = addPublication(
-        resolved_uri,
-        aeron_archive_context_get_control_response_stream_id(ctx));
-
-    while (!aeron_publication_is_connected(publication))
-    {
-        idle();
-    }
-
-    {
-        struct aeron_archive_client_controlResponse controlResponse;
-        struct aeron_archive_client_messageHeader hdr;
-
-        char message[1000];
-
-        aeron_archive_client_controlResponse_wrap_and_apply_header(
-            &controlResponse,
-            message,
-            0,
-            1000,
-            &hdr);
-        aeron_archive_client_controlResponse_set_controlSessionId(
-            &controlResponse, aeron_archive_control_session_id(archive));
-        aeron_archive_client_controlResponse_set_correlationId(&controlResponse, 9999999); // this should NOT match
-        aeron_archive_client_controlResponse_set_relevantId(&controlResponse, 1234);
-        aeron_archive_client_controlResponse_set_code(&controlResponse, aeron_archive_client_controlResponseCode_ERROR);
-        const char *err_msg = "fancy error message";
-        aeron_archive_client_controlResponse_put_errorMessage(&controlResponse, err_msg, strlen(err_msg) + 1);
-
-        uint64_t len = aeron_archive_client_messageHeader_encoded_length() +
-            aeron_archive_client_controlResponse_encoded_length(&controlResponse);
-
-        // the following prints out the char buffer definition used by the C++ version of this test
-        bool printErrorMessageHex = false;
-        if (printErrorMessageHex)
-        {
-            fprintf(stderr, "session id :: %" PRIi64 "\n", aeron_archive_control_session_id(archive));
-
-            uint8_t controlSessionBuffer[100];
-            uint64_t sid = aeron_archive_control_session_id(archive);
-            memcpy(controlSessionBuffer, &sid, 8);
-            for (int i = 0; i < 8; i++)
-            {
-                fprintf(stderr, "'\\x%02X', ", controlSessionBuffer[i]);
-            }
-            fprintf(stderr, "\n");
-
-            fprintf(stderr, "len == %" PRIu64 "\n", len);
-
-            fprintf(stderr, "char buffer[] = { ");
-            for (uint64_t j = 0; j < len; j++)
-            {
-                fprintf(stderr, "'\\x%02X', ", (uint8_t)message[j]);
-            }
-            fprintf(stderr, "};\n");
-
-            for (uint64_t j = 0; j < len; j++)
-            {
-                fprintf(stderr, "%02X", (uint8_t)message[j]);
-            }
-            fprintf(stderr, "\n");
-        }
-
-        while (aeron_publication_offer(publication, (uint8_t *)message, len, nullptr, nullptr) < 0)
-        {
-            idle();
-        }
-    }
-
-    while (true)
-    {
-        int64_t found_start_position;
-        ASSERT_EQ_ERR(-1, aeron_archive_get_start_position(
-            &found_start_position,
-            archive,
-            1234)); // <-- should be an invalid recording id
-
-        if (ehc.called)
-        {
-            break;
-        }
-
-        ASSERT_STREQ("", ehc.message);
-
-        std::this_thread::sleep_for(IDLE_SLEEP_MS_5);
-    }
-
-    ASSERT_STREQ("correlation_id=9999999 fancy error message", ehc.message);
-
-    ASSERT_EQ_ERR(0, aeron_archive_close(archive));
+    EXPECT_EQ(0, aeron_archive_close(archive));
+    EXPECT_EQ(0, aeron_archive_context_close(ctx));
 }
 
 TEST_F(AeronCArchiveTest, shouldRecordPublicationAndFindRecording)
@@ -2166,6 +2064,8 @@ TEST_F(AeronCArchiveTest, shouldBeAbleToHandleBeingChallenged)
     credentials_supplier_clientd_t creds_clientd = { &creds, &challenge_creds };
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(m_ctx, "aeron:udp?endpoint=localhost:0"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_idle_strategy(
         m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_credentials_supplier(
@@ -2960,6 +2860,272 @@ TEST_F(AeronCArchiveTest, shouldRecordReplicateTwice)
     }
 }
 
+TEST_F(AeronCArchiveIdTest, shouldInitializeContextWithDefaultValues)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    EXPECT_EQ(nullptr, m_ctx->aeron);
+    EXPECT_NE(nullptr, m_ctx->aeron_directory_name);
+    EXPECT_NE(0, strlen(m_ctx->aeron_directory_name));
+    EXPECT_FALSE(m_ctx->owns_aeron_client);
+
+    EXPECT_EQ(nullptr, m_ctx->control_request_channel);
+    EXPECT_EQ(AERON_ARCHIVE_CONTROL_STREAM_ID_DEFAULT, m_ctx->control_request_stream_id);
+
+    EXPECT_EQ(nullptr, m_ctx->control_response_channel);
+    EXPECT_EQ(AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_DEFAULT, m_ctx->control_response_stream_id);
+
+    EXPECT_EQ(nullptr, m_ctx->recording_events_channel);
+    EXPECT_EQ(AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_DEFAULT, m_ctx->recording_events_stream_id);
+
+    EXPECT_EQ(AERON_ARCHIVE_MESSAGE_TIMEOUT_NS_DEFAULT, m_ctx->message_timeout_ns);
+
+    EXPECT_EQ(AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_DEFAULT, m_ctx->control_term_buffer_length);
+    EXPECT_EQ(AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_DEFAULT, m_ctx->control_term_buffer_sparse);
+    EXPECT_EQ(1408, m_ctx->control_mtu_length);
+}
+
+TEST_F(AeronCArchiveIdTest, shouldInitializeContextWithValuesSpecifiedViaEnvironment)
+{
+    const auto aeron_dir = "/dev/shm/aeron-test-dir";
+    const auto control_channel = "aeron:udp?endpoint=localhost:5555";
+    const auto response_channel = "aeron:udp?endpoint=localhost:0";
+    const auto recording_events_channel = "aeron:udp?endpoint=localhost:8888|alias=events";
+    aeron_env_set(AERON_DIR_ENV_VAR, aeron_dir);
+    aeron_env_set(AERON_ARCHIVE_CONTROL_CHANNEL_ENV_VAR, control_channel);
+    aeron_env_set(AERON_ARCHIVE_CONTROL_STREAM_ID_ENV_VAR, "-4321");
+    aeron_env_set(AERON_ARCHIVE_CONTROL_RESPONSE_CHANNEL_ENV_VAR, response_channel);
+    aeron_env_set(AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_ENV_VAR, "2009");
+    aeron_env_set(AERON_ARCHIVE_RECORDING_EVENTS_CHANNEL_ENV_VAR, recording_events_channel);
+    aeron_env_set(AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_ENV_VAR, "2147483647");
+    aeron_env_set(AERON_ARCHIVE_MESSAGE_TIMEOUT_ENV_VAR, "9223372036s");
+    aeron_env_set(AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_ENV_VAR, "128k");
+    aeron_env_set(AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_ENV_VAR, "false");
+    aeron_env_set(AERON_ARCHIVE_CONTROL_MTU_LENGTH_ENV_VAR, "8k");
+
+    EXPECT_EQ(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_env_unset(AERON_DIR_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_CHANNEL_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_STREAM_ID_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_RESPONSE_CHANNEL_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_RECORDING_EVENTS_CHANNEL_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_MESSAGE_TIMEOUT_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_ENV_VAR);
+    aeron_env_unset(AERON_ARCHIVE_CONTROL_MTU_LENGTH_ENV_VAR);
+
+    EXPECT_EQ(nullptr, m_ctx->aeron);
+    EXPECT_STREQ(aeron_dir, m_ctx->aeron_directory_name);
+    EXPECT_FALSE(m_ctx->owns_aeron_client);
+
+    EXPECT_STREQ(control_channel, m_ctx->control_request_channel);
+    EXPECT_EQ(-4321, m_ctx->control_request_stream_id);
+
+    EXPECT_STREQ(response_channel, m_ctx->control_response_channel);
+    EXPECT_EQ(2009, m_ctx->control_response_stream_id);
+
+    EXPECT_STREQ(recording_events_channel, m_ctx->recording_events_channel);
+    EXPECT_EQ(INT32_MAX, m_ctx->recording_events_stream_id);
+
+    EXPECT_EQ(9223372036000000000UL, m_ctx->message_timeout_ns);
+
+    EXPECT_EQ(128 * 1024, m_ctx->control_term_buffer_length);
+    EXPECT_EQ(false, m_ctx->control_term_buffer_sparse);
+    EXPECT_EQ(8192, m_ctx->control_mtu_length);
+}
+
+TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlRequestChannelIsNotDefined)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(-1, aeron_archive_context_conclude(m_ctx));
+
+    EXPECT_EQ(EINVAL, aeron_errcode());
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("control request channel is required"));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlResponseChannelIsNotDefined)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:ipc");
+    ASSERT_EQ_ERR(-1, aeron_archive_context_conclude(m_ctx));
+
+    EXPECT_EQ(EINVAL, aeron_errcode());
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("control response channel is required"));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfAeronClientFailsToConnect)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:ipc");
+    aeron_archive_context_set_control_response_channel(m_ctx, "aeron:ipc");
+    aeron_env_set(AERON_CLIENT_NAME_ENV_VAR, std::string("super very long client name").append(100, 'x').c_str());
+    ASSERT_EQ_ERR(-1, aeron_archive_context_conclude(m_ctx));
+    aeron_env_unset(AERON_CLIENT_NAME_ENV_VAR);
+
+    EXPECT_EQ(EINVAL, aeron_errcode());
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("client_name length must <= 100"));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldApplyDefaultParametersToRequestAndResponseChannels)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:ipc");
+    aeron_archive_context_set_control_response_channel(m_ctx, "aeron:udp?endpoint=127.0.0.1:0");
+    aeron_t aeron = {};
+    aeron_archive_context_set_aeron(m_ctx, &aeron);
+    aeron_archive_context_set_error_handler(m_ctx, error_handler, nullptr);
+    aeron_archive_context_set_control_term_buffer_length(m_ctx, 256 * 1024);
+    aeron_archive_context_set_control_mtu_length(m_ctx, 2048);
+    aeron_archive_context_set_control_term_buffer_sparse(m_ctx, false);
+    ASSERT_EQ_ERR(0, aeron_archive_context_conclude(m_ctx));
+
+    aeron_uri_string_builder_t request_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &request_channel,
+        aeron_archive_context_get_control_request_channel(m_ctx)));
+    EXPECT_STREQ("262144", aeron_uri_string_builder_get(&request_channel, AERON_URI_TERM_LENGTH_KEY));
+    EXPECT_STREQ("2048", aeron_uri_string_builder_get(&request_channel, AERON_URI_MTU_LENGTH_KEY));
+    EXPECT_STREQ("false", aeron_uri_string_builder_get(&request_channel, AERON_URI_SPARSE_TERM_KEY));
+    EXPECT_STRNE("", aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY));
+
+    aeron_uri_string_builder_t response_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &response_channel,
+        aeron_archive_context_get_control_response_channel(m_ctx)));
+    EXPECT_STREQ("262144", aeron_uri_string_builder_get(&response_channel, AERON_URI_TERM_LENGTH_KEY));
+    EXPECT_STREQ("2048", aeron_uri_string_builder_get(&response_channel, AERON_URI_MTU_LENGTH_KEY));
+    EXPECT_STREQ("false", aeron_uri_string_builder_get(&response_channel, AERON_URI_SPARSE_TERM_KEY));
+    EXPECT_STREQ("127.0.0.1:0", aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_ENDPOINT_KEY));
+    EXPECT_STRNE("", aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+
+    EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldNotApplyDefaultParametersToRequestAndResponseChannelsIfTheyAreSetExplicitly)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8080|term-length=64k|mtu=1408|sparse=true|session-id=0|ttl=3|interface=127.0.0.1");
+    aeron_archive_context_set_control_response_channel(m_ctx, "aeron:ipc?term-length=128k|mtu=4096|sparse=true|alias=response");
+    aeron_t aeron = {};
+    aeron_archive_context_set_aeron(m_ctx, &aeron);
+    aeron_archive_context_set_error_handler(m_ctx, error_handler, nullptr);
+    aeron_archive_context_set_control_term_buffer_length(m_ctx, 256 * 1024);
+    aeron_archive_context_set_control_mtu_length(m_ctx, 2048);
+    aeron_archive_context_set_control_term_buffer_sparse(m_ctx, false);
+    ASSERT_EQ_ERR(0, aeron_archive_context_conclude(m_ctx));
+
+    aeron_uri_string_builder_t request_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &request_channel,
+        aeron_archive_context_get_control_request_channel(m_ctx)));
+    EXPECT_STREQ("64k", aeron_uri_string_builder_get(&request_channel, AERON_URI_TERM_LENGTH_KEY));
+    EXPECT_STREQ("1408", aeron_uri_string_builder_get(&request_channel, AERON_URI_MTU_LENGTH_KEY));
+    EXPECT_STREQ("true", aeron_uri_string_builder_get(&request_channel, AERON_URI_SPARSE_TERM_KEY));
+    EXPECT_STREQ("3", aeron_uri_string_builder_get(&request_channel, AERON_UDP_CHANNEL_TTL_KEY));
+    EXPECT_STREQ("127.0.0.1", aeron_uri_string_builder_get(&request_channel, AERON_UDP_CHANNEL_INTERFACE_KEY));
+    EXPECT_STREQ("udp", aeron_uri_string_builder_get(&request_channel, AERON_URI_STRING_BUILDER_MEDIA_KEY));
+    EXPECT_STRNE("", aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY));
+
+    aeron_uri_string_builder_t response_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &response_channel,
+        aeron_archive_context_get_control_response_channel(m_ctx)));
+    EXPECT_STREQ("128k", aeron_uri_string_builder_get(&response_channel, AERON_URI_TERM_LENGTH_KEY));
+    EXPECT_STREQ("4096", aeron_uri_string_builder_get(&response_channel, AERON_URI_MTU_LENGTH_KEY));
+    EXPECT_STREQ("true", aeron_uri_string_builder_get(&response_channel, AERON_URI_SPARSE_TERM_KEY));
+    EXPECT_STREQ("response", aeron_uri_string_builder_get(&response_channel, AERON_URI_ALIAS_KEY));
+    EXPECT_STREQ("ipc", aeron_uri_string_builder_get(&response_channel, AERON_URI_STRING_BUILDER_MEDIA_KEY));
+    EXPECT_STRNE("", aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+
+    EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldNotSetSessionIdOnControlRequestAndReponseChannelsIfControlModeResponseIsUsed)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8080");
+    aeron_archive_context_set_control_response_channel(m_ctx, "aeron:udp?control=localhost:9090|control-mode=response");
+    aeron_t aeron = {};
+    aeron_archive_context_set_aeron(m_ctx, &aeron);
+    aeron_archive_context_set_error_handler(m_ctx, error_handler, nullptr);
+    aeron_archive_context_set_control_term_buffer_length(m_ctx, 256 * 1024);
+    aeron_archive_context_set_control_mtu_length(m_ctx, 2048);
+    aeron_archive_context_set_control_term_buffer_sparse(m_ctx, false);
+    ASSERT_EQ_ERR(0, aeron_archive_context_conclude(m_ctx));
+
+    aeron_uri_string_builder_t request_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &request_channel,
+        aeron_archive_context_get_control_request_channel(m_ctx)));
+    EXPECT_STREQ("localhost:8080", aeron_uri_string_builder_get(&request_channel, AERON_UDP_CHANNEL_ENDPOINT_KEY));
+    EXPECT_EQ(nullptr, aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY));
+
+    aeron_uri_string_builder_t response_channel;
+    EXPECT_EQ(0, aeron_uri_string_builder_init_on_string(
+        &response_channel,
+        aeron_archive_context_get_control_response_channel(m_ctx)));
+    EXPECT_EQ(nullptr, aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_ENDPOINT_KEY));
+    EXPECT_STREQ("localhost:9090", aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_CONTROL_KEY));
+    EXPECT_STREQ(AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE, aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_CONTROL_MODE_KEY));
+    EXPECT_EQ(nullptr, aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+}
+
+TEST_F(AeronCArchiveIdTest, shouldDuplicateContext)
+{
+    ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+
+    aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8080");
+    aeron_archive_context_set_control_request_stream_id(m_ctx, 42);
+    aeron_archive_context_set_control_response_channel(m_ctx, "aeron:udp?endpoint=localhost:0");
+    aeron_archive_context_set_control_response_stream_id(m_ctx, -5);
+    aeron_archive_context_set_recording_events_channel(m_ctx, nullptr);
+    aeron_archive_context_set_recording_events_stream_id(m_ctx, 777);
+    aeron_archive_context_set_control_term_buffer_length(m_ctx, 256 * 1024);
+    aeron_archive_context_set_control_mtu_length(m_ctx, 2048);
+    aeron_archive_context_set_control_term_buffer_sparse(m_ctx, false);
+    aeron_archive_context_set_message_timeout_ns(m_ctx, 1000000000);
+    aeron_t aeron = {};
+    aeron_archive_context_set_aeron(m_ctx, &aeron);
+    aeron_archive_context_set_error_handler(m_ctx, error_handler, nullptr);
+    aeron_archive_context_set_idle_strategy(m_ctx, aeron_idle_strategy_sleeping_idle, (void *)&m_idle_duration_ns);
+
+    aeron_archive_context_t *copy_ctx;
+    ASSERT_EQ_ERR(0, aeron_archive_context_duplicate(&copy_ctx, m_ctx));
+
+    EXPECT_NE(nullptr, copy_ctx);
+    EXPECT_NE(m_ctx, copy_ctx);
+    EXPECT_EQ(m_ctx->aeron, copy_ctx->aeron);
+    EXPECT_EQ(m_ctx->owns_aeron_client, copy_ctx->owns_aeron_client);
+    EXPECT_NE(m_ctx->control_request_channel, copy_ctx->control_request_channel);
+    EXPECT_STREQ(m_ctx->control_request_channel, copy_ctx->control_request_channel);
+    EXPECT_EQ(m_ctx->control_request_channel_length, copy_ctx->control_request_channel_length);
+    EXPECT_NE(m_ctx->control_response_channel, copy_ctx->control_response_channel);
+    EXPECT_STREQ(m_ctx->control_response_channel, copy_ctx->control_response_channel);
+    EXPECT_EQ(m_ctx->control_response_channel_length, copy_ctx->control_response_channel_length);
+    EXPECT_EQ(m_ctx->recording_events_channel, copy_ctx->recording_events_channel);
+    EXPECT_EQ(m_ctx->recording_events_channel_length, copy_ctx->recording_events_channel_length);
+    EXPECT_EQ(m_ctx->message_timeout_ns, copy_ctx->message_timeout_ns);
+    EXPECT_EQ(m_ctx->control_term_buffer_sparse, copy_ctx->control_term_buffer_sparse);
+    EXPECT_EQ(m_ctx->control_term_buffer_length, copy_ctx->control_term_buffer_length);
+    EXPECT_EQ(m_ctx->control_mtu_length, copy_ctx->control_mtu_length);
+    EXPECT_EQ(m_ctx->error_handler, copy_ctx->error_handler);
+    EXPECT_EQ(m_ctx->error_handler_clientd, copy_ctx->error_handler_clientd);
+    EXPECT_EQ(m_ctx->idle_strategy_func, copy_ctx->idle_strategy_func);
+    EXPECT_EQ(m_ctx->idle_strategy_state, copy_ctx->idle_strategy_state);
+    EXPECT_EQ(m_ctx->delegating_invoker_func, copy_ctx->delegating_invoker_func);
+    EXPECT_EQ(m_ctx->delegating_invoker_func_clientd, copy_ctx->delegating_invoker_func_clientd);
+    EXPECT_EQ(m_ctx->on_recording_signal, copy_ctx->on_recording_signal);
+    EXPECT_EQ(m_ctx->on_recording_signal_clientd, copy_ctx->on_recording_signal_clientd);
+}
+
 TEST_F(AeronCArchiveIdTest, shouldResolveArchiveId)
 {
     std::int64_t archiveId = 0x4236483BEEF;
@@ -2977,6 +3143,7 @@ TEST_F(AeronCArchiveIdTest, shouldResolveArchiveId)
 TEST_F(AeronCArchiveTest, shouldConnectToArchiveWithResponseChannels)
 {
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         "aeron:udp?control-mode=response|control=localhost:10002"));
@@ -3002,6 +3169,7 @@ TEST_P(AeronCArchiveParamTest, shouldReplayWithResponseChannel)
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
@@ -3056,6 +3224,7 @@ TEST_P(AeronCArchiveParamTest, shouldBoundedReplayWithResponseChannel)
     const std::int64_t key = 1234567890;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
@@ -3134,6 +3303,7 @@ TEST_P(AeronCArchiveParamTest, shouldStartReplayWithResponseChannel)
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10003";
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
@@ -3192,6 +3362,7 @@ TEST_P(AeronCArchiveParamTest, shouldStartBoundedReplayWithResponseChannel)
     const std::int64_t key = 1234567890;
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));
@@ -3271,6 +3442,7 @@ TEST_F(AeronCArchiveTest, shouldDisconnectAfterStopAllReplays)
     const char *response_channel = "aeron:udp?control-mode=response|control=localhost:10002";
 
     ASSERT_EQ_ERR(0, aeron_archive_context_init(&m_ctx));
+    ASSERT_EQ_ERR(0, aeron_archive_context_set_control_request_channel(m_ctx, "aeron:udp?endpoint=localhost:8010"));
     ASSERT_EQ_ERR(0, aeron_archive_context_set_control_response_channel(
         m_ctx,
         response_channel));

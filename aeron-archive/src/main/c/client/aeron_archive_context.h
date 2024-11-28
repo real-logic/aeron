@@ -20,6 +20,23 @@
 #include "aeron_archive.h"
 #include "aeron_archive_credentials_supplier.h"
 
+#define AERON_ARCHIVE_MESSAGE_TIMEOUT_ENV_VAR "AERON_ARCHIVE_MESSAGE_TIMEOUT"
+#define AERON_ARCHIVE_MESSAGE_TIMEOUT_NS_DEFAULT  (10 * 1000 * 1000 * 1000LL) // 10 seconds
+#define AERON_ARCHIVE_CONTROL_CHANNEL_ENV_VAR "AERON_ARCHIVE_CONTROL_CHANNEL"
+#define AERON_ARCHIVE_CONTROL_STREAM_ID_ENV_VAR "AERON_ARCHIVE_CONTROL_STREAM_ID"
+#define AERON_ARCHIVE_CONTROL_STREAM_ID_DEFAULT (10)
+#define AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_ENV_VAR "AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH"
+#define AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_DEFAULT (64 * 1024)
+#define AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_ENV_VAR "AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE"
+#define AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_DEFAULT (true)
+#define AERON_ARCHIVE_CONTROL_MTU_LENGTH_ENV_VAR "AERON_ARCHIVE_CONTROL_MTU_LENGTH"
+#define AERON_ARCHIVE_CONTROL_RESPONSE_CHANNEL_ENV_VAR "AERON_ARCHIVE_CONTROL_RESPONSE_CHANNEL"
+#define AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_ENV_VAR "AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID"
+#define AERON_ARCHIVE_CONTROL_RESPONSE_STREAM_ID_DEFAULT (20)
+#define AERON_ARCHIVE_RECORDING_EVENTS_CHANNEL_ENV_VAR "AERON_ARCHIVE_RECORDING_EVENTS_CHANNEL"
+#define AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_ENV_VAR "AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID"
+#define AERON_ARCHIVE_RECORDING_EVENTS_STREAM_ID_DEFAULT (30)
+
 struct aeron_archive_context_stct
 {
     aeron_t *aeron;
@@ -27,14 +44,22 @@ struct aeron_archive_context_stct
     bool owns_aeron_client;
 
     char *control_request_channel;
-    size_t control_request_channel_malloced_len;
+    size_t control_request_channel_length;
     int32_t control_request_stream_id;
 
     char *control_response_channel;
-    size_t control_response_channel_malloced_len;
+    size_t control_response_channel_length;
     int32_t control_response_stream_id;
 
-    int64_t message_timeout_ns;
+    char *recording_events_channel;
+    size_t recording_events_channel_length;
+    int32_t recording_events_stream_id;
+
+    uint64_t message_timeout_ns;
+
+    size_t control_term_buffer_length;
+    size_t control_mtu_length;
+    bool control_term_buffer_sparse;
 
     aeron_idle_strategy_func_t idle_strategy_func;
     void *idle_strategy_state;
@@ -59,6 +84,7 @@ void aeron_archive_context_idle(aeron_archive_context_t *ctx);
 
 void aeron_archive_context_invoke_aeron_client(aeron_archive_context_t *ctx);
 
-int aeron_archive_context_ensure_control_request_channel_size(aeron_archive_context_t *ctx, size_t len);
+void aeron_archive_context_invoke_error_handler(
+    aeron_archive_context_t *ctx, int64_t correlation_id, int32_t error_code, const char *error_message);
 
 #endif //AERON_ARCHIVE_CLIENT_CONTEXT_H

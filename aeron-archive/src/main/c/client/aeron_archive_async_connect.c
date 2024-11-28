@@ -385,11 +385,11 @@ int aeron_archive_async_connect_poll(aeron_archive_t **aeron_archive, aeron_arch
 
                     if (poller->is_code_error)
                     {
-                        AERON_SET_ERR(-1, "%s", poller->error_message);
+                        AERON_SET_ERR(EINVAL, "%s", poller->error_message);
                     }
                     else
                     {
-                        AERON_SET_ERR(-1, "unexpected response code: code=%i", poller->code_value);
+                        AERON_SET_ERR(EINVAL, "unexpected response code: code=%i", poller->code_value);
                     }
 
                     goto cleanup;
@@ -445,14 +445,15 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
     const char *control_mode = aeron_uri_string_builder_get(&builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY);
 
     if (NULL != control_mode &&
-        strcmp(control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0)
+        0 == strcmp(AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE, control_mode))
     {
         aeron_uri_string_builder_close(&builder); // close the previous builder
 
-        if (aeron_archive_context_ensure_control_request_channel_size(ctx, strlen(ctx->control_request_channel) + strlen(AERON_URI_RESPONSE_CORRELATION_ID_KEY) + 20) < 0 ||
-            aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
+        char uri[AERON_MAX_PATH];
+        if (aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
             aeron_uri_string_builder_put_int64(&builder,AERON_URI_RESPONSE_CORRELATION_ID_KEY,subscription_id) < 0 ||
-            aeron_uri_string_builder_sprint(&builder,ctx->control_request_channel,ctx->control_request_channel_malloced_len) < 0)
+            aeron_uri_string_builder_sprint(&builder,uri, sizeof(uri)) < 0 ||
+            aeron_archive_context_set_control_request_channel(ctx, uri) < 0)
         {
             AERON_APPEND_ERR("%s", "");
             rc = -1;

@@ -63,6 +63,7 @@ struct aeron_archive_context_stct
 
     aeron_idle_strategy_func_t idle_strategy_func;
     void *idle_strategy_state;
+    bool owns_idle_strategy;
 
     aeron_archive_credentials_supplier_t credentials_supplier;
 

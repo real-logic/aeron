@@ -67,6 +67,19 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     _ctx->control_term_buffer_sparse = AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_DEFAULT;
     _ctx->control_term_buffer_length = AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_DEFAULT;
 
+    _ctx->idle_strategy_func = NULL;
+    _ctx->idle_strategy_state = NULL;
+    _ctx->owns_idle_strategy = false;
+
+    _ctx->error_handler = NULL;
+    _ctx->error_handler_clientd = NULL;
+
+    _ctx->delegating_invoker_func = NULL;
+    _ctx->delegating_invoker_func_clientd = NULL;
+
+    _ctx->on_recording_signal = NULL;
+    _ctx->on_recording_signal_clientd = NULL;
+
     // like in Java the default value of the control MTU is defined by the driver configuration
     _ctx->control_mtu_length = aeron_config_parse_size64(
         "AERON_MTU_LENGTH",
@@ -184,6 +197,11 @@ int aeron_archive_context_close(aeron_archive_context_t *ctx)
         aeron_free(ctx->control_request_channel);
         aeron_free(ctx->control_response_channel);
         aeron_free(ctx->recording_events_channel);
+
+        if (ctx->owns_idle_strategy)
+        {
+            aeron_free(ctx->idle_strategy_state);
+        }
 
         aeron_free(ctx);
     }
@@ -303,6 +321,7 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
 
     if (NULL == ctx->idle_strategy_func)
     {
+        ctx->owns_idle_strategy = true;
         if (NULL == (ctx->idle_strategy_func = aeron_idle_strategy_load(
             "backoff",
             &ctx->idle_strategy_state,

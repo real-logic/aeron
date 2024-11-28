@@ -3005,6 +3005,8 @@ TEST_F(AeronCArchiveIdTest, shouldApplyDefaultParametersToRequestAndResponseChan
     EXPECT_STRNE("", aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
 
     EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldNotApplyDefaultParametersToRequestAndResponseChannelsIfTheyAreSetExplicitly)
@@ -3045,6 +3047,8 @@ TEST_F(AeronCArchiveIdTest, shouldNotApplyDefaultParametersToRequestAndResponseC
     EXPECT_STRNE("", aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
 
     EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldNotSetSessionIdOnControlRequestAndReponseChannelsIfControlModeResponseIsUsed)
@@ -3076,6 +3080,8 @@ TEST_F(AeronCArchiveIdTest, shouldNotSetSessionIdOnControlRequestAndReponseChann
     EXPECT_STREQ("localhost:9090", aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_CONTROL_KEY));
     EXPECT_STREQ(AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE, aeron_uri_string_builder_get(&response_channel, AERON_UDP_CHANNEL_CONTROL_MODE_KEY));
     EXPECT_EQ(nullptr, aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
+    EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldDuplicateContext)

@@ -48,6 +48,7 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellapi.h>
+typedef intptr_t pid_t;
 
 static bool aeron_file_exists(const char *path)
 {
@@ -112,7 +113,7 @@ static int aeron_test_archive_delete_directory(const char *dirname)
 static void await_process_terminated(pid_t process_pid)
 {
 #if defined(_WIN32)
-    WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
+    WaitForSingleObject(reinterpret_cast<HANDLE>(process_pid), INFINITE);
 #else
     int process_status = -1;
     while (true)
@@ -221,13 +222,19 @@ public:
         {
             m_stream << currentTimeMillis() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
 
+            bool archive_terminated = false;
+#ifndef _WIN32
             if (0 == kill(m_pid, SIGTERM))
             {
                 m_stream << currentTimeMillis() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
                 await_process_terminated(m_pid);
                 m_stream << currentTimeMillis() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
+                archive_terminated = true;
             }
-            else
+#endif
+
+
+            if (!archive_terminated)
             {
                 const std::string aeronPath = m_aeronDir;
                 const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
@@ -245,6 +252,7 @@ public:
 
                     await_process_terminated(m_pid);
                     m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
+                    archive_terminated = true;
                 }
                 else
                 {
@@ -252,7 +260,7 @@ public:
                 }
             }
 
-            if (aeron_file_exists(m_archiveDir.c_str()))
+            if (archive_terminated && aeron_file_exists(m_archiveDir.c_str()))
             {
                 m_stream << currentTimeMillis() << " [TearDown] Deleting " << m_archiveDir << std::endl;
                 if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)

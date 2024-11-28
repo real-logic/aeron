@@ -28,7 +28,9 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#if defined(__linux__) || defined(Darwin)
 #include <unistd.h>
+#endif
 
 #include "util/aeron_bitutil.h"
 #include "util/aeron_platform.h"

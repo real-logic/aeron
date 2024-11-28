@@ -23,6 +23,7 @@
 extern "C"
 {
 #include <atomic>
+#include <signal.h>
 }
 
 #include <thread>
@@ -85,6 +86,7 @@ static int aeron_test_archive_delete_directory(const char *dir)
 #else
 #include "ftw.h"
 #include "spawn.h"
+
 static bool aeron_file_exists(const char *path)
 {
     struct stat stat_info = {};
@@ -107,13 +109,30 @@ static int aeron_test_archive_delete_directory(const char *dirname)
 }
 #endif
 
+static void await_process_terminated(pid_t process_pid)
+{
+#if defined(_WIN32)
+    WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
+#else
+    int process_status = -1;
+    while (true)
+    {
+        waitpid(process_pid, &process_status, WUNTRACED);
+        if (WIFSIGNALED(process_status) || WIFEXITED(process_status))
+        {
+            break;
+        }
+    }
+#endif
+}
+
 class TestArchive
 {
 public:
     TestArchive(
         std::string aeronDir,
         std::string archiveDir,
-        std::ostream& stream,
+        std::ostream &stream,
         std::string controlChannel,
         std::string replicationChannel,
         std::int64_t archiveId)
@@ -180,7 +199,7 @@ public:
         m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
 #else
         m_pid = -1;
-        if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr))
+        if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char *const *)&argv[0], nullptr))
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
@@ -200,46 +219,47 @@ public:
     {
         if (0 != m_pid)
         {
-            m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
+            m_stream << currentTimeMillis() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
 
-            const std::string aeronPath = m_aeronDir;
-            const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
-
-            if (aeron_context_request_driver_termination(aeronPath.c_str(), nullptr, 0))
+            if (0 == kill(m_pid, SIGTERM))
             {
-                m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
-
-                while (aeron_file_exists(cncFilename.c_str()))
-                {
-                    std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
-                }
-
-                m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
-
-#if defined(_WIN32)
-                WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
-#else
-                int process_status = -1;
-                do
-                {
-                    m_stream << currentTimeMillis() << " [TearDown] waiting for driver termination " << process_status << std::endl;
-                    waitpid(m_pid, &process_status, WUNTRACED);
-                }
-                while (0 >= WIFEXITED(process_status));
-#endif
-                m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
+                m_stream << currentTimeMillis() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
+                await_process_terminated(m_pid);
+                m_stream << currentTimeMillis() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
             }
             else
             {
-                const auto now_ms = currentTimeMillis();
-                m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
-                m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
+                const std::string aeronPath = m_aeronDir;
+                const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
+
+                if (aeron_context_request_driver_termination(aeronPath.c_str(), nullptr, 0))
+                {
+                    m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
+
+                    while (aeron_file_exists(cncFilename.c_str()))
+                    {
+                        std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+                    }
+
+                    m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
+
+                    await_process_terminated(m_pid);
+                    m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
+                }
+                else
+                {
+                    m_stream << currentTimeMillis() << " [TearDown] Failed to send driver terminate command" << std::endl;
+                }
+            }
+
+            if (aeron_file_exists(m_archiveDir.c_str()))
+            {
+                m_stream << currentTimeMillis() << " [TearDown] Deleting " << m_archiveDir << std::endl;
                 if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)
                 {
                     m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }
             }
-
             m_stream.flush();
         }
     }

@@ -54,4 +54,18 @@ int aeron_interface_split(const char *interface_str, aeron_parsed_interface_t *p
 
 int aeron_parse_get_line(char *line, size_t max_length, const char *buffer);
 
+void aeron_config_prop_warning(const char *name, const char *str);
+
+uint64_t aeron_config_parse_uint64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max);
+
+int32_t aeron_config_parse_int32(const char *name, const char *str, int32_t def, int32_t min, int32_t max);
+
+int64_t aeron_config_parse_int64(const char *name, const char *str, int64_t def, int64_t min, int64_t max);
+
+uint32_t aeron_config_parse_uint32(const char *name, const char *str, uint32_t def, uint32_t min, uint32_t max);
+
+uint64_t aeron_config_parse_size64(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max);
+
+uint64_t aeron_config_parse_duration_ns(const char *name, const char *str, uint64_t def, uint64_t min, uint64_t max);
+
 #endif

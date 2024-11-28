@@ -2883,6 +2883,8 @@ TEST_F(AeronCArchiveIdTest, shouldInitializeContextWithDefaultValues)
     EXPECT_EQ(AERON_ARCHIVE_CONTROL_TERM_BUFFER_LENGTH_DEFAULT, m_ctx->control_term_buffer_length);
     EXPECT_EQ(AERON_ARCHIVE_CONTROL_TERM_BUFFER_SPARSE_DEFAULT, m_ctx->control_term_buffer_sparse);
     EXPECT_EQ(1408, m_ctx->control_mtu_length);
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldInitializeContextWithValuesSpecifiedViaEnvironment)
@@ -2935,6 +2937,8 @@ TEST_F(AeronCArchiveIdTest, shouldInitializeContextWithValuesSpecifiedViaEnviron
     EXPECT_EQ(128 * 1024, m_ctx->control_term_buffer_length);
     EXPECT_EQ(false, m_ctx->control_term_buffer_sparse);
     EXPECT_EQ(8192, m_ctx->control_mtu_length);
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlRequestChannelIsNotDefined)
@@ -2944,6 +2948,8 @@ TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlRequestChannelIsNotDefin
 
     EXPECT_EQ(EINVAL, aeron_errcode());
     EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("control request channel is required"));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlResponseChannelIsNotDefined)
@@ -2955,6 +2961,8 @@ TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfControlResponseChannelIsNotDefi
 
     EXPECT_EQ(EINVAL, aeron_errcode());
     EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("control response channel is required"));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfAeronClientFailsToConnect)
@@ -2969,6 +2977,8 @@ TEST_F(AeronCArchiveIdTest, shouldFailWithErrorIfAeronClientFailsToConnect)
 
     EXPECT_EQ(EINVAL, aeron_errcode());
     EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("client_name length must <= 100"));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldApplyDefaultParametersToRequestAndResponseChannels)
@@ -3007,6 +3017,8 @@ TEST_F(AeronCArchiveIdTest, shouldApplyDefaultParametersToRequestAndResponseChan
     EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldNotApplyDefaultParametersToRequestAndResponseChannelsIfTheyAreSetExplicitly)
@@ -3049,6 +3061,8 @@ TEST_F(AeronCArchiveIdTest, shouldNotApplyDefaultParametersToRequestAndResponseC
     EXPECT_STREQ(aeron_uri_string_builder_get(&request_channel, AERON_URI_SESSION_ID_KEY), aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldNotSetSessionIdOnControlRequestAndReponseChannelsIfControlModeResponseIsUsed)
@@ -3082,6 +3096,8 @@ TEST_F(AeronCArchiveIdTest, shouldNotSetSessionIdOnControlRequestAndReponseChann
     EXPECT_EQ(nullptr, aeron_uri_string_builder_get(&response_channel, AERON_URI_SESSION_ID_KEY));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&request_channel));
     EXPECT_EQ(0, aeron_uri_string_builder_close(&response_channel));
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldDuplicateContext)
@@ -3130,6 +3146,9 @@ TEST_F(AeronCArchiveIdTest, shouldDuplicateContext)
     EXPECT_EQ(m_ctx->delegating_invoker_func_clientd, copy_ctx->delegating_invoker_func_clientd);
     EXPECT_EQ(m_ctx->on_recording_signal, copy_ctx->on_recording_signal);
     EXPECT_EQ(m_ctx->on_recording_signal_clientd, copy_ctx->on_recording_signal_clientd);
+
+    EXPECT_EQ(0, aeron_archive_context_close(m_ctx));
+    EXPECT_EQ(0, aeron_archive_context_close(copy_ctx));
 }
 
 TEST_F(AeronCArchiveIdTest, shouldResolveArchiveId)

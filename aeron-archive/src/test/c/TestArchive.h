@@ -30,19 +30,7 @@ extern "C"
 
 #define TERM_LENGTH AERON_LOGBUFFER_TERM_MIN_LENGTH
 #define SEGMENT_LENGTH (TERM_LENGTH * 2)
-
-inline long long currentTimeMillis()
-{
-    using namespace std::chrono;
-
-    system_clock::time_point now = system_clock::now();
-    milliseconds ms = duration_cast<milliseconds>(now.time_since_epoch());
-
-    return ms.count();
-}
-
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
+#define ARCHIVE_MARK_FILE_HEADER_LENGTH (8192)
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
@@ -50,71 +38,16 @@ static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
 #include <shellapi.h>
 typedef intptr_t pid_t;
 
-static bool aeron_file_exists(const char *path)
+static void await_process_terminated(pid_t process_handle)
 {
-    DWORD dwAttrib = GetFileAttributes(path);
-    return dwAttrib != INVALID_FILE_ATTRIBUTES;
-}
-
-static int aeron_test_archive_delete_directory(const char *dir)
-{
-    char dir_buffer[1024] = { 0 };
-
-    size_t dir_length = strlen(dir);
-    if (dir_length > (1024 - 2))
-    {
-        return -1;
-    }
-
-    memcpy(dir_buffer, dir, dir_length);
-    dir_buffer[dir_length] = '\0';
-    dir_buffer[dir_length + 1] = '\0';
-
-    SHFILEOPSTRUCT file_op =
-        {
-            nullptr,
-            FO_DELETE,
-            dir_buffer,
-            nullptr,
-            FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
-            false,
-            nullptr,
-            nullptr
-        };
-
-    return SHFileOperation(&file_op);
+    WaitForSingleObject(reinterpret_cast<HANDLE>(process_handle), INFINITE);
 }
 #else
 #include "ftw.h"
 #include "spawn.h"
 
-static bool aeron_file_exists(const char *path)
-{
-    struct stat stat_info = {};
-    return stat(path, &stat_info) == 0;
-}
-
-static int aeron_unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
-{
-    if (remove(path) != 0)
-    {
-        perror("remove");
-    }
-
-    return 0;
-}
-
-static int aeron_test_archive_delete_directory(const char *dirname)
-{
-    return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
-}
-#endif
-
 static void await_process_terminated(pid_t process_handle)
 {
-#if defined(_WIN32)
-    WaitForSingleObject(reinterpret_cast<HANDLE>(process_handle), INFINITE);
-#else
     int process_status = -1;
     while (true)
     {
@@ -124,8 +57,8 @@ static void await_process_terminated(pid_t process_handle)
             break;
         }
     }
-#endif
 }
+#endif
 
 class TestArchive
 {
@@ -139,13 +72,13 @@ public:
         std::int64_t archiveId)
         : m_archiveDir(archiveDir), m_aeronDir(aeronDir), m_stream(stream)
     {
-        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
         std::string aeronDirArg = "-Daeron.dir=" + aeronDir;
         std::string archiveDirArg = "-Daeron.archive.dir=" + archiveDir;
         std::string archiveMarkFileDirArg = "-Daeron.archive.mark.file.dir=" + aeronDir;
-        m_stream << currentTimeMillis() << " [SetUp] " << aeronDirArg << std::endl;
-        m_stream << currentTimeMillis() << " [SetUp] " << archiveDirArg << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] " << aeronDirArg << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] " << archiveDirArg << std::endl;
         std::string controlChannelArg = "-Daeron.archive.control.channel=" + controlChannel;
         std::string replicationChannelArg = "-Daeron.archive.replication.channel=" + replicationChannel;
         std::string archiveIdArg = "-Daeron.archive.id=" + std::to_string(archiveId);
@@ -154,14 +87,8 @@ public:
         const char *const argv[] =
         {
             "java",
-#if JAVA_MAJOR_VERSION >= 9
             "--add-opens",
-            "java.base/java.lang.reflect=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/java.net=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/sun.nio.ch=ALL-UNNAMED",
-#endif
+            "java.base/java.util.zip=ALL-UNNAMED",
 #if ENABLE_AGENT_DEBUG_LOGGING
             m_aeronAgentJar.c_str(),
             "-Daeron.event.log=admin",
@@ -226,28 +153,28 @@ public:
         while (true)
         {
             int64_t file_length = aeron_file_length(mark_file.c_str());
-            if (file_length >= 8192)
+            if (file_length >= ARCHIVE_MARK_FILE_HEADER_LENGTH)
             {
                 break;
             }
             aeron_micro_sleep(1000);
         }
-        m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
     }
 
     ~TestArchive()
     {
         if (m_process_handle > 0)
         {
-            m_stream << currentTimeMillis() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
+            m_stream << aeron_epoch_clock() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
 
             bool archive_terminated = false;
 #ifndef _WIN32
             if (0 == kill(m_process_handle, SIGTERM))
             {
-                m_stream << currentTimeMillis() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
+                m_stream << aeron_epoch_clock() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
                 await_process_terminated(m_process_handle);
-                m_stream << currentTimeMillis() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
+                m_stream << aeron_epoch_clock() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
                 archive_terminated = true;
             }
 #endif
@@ -259,31 +186,31 @@ public:
 
                 if (aeron_context_request_driver_termination(aeronPath.c_str(), nullptr, 0))
                 {
-                    m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] Waiting for driver termination" << std::endl;
 
-                    while (aeron_file_exists(cncFilename.c_str()))
+                    while (aeron_file_length(cncFilename.c_str()) > 0)
                     {
-                        std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
+                        aeron_micro_sleep(1000);
                     }
 
-                    m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] CnC file no longer exists" << std::endl;
 
                     await_process_terminated(m_process_handle);
-                    m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] Driver terminated" << std::endl;
                     archive_terminated = true;
                 }
                 else
                 {
-                    m_stream << currentTimeMillis() << " [TearDown] Failed to send driver terminate command" << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] Failed to send driver terminate command" << std::endl;
                 }
             }
 
-            if (archive_terminated && aeron_file_exists(m_archiveDir.c_str()))
+            if (archive_terminated && aeron_is_directory(m_archiveDir.c_str()) >= 0)
             {
-                m_stream << currentTimeMillis() << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)
+                m_stream << aeron_epoch_clock() << " [TearDown] Deleting " << m_archiveDir << std::endl;
+                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
                 {
-                    m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
                 }
             }
             m_stream.flush();

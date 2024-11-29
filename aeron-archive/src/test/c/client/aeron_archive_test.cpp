@@ -354,9 +354,9 @@ public:
         clientd.received = 0;
         clientd.position = 0;
 
-        int64_t deadline_ms = currentTimeMillis() + timeout_ms;
+        int64_t deadline_ms = aeron_epoch_clock() + timeout_ms;
 
-        while (currentTimeMillis() < deadline_ms)
+        while (aeron_epoch_clock() < deadline_ms)
         {
             if (0 == aeron_subscription_poll(subscription, fragment_handler, (void *)&clientd, 10))
             {
@@ -2016,7 +2016,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
             live_destination,
             m_recording_id_from_counter,
             clientd.position,
-            currentTimeMillis(),
+            aeron_epoch_clock(),
             REPLAY_MERGE_PROGRESS_TIMEOUT_DEFAULT_MS));
 
         if (attemptReplayMerge(

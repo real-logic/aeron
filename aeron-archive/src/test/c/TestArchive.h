@@ -202,7 +202,7 @@ public:
 #if defined(_WIN32)
         m_process_handle = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
 #else
-        if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char *const *)&argv[0], nullptr))
+        if (0 != posix_spawn(&m_process_handle, m_java.c_str(), nullptr, nullptr, (char *const *)&argv[0], nullptr))
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
@@ -243,15 +243,14 @@ public:
 
             bool archive_terminated = false;
 #ifndef _WIN32
-            if (0 == kill(m_pid, SIGTERM))
+            if (0 == kill(m_process_handle, SIGTERM))
             {
                 m_stream << currentTimeMillis() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
-                await_process_terminated(m_pid);
+                await_process_terminated(m_process_handle);
                 m_stream << currentTimeMillis() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
                 archive_terminated = true;
             }
 #endif
-
 
             if (!archive_terminated)
             {

@@ -18,80 +18,47 @@
 #define AERON_TESTARCHIVE_H
 
 // Uncomment for logging
-//#define ENABLE_AGENT_DEBUG_LOGGING 1
+// #define ENABLE_AGENT_DEBUG_LOGGING 1
 
-#include "util/MemoryMappedFile.h"
+extern "C"
+{
+#include <atomic>
+#include <signal.h>
 
-using namespace aeron;
-using namespace aeron::util;
-using namespace aeron::concurrent;
-using namespace aeron::archive::client;
+#include "aeron_log_buffer.h"
+}
+
+#include <thread>
 
 #define TERM_LENGTH AERON_LOGBUFFER_TERM_MIN_LENGTH
 #define SEGMENT_LENGTH (TERM_LENGTH * 2)
-
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
-static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_5(5);
+#define ARCHIVE_MARK_FILE_HEADER_LENGTH (8192)
 
 #ifdef _WIN32
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <shellapi.h>
+typedef intptr_t pid_t;
 
-static bool aeron_file_exists(const char *path)
+static void await_process_terminated(pid_t process_handle)
 {
-    DWORD dwAttrib = GetFileAttributes(path);
-    return dwAttrib != INVALID_FILE_ATTRIBUTES;
-}
-
-static int aeron_test_archive_delete_directory(const char *dir)
-{
-    char dir_buffer[1024] = { 0 };
-
-    size_t dir_length = strlen(dir);
-    if (dir_length > (1024 - 2))
-    {
-        return -1;
-    }
-
-    memcpy(dir_buffer, dir, dir_length);
-    dir_buffer[dir_length] = '\0';
-    dir_buffer[dir_length + 1] = '\0';
-
-    SHFILEOPSTRUCT file_op =
-        {
-            nullptr,
-            FO_DELETE,
-            dir_buffer,
-            nullptr,
-            FOF_NOCONFIRMATION | FOF_NOERRORUI | FOF_SILENT,
-            false,
-            nullptr,
-            nullptr
-        };
-
-    return SHFileOperation(&file_op);
+    WaitForSingleObject(reinterpret_cast<HANDLE>(process_handle), INFINITE);
 }
 #else
-static bool aeron_file_exists(const char *path)
-{
-    struct stat stat_info = {};
-    return stat(path, &stat_info) == 0;
-}
+#include "ftw.h"
+#include "spawn.h"
 
-static int aeron_unlink_func(const char *path, const struct stat *sb, int type_flag, struct FTW *ftw)
+static void await_process_terminated(pid_t process_handle)
 {
-    if (remove(path) != 0)
+    int process_status = -1;
+    while (true)
     {
-        perror("remove");
+        waitpid(process_handle, &process_status, WUNTRACED);
+        if (WIFSIGNALED(process_status) || WIFEXITED(process_status))
+        {
+            break;
+        }
     }
-
-    return 0;
-}
-
-static int aeron_test_archive_delete_directory(const char *dirname)
-{
-    return nftw(dirname, aeron_unlink_func, 64, FTW_DEPTH | FTW_PHYS);
 }
 #endif
 
@@ -101,194 +68,166 @@ public:
     TestArchive(
         std::string aeronDir,
         std::string archiveDir,
-        std::ostream& stream,
+        std::ostream &stream,
         std::string controlChannel,
         std::string replicationChannel,
         std::int64_t archiveId)
         : m_archiveDir(archiveDir), m_aeronDir(aeronDir), m_stream(stream)
     {
-        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] Starting ArchivingMediaDriver..." << std::endl;
 
         std::string aeronDirArg = "-Daeron.dir=" + aeronDir;
         std::string archiveDirArg = "-Daeron.archive.dir=" + archiveDir;
+        std::string archiveMarkFileDirArg = "-Daeron.archive.mark.file.dir=" + aeronDir;
+        m_stream << aeron_epoch_clock() << " [SetUp] " << aeronDirArg << std::endl;
+        m_stream << aeron_epoch_clock() << " [SetUp] " << archiveDirArg << std::endl;
         std::string controlChannelArg = "-Daeron.archive.control.channel=" + controlChannel;
         std::string replicationChannelArg = "-Daeron.archive.replication.channel=" + replicationChannel;
         std::string archiveIdArg = "-Daeron.archive.id=" + std::to_string(archiveId);
         std::string segmentLength = "-Daeron.archive.segment.file.length=" + std::to_string(SEGMENT_LENGTH);
 
         const char *const argv[] =
-        {
-            "java",
-#if JAVA_MAJOR_VERSION >= 9
-            "--add-opens",
-            "java.base/java.lang.reflect=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/java.net=ALL-UNNAMED",
-            "--add-opens",
-            "java.base/sun.nio.ch=ALL-UNNAMED",
-#endif
+            {
+                "java",
+                "--add-opens",
+                "java.base/java.util.zip=ALL-UNNAMED",
 #if ENABLE_AGENT_DEBUG_LOGGING
-            m_aeronAgentJar.c_str(),
+                m_aeronAgentJar.c_str(),
             "-Daeron.event.log=admin",
             "-Daeron.event.archive.log=all",
 #endif
-            "-Daeron.dir.delete.on.start=true",
-            "-Daeron.dir.delete.on.shutdown=true",
-            "-Daeron.archive.dir.delete.on.start=true",
-            "-Daeron.archive.max.catalog.entries=128",
-            "-Daeron.term.buffer.sparse.file=true",
-            "-Daeron.perform.storage.checks=false",
-            "-Daeron.term.buffer.length=64k",
-            "-Daeron.ipc.term.buffer.length=64k",
-            "-Daeron.threading.mode=SHARED",
-            "-Daeron.shared.idle.strategy=yield",
-            "-Daeron.archive.threading.mode=SHARED",
-            "-Daeron.archive.idle.strategy=yield",
-            "-Daeron.archive.recording.events.enabled=false",
-            "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
-            "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
-            "-Daeron.enable.experimental.features=true",
-            "-Daeron.spies.simulate.connection=true",
-            segmentLength.c_str(),
-            archiveIdArg.c_str(),
-            controlChannelArg.c_str(),
-            replicationChannelArg.c_str(),
-            "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
-            archiveDirArg.c_str(),
-            aeronDirArg.c_str(),
-            "-cp",
-            m_aeronAllJar.c_str(),
-            "io.aeron.archive.ArchivingMediaDriver",
-            nullptr
-        };
+                "-Daeron.dir.delete.on.start=true",
+                "-Daeron.dir.delete.on.shutdown=true",
+                "-Daeron.archive.dir.delete.on.start=true",
+                "-Daeron.archive.max.catalog.entries=128",
+                "-Daeron.term.buffer.sparse.file=true",
+                "-Daeron.perform.storage.checks=false",
+                "-Daeron.term.buffer.length=64k",
+                "-Daeron.ipc.term.buffer.length=64k",
+                "-Daeron.threading.mode=SHARED",
+                "-Daeron.shared.idle.strategy=yield",
+                "-Daeron.archive.threading.mode=SHARED",
+                "-Daeron.archive.idle.strategy=yield",
+                "-Daeron.archive.recording.events.enabled=false",
+                "-Daeron.driver.termination.validator=io.aeron.driver.DefaultAllowTerminationValidator",
+                "-Daeron.archive.authenticator.supplier=io.aeron.samples.archive.SampleAuthenticatorSupplier",
+                "-Daeron.enable.experimental.features=true",
+                "-Daeron.spies.simulate.connection=true",
+                segmentLength.c_str(),
+                archiveIdArg.c_str(),
+                controlChannelArg.c_str(),
+                replicationChannelArg.c_str(),
+                "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
+                archiveDirArg.c_str(),
+                archiveMarkFileDirArg.c_str(),
+                aeronDirArg.c_str(),
+                "-cp",
+                m_aeronAllJar.c_str(),
+                "io.aeron.archive.ArchivingMediaDriver",
+                nullptr
+            };
+        m_process_handle = -1;
 
 #if defined(_WIN32)
-        m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
+        m_process_handle = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
 #else
-        m_pid = -1;
-        if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char * const *)&argv[0], nullptr))
+        if (0 != posix_spawn(&m_process_handle, m_java.c_str(), nullptr, nullptr, (char *const *)&argv[0], nullptr))
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
         }
 #endif
 
-        if (m_pid < 0)
+        if (m_process_handle < 0)
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
         }
 
-        m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
+        m_pid = m_process_handle;
+#ifdef _WIN32
+        m_pid = GetProcessId((HANDLE)m_process_handle);
+#endif
+
+        const std::string mark_file = aeronDir + std::string(1, AERON_FILE_SEP) + "archive-mark.dat";
+
+        // await mark file creation as an indicator that Archive process is running
+        while (true)
+        {
+            int64_t file_length = aeron_file_length(mark_file.c_str());
+            if (file_length >= ARCHIVE_MARK_FILE_HEADER_LENGTH)
+            {
+                break;
+            }
+            aeron_micro_sleep(1000);
+        }
+        m_stream << aeron_epoch_clock() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
     }
 
     ~TestArchive()
     {
-        if (0 != m_pid)
+        if (m_process_handle > 0)
         {
-            m_stream << currentTimeMillis() << " [TearDown] Shutting down PID " << m_pid << std::endl;
+            m_stream << aeron_epoch_clock() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
 
-            const std::string aeronPath = m_aeronDir;
-            const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
-
+            bool archive_terminated = false;
+#ifndef _WIN32
+            if (0 == kill(m_process_handle, SIGTERM))
             {
-                const CncFileReader reader = aeron::CncFileReader::mapExisting(m_aeronDir.c_str());
-                printErrors(aeronPath, m_stream);
+                m_stream << aeron_epoch_clock() << " [TearDown] waiting for ArchivingMediaDriver termination..." << std::endl;
+                await_process_terminated(m_process_handle);
+                m_stream << aeron_epoch_clock() << " [TearDown] ArchivingMediaDriver terminated" << std::endl;
+                archive_terminated = true;
             }
-
-            // TODO this throws an exception - it can't find the specified archive-mark.dat file.
-            /*
-            {
-                std::string archiveDatFilename = m_archiveDir + AERON_FILE_SEP + "archive-mark.dat";
-                const MemoryMappedFile::ptr_t ptr = util::MemoryMappedFile::mapExistingReadOnly(archiveDatFilename.c_str());
-                AtomicBuffer errorBuffer{ptr->getMemoryPtr() + 8192, 1024 * 1024};
-
-                const int count = ErrorLogReader::read(
-                    errorBuffer,
-                    [&](
-                        std::int32_t observationCount,
-                        std::int64_t firstObservationTimestamp,
-                        std::int64_t lastObservationTimestamp,
-                        const std::string &encodedException)
-                    {
-                        m_stream << "***\n" << observationCount
-                                 << " observations for:\n " << encodedException.c_str() << std::endl;
-                    },
-                    0);
-
-                m_stream << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
-            }
-             */
-
-            if (aeron::Context::requestDriverTermination(aeronPath, nullptr, 0))
-            {
-                m_stream << currentTimeMillis() << " [TearDown] Waiting for driver termination" << std::endl;
-
-                while (aeron_file_exists(cncFilename.c_str()))
-                {
-                    std::this_thread::sleep_for(IDLE_SLEEP_MS_1);
-                }
-
-                m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
-
-#if defined(_WIN32)
-                WaitForSingleObject(reinterpret_cast<HANDLE>(m_pid), INFINITE);
-#else
-                int process_status = -1;
-                do
-                {
-                    waitpid(m_pid, &process_status, WUNTRACED);
-                }
-                while (0 >= WIFEXITED(process_status));
 #endif
-                m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
-            }
-            else
+
+            if (!archive_terminated)
             {
-                const auto now_ms = currentTimeMillis();
-                m_stream << now_ms << " [TearDown] Failed to send driver terminate command" << std::endl;
-                m_stream << now_ms << " [TearDown] Deleting " << m_archiveDir << std::endl;
-                if (aeron_test_archive_delete_directory(m_archiveDir.c_str()) != 0)
+                const std::string aeronPath = m_aeronDir;
+                const std::string cncFilename = aeronPath + std::string(1, AERON_FILE_SEP) + "cnc.dat";
+
+                if (aeron_context_request_driver_termination(aeronPath.c_str(), nullptr, 0))
                 {
-                    m_stream << currentTimeMillis() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
+                    m_stream << aeron_epoch_clock() << " [TearDown] Waiting for driver termination" << std::endl;
+
+                    while (aeron_file_length(cncFilename.c_str()) > 0)
+                    {
+                        aeron_micro_sleep(1000);
+                    }
+
+                    m_stream << aeron_epoch_clock() << " [TearDown] CnC file no longer exists" << std::endl;
+
+                    await_process_terminated(m_process_handle);
+                    m_stream << aeron_epoch_clock() << " [TearDown] Driver terminated" << std::endl;
+                    archive_terminated = true;
+                }
+                else
+                {
+                    m_stream << aeron_epoch_clock() << " [TearDown] Failed to send driver terminate command" << std::endl;
                 }
             }
 
+            if (archive_terminated && aeron_is_directory(m_archiveDir.c_str()) >= 0)
+            {
+                m_stream << aeron_epoch_clock() << " [TearDown] Deleting " << m_archiveDir << std::endl;
+                if (aeron_delete_directory(m_archiveDir.c_str()) != 0)
+                {
+                    m_stream << aeron_epoch_clock() << " [TearDown] Failed to delete " << m_archiveDir << std::endl;
+                }
+            }
             m_stream.flush();
         }
-    }
-
-    static void printErrors(const std::string &aeronPath, std::ostream &out)
-    {
-        const CncFileReader reader = aeron::CncFileReader::mapExisting(aeronPath.c_str());
-
-        int count = reader.readErrorLog(
-            [&](
-                std::int32_t observationCount,
-                std::int64_t firstObservationTimestamp,
-                std::int64_t lastObservationTimestamp,
-                const std::string &encodedException)
-            {
-                out << "***\n" << observationCount
-                         << " observations for:\n " << encodedException.c_str() << std::endl;
-            },
-            0);
-
-        out << currentTimeMillis() << " [TearDown] " << count << " distinct errors observed." << std::endl;
     }
 
 private:
     const std::string m_java = JAVA_EXECUTABLE;          // Defined in CMakeLists.txt
     const std::string m_aeronAllJar = AERON_ALL_JAR;     // Defined in CMakeLists.txt
     const std::string m_aeronAgentJar = "-javaagent:" AERON_AGENT_JAR; // Defined in CMakeLists.txt
-    const std::string m_archiveDir = {};
-    const std::string m_aeronDir = {};
+    const std::string m_archiveDir;
+    const std::string m_aeronDir;
     std::ostream &m_stream;
-#if defined(_WIN32)
-    intptr_t m_pid = -1;
-#else
-    pid_t m_pid = -1;
-#endif
+    pid_t m_process_handle = -1;
+    pid_t m_pid = 0;
 };
 
 #endif //AERON_TESTARCHIVE_H

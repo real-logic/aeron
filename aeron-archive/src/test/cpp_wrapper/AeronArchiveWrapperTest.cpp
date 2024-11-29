@@ -45,6 +45,7 @@ typedef intptr_t pid_t;
 #endif
 
 #include "TestArchive.h"
+static const std::chrono::duration<long, std::milli> IDLE_SLEEP_MS_1(1);
 
 using namespace aeron;
 using namespace aeron::archive::client;

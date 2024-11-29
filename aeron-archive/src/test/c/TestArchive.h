@@ -110,15 +110,15 @@ static int aeron_test_archive_delete_directory(const char *dirname)
 }
 #endif
 
-static void await_process_terminated(pid_t process_pid)
+static void await_process_terminated(pid_t process_handle)
 {
 #if defined(_WIN32)
-    WaitForSingleObject(reinterpret_cast<HANDLE>(process_pid), INFINITE);
+    WaitForSingleObject(reinterpret_cast<HANDLE>(process_handle), INFINITE);
 #else
     int process_status = -1;
     while (true)
     {
-        waitpid(process_pid, &process_status, WUNTRACED);
+        waitpid(process_handle, &process_status, WUNTRACED);
         if (WIFSIGNALED(process_status) || WIFEXITED(process_status))
         {
             break;
@@ -143,8 +143,9 @@ public:
 
         std::string aeronDirArg = "-Daeron.dir=" + aeronDir;
         std::string archiveDirArg = "-Daeron.archive.dir=" + archiveDir;
-        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver... " << aeronDir << std::endl;
-        m_stream << currentTimeMillis() << " [SetUp] Starting ArchivingMediaDriver... " << archiveDir << std::endl;
+        std::string archiveMarkFileDirArg = "-Daeron.archive.mark.file.dir=" + aeronDir;
+        m_stream << currentTimeMillis() << " [SetUp] " << aeronDirArg << std::endl;
+        m_stream << currentTimeMillis() << " [SetUp] " << archiveDirArg << std::endl;
         std::string controlChannelArg = "-Daeron.archive.control.channel=" + controlChannel;
         std::string replicationChannelArg = "-Daeron.archive.replication.channel=" + replicationChannel;
         std::string archiveIdArg = "-Daeron.archive.id=" + std::to_string(archiveId);
@@ -189,17 +190,18 @@ public:
             replicationChannelArg.c_str(),
             "-Daeron.archive.control.response.channel=aeron:udp?endpoint=localhost:0",
             archiveDirArg.c_str(),
+            archiveMarkFileDirArg.c_str(),
             aeronDirArg.c_str(),
             "-cp",
             m_aeronAllJar.c_str(),
             "io.aeron.archive.ArchivingMediaDriver",
             nullptr
         };
+        m_process_handle = -1;
 
 #if defined(_WIN32)
-        m_pid = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
+        m_process_handle = _spawnv(P_NOWAIT, m_java.c_str(), &argv[0]);
 #else
-        m_pid = -1;
         if (0 != posix_spawn(&m_pid, m_java.c_str(), nullptr, nullptr, (char *const *)&argv[0], nullptr))
         {
             perror("spawn");
@@ -207,18 +209,35 @@ public:
         }
 #endif
 
-        if (m_pid < 0)
+        if (m_process_handle < 0)
         {
             perror("spawn");
             ::exit(EXIT_FAILURE);
         }
 
+        m_pid = m_process_handle;
+#ifdef _WIN32
+        m_pid = GetProcessId((HANDLE)m_process_handle);
+#endif
+
+        const std::string mark_file = aeronDir + std::string(1, AERON_FILE_SEP) + "archive-mark.dat";
+
+        // await mark file creation as an indicator that Archive process is running
+        while (true)
+        {
+            int64_t file_length = aeron_file_length(mark_file.c_str());
+            if (file_length >= 8192)
+            {
+                break;
+            }
+            aeron_micro_sleep(1000);
+        }
         m_stream << currentTimeMillis() << " [SetUp] ArchivingMediaDriver PID " << m_pid << std::endl;
     }
 
     ~TestArchive()
     {
-        if (0 != m_pid)
+        if (m_process_handle > 0)
         {
             m_stream << currentTimeMillis() << " [TearDown] Shutting down ArchivingMediaDriver PID " << m_pid << std::endl;
 
@@ -250,7 +269,7 @@ public:
 
                     m_stream << currentTimeMillis() << " [TearDown] CnC file no longer exists" << std::endl;
 
-                    await_process_terminated(m_pid);
+                    await_process_terminated(m_process_handle);
                     m_stream << currentTimeMillis() << " [TearDown] Driver terminated" << std::endl;
                     archive_terminated = true;
                 }
@@ -279,11 +298,8 @@ private:
     const std::string m_archiveDir;
     const std::string m_aeronDir;
     std::ostream &m_stream;
-#if defined(_WIN32)
-    intptr_t m_pid = -1;
-#else
-    pid_t m_pid = -1;
-#endif
+    pid_t m_process_handle = -1;
+    pid_t m_pid = 0;
 };
 
 #endif //AERON_TESTARCHIVE_H

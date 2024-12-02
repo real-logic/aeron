@@ -58,7 +58,6 @@ import org.agrona.concurrent.status.Position;
 import org.agrona.concurrent.status.UnsafeBufferPosition;
 
 import java.net.InetSocketAddress;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Objects;
@@ -1500,9 +1499,10 @@ public final class DriverConductor implements Agent
         final long position,
         final String reason)
     {
-        if (ErrorFlyweight.MAX_ERROR_MESSAGE_LENGTH < reason.getBytes(StandardCharsets.UTF_8).length)
+        if (reason.length() > ErrorFlyweight.MAX_ERROR_MESSAGE_LENGTH)
         {
-            throw new ControlProtocolException(GENERIC_ERROR, "Invalidation reason must be 1023 bytes or less");
+            throw new ControlProtocolException(GENERIC_ERROR, "Invalidation reason must be " +
+                ErrorFlyweight.MAX_ERROR_MESSAGE_LENGTH + " bytes or less");
         }
 
         final PublicationImage publicationImage = findPublicationImage(imageCorrelationId);

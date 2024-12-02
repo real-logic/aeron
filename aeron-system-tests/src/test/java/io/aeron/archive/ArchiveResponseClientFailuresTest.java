@@ -145,8 +145,7 @@ public class ArchiveResponseClientFailuresTest
             final long deadlineMs = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(1);
             while (System.currentTimeMillis() < deadlineMs && 0 == archive.context().errorCounter().get())
             {
-                final int poll = aeronArchive.controlResponsePoller().poll();
-                assertEquals(0, poll);
+                aeronArchive.controlResponsePoller().poll();
             }
 
             assertThat(archive.context().errorCounter().get(), greaterThan(0L));

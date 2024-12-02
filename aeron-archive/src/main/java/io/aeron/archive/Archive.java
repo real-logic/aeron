@@ -56,9 +56,10 @@ import java.util.function.Supplier;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.AeronCounters.*;
+import static io.aeron.AeronCounters.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
+import static io.aeron.AeronCounters.ARCHIVE_ERROR_COUNT_TYPE_ID;
 import static io.aeron.CommonContext.ENDPOINT_PARAM_NAME;
-import static io.aeron.archive.Archive.Configuration.ARCHIVE_CONTROL_SESSIONS_TYPE_ID;
-import static io.aeron.archive.Archive.Configuration.ERROR_BUFFER_LENGTH_DEFAULT;
+import static io.aeron.archive.Archive.Configuration.*;
 import static io.aeron.archive.ArchiveThreadingMode.DEDICATED;
 import static io.aeron.exceptions.AeronException.Category.ERROR;
 import static io.aeron.logbuffer.LogBufferDescriptor.*;
@@ -435,6 +436,21 @@ public final class Archive implements AutoCloseable
          */
         @Config(defaultType = DefaultType.LONG, defaultLong = 5L * 1000 * 1000 * 1000)
         public static final long CONNECT_TIMEOUT_DEFAULT_NS = TimeUnit.SECONDS.toNanos(5);
+
+        /**
+         * Time interval in nanoseconds for checking session liveness checks.
+         */
+        @Config
+        public static final String SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME =
+            "aeron.archive.session.liveness.check.interval";
+
+        /**
+         * Default time interval in nanoseconds for checking session liveness.
+         *
+         * @see #CONNECT_TIMEOUT_PROP_NAME
+         */
+        @Config(defaultType = DefaultType.LONG, defaultLong = 100 * 1000 * 1000)
+        public static final long SESSION_LIVENESS_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
         /**
          * How long a replay publication should linger after all data is sent. Longer linger can help avoid tail loss.
@@ -1017,6 +1033,8 @@ public final class Archive implements AutoCloseable
         private String replicationChannel = Configuration.replicationChannel();
 
         private long connectTimeoutNs = Configuration.connectTimeoutNs();
+        private long sessionLivenessCheckIntervalNs =
+            getDurationInNanos(SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME, SESSION_LIVENESS_CHECK_INTERVAL_DEFAULT_NS);
         private long replayLingerTimeoutNs = Configuration.replayLingerTimeoutNs();
         private long conductorCycleThresholdNs = Configuration.conductorCycleThresholdNs();
         private long recorderCycleThresholdNs = Configuration.recorderCycleThresholdNs();
@@ -2054,6 +2072,31 @@ public final class Archive implements AutoCloseable
         public long connectTimeoutNs()
         {
             return connectTimeoutNs;
+        }
+
+        /**
+         * The time internal in nanoseconds at which session liveness checks are performed.
+         *
+         * @param sessionLivenessCheckIntervalNs of a liveness check.
+         * @return this for a fluent API.
+         * @see Configuration#SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
+         */
+        public Context sessionLivenessCheckIntervalNs(final long sessionLivenessCheckIntervalNs)
+        {
+            this.sessionLivenessCheckIntervalNs = sessionLivenessCheckIntervalNs;
+            return this;
+        }
+
+        /**
+         * The time internal in nanoseconds at which session liveness checks are performed.
+         *
+         * @return the time internal in nanoseconds at which session liveness checks are performed.
+         * @see Configuration#SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
+         */
+        @Config
+        public long sessionLivenessCheckIntervalNs()
+        {
+            return sessionLivenessCheckIntervalNs;
         }
 
         /**
@@ -3705,6 +3748,7 @@ public final class Archive implements AutoCloseable
                 "\n    recordingEventsEnabled=" + recordingEventsEnabled +
                 "\n    replicationChannel='" + replicationChannel + '\'' +
                 "\n    connectTimeoutNs=" + connectTimeoutNs +
+                "\n    sessionLivenessCheckIntervalNs=" + sessionLivenessCheckIntervalNs +
                 "\n    replayLingerTimeoutNs=" + replayLingerTimeoutNs +
                 "\n    maxCatalogEntries=" + -1 +
                 "\n    catalogCapacity=" + catalogCapacity +

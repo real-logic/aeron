@@ -78,6 +78,7 @@ abstract class ArchiveConductor
     private final long closeHandlerRegistrationId;
     private final long unavailableCounterHandlerRegistrationId;
     private final long connectTimeoutMs;
+    private final long sessionLivenessCheckIntervalMs;
     private long nextSessionId = ThreadLocalRandom.current().nextInt(Integer.MAX_VALUE);
     private long markFileUpdateDeadlineMs = 0;
     private int replayId = 1;
@@ -134,6 +135,7 @@ abstract class ArchiveConductor
         nanoClock = ctx.nanoClock();
         archiveDir = ctx.archiveDir();
         connectTimeoutMs = TimeUnit.NANOSECONDS.toMillis(ctx.connectTimeoutNs());
+        sessionLivenessCheckIntervalMs = TimeUnit.NANOSECONDS.toMillis(ctx.sessionLivenessCheckIntervalNs());
         catalog = ctx.catalog();
         markFile = ctx.archiveMarkFile();
         dutyCycleTracker = ctx.conductorDutyCycleTracker();
@@ -409,6 +411,7 @@ abstract class ArchiveConductor
             nextSessionId++,
             correlationId,
             connectTimeoutMs,
+            sessionLivenessCheckIntervalMs,
             aeron.asyncAddExclusivePublication(responseChannel, streamId),
             invalidVersionMessage,
             demuxer,

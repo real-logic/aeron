@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
+import io.aeron.ExclusivePublication;
 import io.aeron.Image;
 import io.aeron.ImageFragmentAssembler;
 import io.aeron.archive.client.AeronArchive;
@@ -1074,8 +1075,21 @@ class ControlSessionDemuxer implements Session, FragmentHandler
 
     void removeControlSession(final long sessionId)
     {
-        controlSessionByIdMap.remove(sessionId);
+        final ControlSession controlSession = controlSessionByIdMap.remove(sessionId);
         conductor.removeReplayTokensForSession(sessionId);
+        if (null != controlSession && controlSession.isInactive() &&
+            controlSessionByIdMap.isEmpty() && image.activeTransportCount() > 0)
+        {
+            // FIXME: How to deal with IPC channels, i.e. they are currently not rejectable?
+            final ExclusivePublication controlPublication = controlSession.controlPublication();
+            final int publicationSessionId = controlPublication.sessionId();
+            if (image.sessionId() == publicationSessionId ||
+                image.correlationId() == Long.parseLong(
+                ChannelUri.parse(controlPublication.channel()).get(RESPONSE_CORRELATION_ID_PARAM_NAME, "-1")))
+            {
+                image.reject("stale ControlSession: sessionId=" + sessionId);
+            }
+        }
     }
 
     private ControlSession setupSessionAndChannelForReplay(

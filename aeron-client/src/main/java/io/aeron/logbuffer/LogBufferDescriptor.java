@@ -601,12 +601,7 @@ public class LogBufferDescriptor
      */
     public static long computeLogLength(final int termLength, final int filePageSize)
     {
-        if (termLength < (1024 * 1024 * 1024))
-        {
-            return align((termLength * PARTITION_COUNT) + LOG_META_DATA_LENGTH, filePageSize);
-        }
-
-        return (PARTITION_COUNT * (long)termLength) + align(LOG_META_DATA_LENGTH, filePageSize);
+        return align((PARTITION_COUNT * (long)termLength) + LOG_META_DATA_LENGTH, filePageSize);
     }
 
     /**

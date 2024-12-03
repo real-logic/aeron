@@ -72,13 +72,14 @@ public class StressUnicastClient implements Agent
     private long lastMessageSent = 0;
 
     /**
-     * Construct Stress Client
-     * @param serverAddress         server address to connect to.
-     * @param clientAddress         local address to get responses.
-     * @param clock                 for timing.
-     * @param maxInflight           maximum number of messages in flight.
-     * @param totalToSend           total number of messages to send.
-     * @param mtu                   the mtu to use.
+     * Construct Stress Client.
+     *
+     * @param serverAddress server address to connect to.
+     * @param clientAddress local address to get responses.
+     * @param clock         for timing.
+     * @param maxInflight   maximum number of messages in flight.
+     * @param totalToSend   total number of messages to send.
+     * @param mtu           the mtu to use.
      */
     public StressUnicastClient(
         final String serverAddress,
@@ -171,7 +172,6 @@ public class StressUnicastClient implements Agent
         validateMessage(crc, msg, offset, length, correlationId);
         inflightMessages.remove(correlationId);
     }
-
 
     private long currentCorrelationId(final DirectBuffer message, final int offset, final int length)
     {

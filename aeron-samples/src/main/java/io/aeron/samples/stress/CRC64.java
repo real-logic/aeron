@@ -132,7 +132,7 @@ public class CRC64
     }
 
     /**
-     * Entry point
+     * Entry point.
      *
      * @param args command line args.
      * @throws Exception on failure.

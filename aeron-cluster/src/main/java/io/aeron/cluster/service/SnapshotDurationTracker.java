@@ -57,7 +57,7 @@ public class SnapshotDurationTracker
     }
 
     /**
-     * Get counter tracking number of times {@link SnapshotDurationTracker#durationThresholdNs} was exceeded
+     * Get counter tracking number of times {@link SnapshotDurationTracker#durationThresholdNs} was exceeded.
      *
      * @return duration threshold exceeded counter.
      */

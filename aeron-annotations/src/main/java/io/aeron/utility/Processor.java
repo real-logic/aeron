@@ -24,7 +24,7 @@ import javax.tools.Diagnostic;
 import java.util.Set;
 
 /**
- * abstract processor
+ * Abstract processor.
  */
 public abstract class Processor extends AbstractProcessor
 {
@@ -37,7 +37,6 @@ public abstract class Processor extends AbstractProcessor
     /**
      * {@inheritDoc}
      */
-    @Override
     public SourceVersion getSupportedSourceVersion()
     {
         return SourceVersion.latest();
@@ -46,7 +45,6 @@ public abstract class Processor extends AbstractProcessor
     /**
      * {@inheritDoc}
      */
-    @Override
     public synchronized void init(final ProcessingEnvironment processingEnv)
     {
         enabled = System.getProperty(getEnabledPropertyName(), "true").equalsIgnoreCase("true");
@@ -87,7 +85,9 @@ public abstract class Processor extends AbstractProcessor
      */
     protected abstract void doProcess(Set<? extends TypeElement> annotations, RoundEnvironment roundEnv);
 
-    @Override
+    /**
+     * {@inheritDoc}
+     */
     public boolean process(final Set<? extends TypeElement> annotations, final RoundEnvironment roundEnv)
     {
         if (enabled)

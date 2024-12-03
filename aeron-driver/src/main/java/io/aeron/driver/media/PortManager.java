@@ -19,14 +19,14 @@ import java.net.BindException;
 import java.net.InetSocketAddress;
 
 /**
- * Interface for managing ports in use by UdpChannelTransports
+ * Interface for managing ports in use by UdpChannelTransports.
  */
 public interface PortManager
 {
     /**
-     * Called before an OS bind to adjust the binded address and to notify of the bind for the port manager.
+     * Called before an OS bind to adjust the bound address and to notify of the bind for the port manager.
      *
-     * @param udpChannel for the UDP endpoint being bound.
+     * @param udpChannel  for the UDP endpoint being bound.
      * @param bindAddress for the bind.
      * @return InetSocketAddress to use for the bind.
      * @throws BindException if the bind should not be performed.

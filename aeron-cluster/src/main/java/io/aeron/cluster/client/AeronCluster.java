@@ -233,9 +233,9 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * an EgressListener for extension schemas
+     * An EgressListener for extension schemas.
      *
-     * @param listenerExtension listener extension
+     * @param listenerExtension listener extension.
      */
     public void extendEgressListener(final EgressListenerExtension listenerExtension)
     {
@@ -243,15 +243,14 @@ public final class AeronCluster implements AutoCloseable
     }
 
     /**
-     * a ControlledEgressListener for extension schemas
+     * A ControlledEgressListener for extension schemas.
      *
-     * @param listenerExtension listener extension
+     * @param listenerExtension listener extension.
      */
     public void extendControlledEgressListener(final ControlledEgressListenerExtension listenerExtension)
     {
         this.controlledEgressListenerExtension = listenerExtension;
     }
-
 
     /**
      * Close session and release associated resources.

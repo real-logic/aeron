@@ -40,72 +40,72 @@ import static org.agrona.BitUtil.SIZE_OF_SHORT;
 public class HeaderFlyweight extends UnsafeBuffer
 {
     /**
-     * header type PAD
+     * Header type PAD.
      */
     public static final int HDR_TYPE_PAD = 0x00;
 
     /**
-     * header type DATA
+     * Header type DATA.
      */
     public static final int HDR_TYPE_DATA = 0x01;
 
     /**
-     * header type NAK
+     * Header type NAK.
      */
     public static final int HDR_TYPE_NAK = 0x02;
 
     /**
-     * header type SM
+     * Header type SM.
      */
     public static final int HDR_TYPE_SM = 0x03;
 
     /**
-     * header type ERR
+     * Header type ERR.
      */
     public static final int HDR_TYPE_ERR = 0x04;
 
     /**
-     * header type SETUP
+     * Header type SETUP.
      */
     public static final int HDR_TYPE_SETUP = 0x05;
 
     /**
-     * header type RTT Measurement
+     * Header type RTT Measurement.
      */
     public static final int HDR_TYPE_RTTM = 0x06;
 
     /**
-     * header type RESOLUTION
+     * Header type RESOLUTION.
      */
     public static final int HDR_TYPE_RES = 0x07;
 
     /**
-     * header type ATS Data
+     * Header type ATS Data.
      */
     public static final int HDR_TYPE_ATS_DATA = 0x08;
 
     /**
-     * header type ATS Status Message
+     * Header type ATS Status Message.
      */
     public static final int HDR_TYPE_ATS_SM = 0x09;
 
     /**
-     * header type ATS Setup
+     * Header type ATS Setup.
      */
     public static final int HDR_TYPE_ATS_SETUP = 0x0A;
 
     /**
-     * header type Response Setup
+     * Header type Response Setup.
      */
     public static final int HDR_TYPE_RSP_SETUP = 0x0B;
 
     /**
-     * header type EXT
+     * Header type EXT.
      */
     public static final int HDR_TYPE_EXT = 0xFFFF;
 
     /**
-     * default version
+     * Default version.
      */
     public static final byte CURRENT_VERSION = 0x0;
 

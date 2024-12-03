@@ -23,7 +23,7 @@ import java.util.IdentityHashMap;
 import java.util.Map;
 
 /**
- * Subscription registration from a client used for liveness tracking
+ * Subscription registration from a client used for liveness tracking.
  */
 public abstract class SubscriptionLink implements DriverManagedResource
 {

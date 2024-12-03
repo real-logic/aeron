@@ -27,7 +27,6 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Command message flyweight to ask the driver process to terminate.
  *
- * @see ControlProtocolEvents
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -44,6 +43,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * ...                                                              |
  *  +---------------------------------------------------------------+
  * </pre>
+ * @see ControlProtocolEvents
  */
 public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
 {
@@ -65,9 +65,9 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Relative offset of the token buffer
+     * Relative offset of the token buffer.
      *
-     * @return relative offset of the token buffer
+     * @return relative offset of the token buffer.
      */
     public int tokenBufferOffset()
     {
@@ -75,9 +75,9 @@ public class TerminateDriverFlyweight extends CorrelatedMessageFlyweight
     }
 
     /**
-     * Length of the token buffer in bytes
+     * Length of the token buffer in bytes.
      *
-     * @return length of token buffer in bytes
+     * @return length of token buffer in bytes.
      */
     public int tokenBufferLength()
     {

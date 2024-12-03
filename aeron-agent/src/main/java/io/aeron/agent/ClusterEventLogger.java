@@ -315,7 +315,7 @@ public final class ClusterEventLogger
     }
 
     /**
-     * Log the catchup position message
+     * Log the catchup position message.
      *
      * @param memberId         of the current cluster node.
      * @param leadershipTermId leadership term to catch up on
@@ -359,7 +359,7 @@ public final class ClusterEventLogger
     }
 
     /**
-     * Log the stop catchup message
+     * Log the stop catchup message.
      *
      * @param memberId         of the current cluster node.
      * @param leadershipTermId current leadershipTermId.
@@ -593,8 +593,8 @@ public final class ClusterEventLogger
      * Log addition of a passive member to the cluster.
      *
      * @param memberId        of the current cluster node.
-     * @param correlationId   correlationId for responding to the addition of the passive member
-     * @param memberEndpoints the endpoints for the new member
+     * @param correlationId   correlationId for responding to the addition of the passive member.
+     * @param memberEndpoints the endpoints for the new member.
      */
     public void logOnAddPassiveMember(final int memberId, final long correlationId, final String memberEndpoints)
     {
@@ -627,12 +627,12 @@ public final class ClusterEventLogger
     /**
      * Log the appending of a session close event to the log.
      *
-     * @param memberId         member (leader) publishing the event
-     * @param sessionId        session id of the session be closed
-     * @param closeReason      reason to close the session
-     * @param leadershipTermId current leadership term id
-     * @param timestamp        the current timestamp
-     * @param timeUnit         units for the timestamp
+     * @param memberId         member (leader) publishing the event.
+     * @param sessionId        session id of the session be closed.
+     * @param closeReason      reason to close the session.
+     * @param leadershipTermId current leadership term id.
+     * @param timestamp        the current timestamp.
+     * @param timeUnit         units for the timestamp.
      */
     public void logAppendSessionClose(
         final int memberId,

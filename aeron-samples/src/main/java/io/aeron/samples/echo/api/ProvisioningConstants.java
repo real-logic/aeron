@@ -16,25 +16,25 @@
 package io.aeron.samples.echo.api;
 
 /**
- * Constants used by the provisioning API
+ * Constants used by the provisioning API.
  */
 public class ProvisioningConstants
 {
     /**
-     * TODO
+     * TODO.
      */
     public static final String IO_AERON_TYPE_PROVISIONING_NAME_TESTING = "io.aeron:type=Provisioning,name=testing";
 
     /**
-     * TODO
+     * TODO.
      */
     public static final String IO_AERON_TYPE_ECHO_PAIR_PREFIX = "io.aeron:type=EchoPair,name=";
 
     /**
      * Generate MBean echo pair object name from the specified correlationId.
      *
-     * @param correlationId user defined correlationId
-     * @return a legal JMX object name
+     * @param correlationId user defined correlationId.
+     * @return a legal JMX object name.
      */
     public static String echoPairObjectName(final long correlationId)
     {

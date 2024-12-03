@@ -103,7 +103,7 @@ public class PublicationErrorFrameFlyweight
     /**
      * Return registration ID of the publication that received the error frame.
      *
-     * @return registration ID of the publication
+     * @return registration ID of the publication.
      */
     public long registrationId()
     {
@@ -126,7 +126,7 @@ public class PublicationErrorFrameFlyweight
      * Return registration id of the destination that received the error frame. This will only be set if the publication
      * is using manual MDC.
      *
-     * @return registration ID of the publication or {@link io.aeron.Aeron#NULL_VALUE}
+     * @return registration ID of the publication or {@link io.aeron.Aeron#NULL_VALUE}.
      */
     public long destinationRegistrationId()
     {
@@ -193,7 +193,7 @@ public class PublicationErrorFrameFlyweight
     }
 
     /**
-     * Get the receiver id field
+     * Get the receiver id field.
      *
      * @return get the receiver id field.
      */
@@ -203,7 +203,7 @@ public class PublicationErrorFrameFlyweight
     }
 
     /**
-     * Set receiver id field
+     * Set receiver id field.
      *
      * @param receiverId field value.
      * @return this for a fluent API.
@@ -340,7 +340,7 @@ public class PublicationErrorFrameFlyweight
     /**
      * Error message associated with the error.
      *
-     * @return error message
+     * @return error message.
      */
     public String errorMessage()
     {

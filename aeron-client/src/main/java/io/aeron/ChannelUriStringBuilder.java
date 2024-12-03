@@ -82,7 +82,7 @@ public final class ChannelUriStringBuilder
     private Integer maxResend;
 
     /**
-     * Default constructor
+     * Default constructor.
      */
     public ChannelUriStringBuilder()
     {

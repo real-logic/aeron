@@ -20,7 +20,7 @@ import java.util.concurrent.TimeUnit;
 import static org.agrona.BitUtil.findNextPositivePowerOfTwo;
 
 /**
- * Supplies an instance of a {@link WheelTimerService} based on the configuration given to the constructor
+ * Supplies an instance of a {@link WheelTimerService} based on the configuration given to the constructor.
  */
 public class WheelTimerServiceSupplier implements TimerServiceSupplier
 {

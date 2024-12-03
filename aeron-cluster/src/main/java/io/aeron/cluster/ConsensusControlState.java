@@ -32,12 +32,12 @@ public final class ConsensusControlState
     private final String leaderLocalLogChannel;
 
     /**
-     * record constructor
+     * Record constructor.
      *
-     * @param logPublication        publication or null
-     * @param logRecordingId        log recording id
-     * @param leadershipTermId      leadership term id
-     * @param leaderLocalLogChannel leader local log channel or null
+     * @param logPublication        publication or null.
+     * @param logRecordingId        log recording id.
+     * @param leadershipTermId      leadership term id.
+     * @param leaderLocalLogChannel leader local log channel or null.
      */
     ConsensusControlState(
         final ExclusivePublication logPublication,
@@ -52,7 +52,7 @@ public final class ConsensusControlState
     }
 
     /**
-     * @return true iff we are the leader (and have the log publication)
+     * @return true iff we are the leader (and have the log publication).
      */
     public boolean isLeader()
     {
@@ -60,7 +60,7 @@ public final class ConsensusControlState
     }
 
     /**
-     * @return log publication or null if follower
+     * @return log publication or null if follower.
      */
     public ExclusivePublication logPublication()
     {
@@ -68,7 +68,7 @@ public final class ConsensusControlState
     }
 
     /**
-     * @return log recording id
+     * @return log recording id.
      */
     public long logRecordingId()
     {
@@ -76,7 +76,7 @@ public final class ConsensusControlState
     }
 
     /**
-     * @return leadership term id
+     * @return leadership term id.
      */
     public long leadershipTermId()
     {

@@ -33,17 +33,17 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 public class StatusMessageFlyweight extends HeaderFlyweight
 {
     /**
-     * Length of the Status Message Frame
+     * Length of the Status Message Frame.
      */
     public static final int HEADER_LENGTH = 36;
 
     /**
-     * Publisher should send SETUP frame
+     * Publisher should send SETUP frame.
      */
     public static final short SEND_SETUP_FLAG = 0x80;
 
     /**
-     * Publisher should treat Subscriber as going away
+     * Publisher should treat Subscriber as going away.
      */
     public static final short END_OF_STREAM_FLAG = 0x40;
 

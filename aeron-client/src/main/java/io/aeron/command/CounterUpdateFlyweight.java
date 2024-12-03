@@ -96,9 +96,9 @@ public class CounterUpdateFlyweight
     }
 
     /**
-     * Set counter id field
+     * Set counter id field.
      *
-     * @param counterId field value
+     * @param counterId field value.
      * @return this for a fluent API.
      */
     public CounterUpdateFlyweight counterId(final int counterId)

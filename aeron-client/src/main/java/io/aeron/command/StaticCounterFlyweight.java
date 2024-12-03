@@ -96,9 +96,9 @@ public class StaticCounterFlyweight
     }
 
     /**
-     * Set counter id field
+     * Set counter id field.
      *
-     * @param counterId field value
+     * @param counterId field value.
      * @return this for a fluent API.
      */
     public StaticCounterFlyweight counterId(final int counterId)
@@ -107,7 +107,6 @@ public class StaticCounterFlyweight
 
         return this;
     }
-
 
     /**
      * {@inheritDoc}

@@ -152,9 +152,9 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the position counter Id for the subscriber
+     * Set the position counter Id for the subscriber.
      *
-     * @param id for the subscriber position counter
+     * @param id for the subscriber position counter.
      * @return this for a fluent API.
      */
     public ImageBuffersReadyFlyweight subscriberPositionId(final int id)
@@ -200,7 +200,7 @@ public class ImageBuffersReadyFlyweight
     /**
      * The Log Filename in ASCII.
      *
-     * @return log filename
+     * @return log filename.
      */
     public String logFileName()
     {
@@ -218,7 +218,7 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Set the log filename in ASCII
+     * Set the log filename in ASCII.
      *
      * @param logFileName for the image.
      * @return this for a fluent API.
@@ -264,11 +264,11 @@ public class ImageBuffersReadyFlyweight
     }
 
     /**
-     * Get the length of the current message
+     * Get the length of the current message.
      * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
-     * @return the length of the current message
+     * @return the length of the current message.
      */
     public int length()
     {

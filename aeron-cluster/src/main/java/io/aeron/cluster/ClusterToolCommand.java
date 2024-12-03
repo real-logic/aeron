@@ -33,9 +33,9 @@ import java.util.function.ToIntFunction;
 public final class ClusterToolCommand
 {
     /**
-     * convenience method to ignore failure exit status
+     * Convenience method to ignore failure exit status.
      *
-     * @param actual    actual action
+     * @param actual actual action.
      * @return SUCCESS
      */
     public static Action ignoreFailures(final Action actual)
@@ -48,9 +48,9 @@ public final class ClusterToolCommand
     }
 
     /**
-     * convenience method for actions that do not require extra args
+     * Convenience method for actions that do not require extra args.
      *
-     * @param actual    actual action
+     * @param actual actual action.
      * @return SUCCESS
      */
     public static Action action(final ToIntBiFunction<File, PrintStream> actual)
@@ -59,10 +59,10 @@ public final class ClusterToolCommand
     }
 
     /**
-     * print help for a tool with the specified commands
+     * Print help for a tool with the specified commands.
      *
-     * @param commands  map of commands by name
-     * @param prefix    usage description prefix
+     * @param commands map of commands by name.
+     * @param prefix   usage description prefix.
      */
     public static void printHelp(final Map<String, ClusterToolCommand> commands, final String prefix)
     {
@@ -83,10 +83,10 @@ public final class ClusterToolCommand
     private final String description;
 
     /**
-     * constructor
+     * Constructor.
      *
-     * @param action        action to perform for command
-     * @param description   description of command
+     * @param action      action to perform for command.
+     * @param description description of command.
      */
     public ClusterToolCommand(final Action action, final String description)
     {
@@ -95,10 +95,10 @@ public final class ClusterToolCommand
     }
 
     /**
-     * convenience method for actions that only require the cluster directory
+     * Convenience method for actions that only require the cluster directory.
      *
-     * @param actual    actual action
-     * @return SUCCESS
+     * @param actual actual action.
+     * @return SUCCESS.
      */
     public static Action action(final ToIntFunction<File> actual)
     {
@@ -106,7 +106,7 @@ public final class ClusterToolCommand
     }
 
     /**
-     * @return description of command
+     * @return description of command.
      */
     public String describe()
     {
@@ -114,7 +114,7 @@ public final class ClusterToolCommand
     }
 
     /**
-     * @return the actual action to perform when given the command
+     * @return the actual action to perform when given the command.
      */
     public Action action()
     {
@@ -122,18 +122,18 @@ public final class ClusterToolCommand
     }
 
     /**
-     * Functional interface of an cluster tool operator action used in {@link ClusterToolCommand}
+     * Functional interface of a cluster tool operator action used in {@link ClusterToolCommand}.
      */
     @FunctionalInterface
     public interface Action
     {
         /**
-         * An action for an operator tool to control cluster
+         * An action for an operator tool to control cluster.
          *
-         * @param clusterDir    local cluster directory
-         * @param out           Where to print the output
-         * @param args          args to tool
-         * @return exit value
+         * @param clusterDir local cluster directory.
+         * @param out        Where to print the output.
+         * @param args       args to tool.
+         * @return exit value.
          */
         int act(File clusterDir, PrintStream out, String[] args);
     }

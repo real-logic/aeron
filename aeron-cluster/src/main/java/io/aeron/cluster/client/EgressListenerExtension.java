@@ -18,7 +18,7 @@ package io.aeron.cluster.client;
 import org.agrona.DirectBuffer;
 
 /**
- * Interface for consuming messages coming from the cluster for an unknown schema
+ * Interface for consuming messages coming from the cluster for an unknown schema.
  */
 @FunctionalInterface
 public interface EgressListenerExtension
@@ -26,13 +26,13 @@ public interface EgressListenerExtension
     /**
      * Message of unknown schema to egress that can be handled by specific listener implementation.
      *
-     * @param actingBlockLength acting block length from header
-     * @param templateId    template id
-     * @param schemaId      schema id
-     * @param actingVersion acting version
-     * @param buffer        message buffer
-     * @param offset        message offset
-     * @param length        message length
+     * @param actingBlockLength acting block length from header.
+     * @param templateId        template id.
+     * @param schemaId          schema id.
+     * @param actingVersion     acting version.
+     * @param buffer            message buffer.
+     * @param offset            message offset.
+     * @param length            message length.
      */
     void onExtensionMessage(
         int actingBlockLength,

@@ -20,7 +20,7 @@ import org.agrona.BitUtil;
 import static java.lang.System.getProperty;
 
 /**
- * {@inheritDoc}
+ * {@inheritDoc}.
  *
  * @deprecated Use {@link TaggedMulticastFlowControl} instead
  */

@@ -71,7 +71,7 @@ import static org.agrona.BufferUtil.allocateDirectAligned;
 import static org.agrona.SystemUtil.*;
 
 /**
- * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s .
+ * The Aeron Archive which allows for the recording and replay of local and remote {@link io.aeron.Publication}s.
  */
 @Versioned
 public final class Archive implements AutoCloseable
@@ -399,7 +399,7 @@ public final class Archive implements AutoCloseable
         public static final String MAX_CATALOG_ENTRIES_PROP_NAME = "aeron.archive.max.catalog.entries";
 
         /**
-         * Default limit for the entries in the {@link Catalog}
+         * Default limit for the entries in the {@link Catalog}.
          *
          * @see #MAX_CATALOG_ENTRIES_PROP_NAME
          */

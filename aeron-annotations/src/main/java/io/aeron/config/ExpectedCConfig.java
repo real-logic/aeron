@@ -18,7 +18,7 @@ package io.aeron.config;
 import java.io.Serializable;
 
 /**
- * A handy class for storing expected C config info that can be serialized into json
+ * A handy class for storing expected C config info that can be serialized into json.
  */
 public class ExpectedCConfig implements Serializable
 {

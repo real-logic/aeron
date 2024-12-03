@@ -32,7 +32,7 @@ public class ElementIO
      * @param elementsFilename the name of the filename that contains a list of objects
      * @return a list of elements
      * @param <T> the type of elements - ConfigInfo or CounterInfo
-     * @throws Exception yup
+     * @throws Exception on IO failure.
      */
     @SuppressWarnings("unchecked")
     public static <T> List<T> read(final String elementsFilename) throws Exception
@@ -46,7 +46,7 @@ public class ElementIO
     /**
      * @param resourceFile the destination file to write to
      * @param elements a Collection of elements
-     * @throws Exception yup
+     * @throws Exception on IO failure.
      */
     public static void write(final FileObject resourceFile, final Collection<?> elements) throws Exception
     {

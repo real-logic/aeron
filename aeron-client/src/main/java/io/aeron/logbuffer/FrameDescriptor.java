@@ -77,32 +77,32 @@ public class FrameDescriptor
     public static final byte UNFRAGMENTED = BEGIN_FRAG_FLAG | END_FRAG_FLAG;
 
     /**
-     * Offset within a frame at which the version field begins
+     * Offset within a frame at which the version field begins.
      */
     public static final int VERSION_OFFSET = DataHeaderFlyweight.VERSION_FIELD_OFFSET;
 
     /**
-     * Offset within a frame at which the flags field begins
+     * Offset within a frame at which the flags field begins.
      */
     public static final int FLAGS_OFFSET = DataHeaderFlyweight.FLAGS_FIELD_OFFSET;
 
     /**
-     * Offset within a frame at which the type field begins
+     * Offset within a frame at which the type field begins.
      */
     public static final int TYPE_OFFSET = DataHeaderFlyweight.TYPE_FIELD_OFFSET;
 
     /**
-     * Offset within a frame at which the term offset field begins
+     * Offset within a frame at which the term offset field begins.
      */
     public static final int TERM_OFFSET = DataHeaderFlyweight.TERM_OFFSET_FIELD_OFFSET;
 
     /**
-     * Offset within a frame at which the term id field begins
+     * Offset within a frame at which the term id field begins.
      */
     public static final int TERM_ID_OFFSET = DataHeaderFlyweight.TERM_ID_FIELD_OFFSET;
 
     /**
-     * Offset within a frame at which the session id field begins
+     * Offset within a frame at which the session id field begins.
      */
     public static final int SESSION_ID_OFFSET = DataHeaderFlyweight.SESSION_ID_FIELD_OFFSET;
 
@@ -372,7 +372,7 @@ public class FrameDescriptor
      *
      * @param buffer     containing the frame.
      * @param termOffset at which a frame begins.
-     * @param sessionId     value for the frame.
+     * @param sessionId  value for the frame.
      */
     public static void frameSessionId(final UnsafeBuffer buffer, final int termOffset, final int sessionId)
     {

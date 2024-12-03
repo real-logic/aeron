@@ -37,8 +37,8 @@ public interface ClusterBackupEventsListener
     /**
      * Backup response was received for a backup query.
      *
-     * @param clusterMembers in the backup response.
-     * @param logSourceMember to be used to replicate data from.
+     * @param clusterMembers      in the backup response.
+     * @param logSourceMember     to be used to replicate data from.
      * @param snapshotsToRetrieve snapshots to be retrieved.
      */
     void onBackupResponse(
@@ -47,17 +47,17 @@ public interface ClusterBackupEventsListener
     /**
      * Updated recording log.
      *
-     * @param recordingLog that was updated.
+     * @param recordingLog       that was updated.
      * @param snapshotsRetrieved the snapshots that were retrieved.
      */
     void onUpdatedRecordingLog(RecordingLog recordingLog, List<RecordingLog.Snapshot> snapshotsRetrieved);
 
     /**
-     * Update to the live log position as recorded to the local archive
+     * Update to the live log position as recorded to the local archive.
      *
-     * @param recordingId of the live log.
+     * @param recordingId           of the live log.
      * @param recordingPosCounterId {@link io.aeron.archive.status.RecordingPos} counter id for the live log.
-     * @param logPosition of the live log.
+     * @param logPosition           of the live log.
      */
     void onLiveLogProgress(long recordingId, long recordingPosCounterId, long logPosition);
 }

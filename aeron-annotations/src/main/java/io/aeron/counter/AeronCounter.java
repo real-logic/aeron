@@ -21,19 +21,19 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * Annotation to indicate this is an Aeron counter
+ * Annotation to indicate this is an Aeron counter.
  */
 @Target({ElementType.FIELD})
 @Retention(RetentionPolicy.SOURCE)
 public @interface AeronCounter
 {
     /**
-     * @return whether this counter exists in the C code
+     * @return whether this counter exists in the C code.
      */
     boolean existsInC() default true;
 
     /**
-     * @return the name of the #define in C
+     * @return the name of the #define in C.
      */
     String expectedCName() default "";
 }

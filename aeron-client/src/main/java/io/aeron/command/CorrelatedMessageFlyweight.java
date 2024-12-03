@@ -72,9 +72,9 @@ public class CorrelatedMessageFlyweight
     }
 
     /**
-     * set client id field
+     * Set client id field.
      *
-     * @param clientId field value
+     * @param clientId field value.
      * @return this for a fluent API.
      */
     public CorrelatedMessageFlyweight clientId(final long clientId)

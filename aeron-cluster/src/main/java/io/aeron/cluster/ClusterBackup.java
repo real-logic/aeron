@@ -187,7 +187,7 @@ public final class ClusterBackup implements AutoCloseable
     }
 
     /**
-     * Defines the type of node that this will receive log data from
+     * Defines the type of node that this will receive log data from.
      */
     public enum SourceType
     {
@@ -204,7 +204,6 @@ public final class ClusterBackup implements AutoCloseable
          */
         FOLLOWER
     }
-
 
     private final ClusterBackup.Context ctx;
     private final AgentInvoker agentInvoker;
@@ -542,7 +541,7 @@ public final class ClusterBackup implements AutoCloseable
         public static final String CLUSTER_INITIAL_REPLAY_START_PROP_NAME = "cluster.backup.initial.replay.start";
 
         /**
-         * Get the initial value for the cluster relay start
+         * Get the initial value for the cluster relay start.
          *
          * @return enum to determine where to start replaying the log from.
          * @see #CLUSTER_INITIAL_REPLAY_START_PROP_NAME
@@ -1849,7 +1848,7 @@ public final class ClusterBackup implements AutoCloseable
         }
 
         /**
-         * Get the currently configured source type
+         * Get the currently configured source type.
          *
          * @return source type for this backup instance.
          * @throws IllegalArgumentException if the configured source type is not one of {@link SourceType}

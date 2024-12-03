@@ -741,7 +741,7 @@ public class Aeron implements AutoCloseable
         static final long AWAITING_IDLE_SLEEP_MS = 1;
 
         /**
-         * Duration to sleep when idle
+         * Duration to sleep when idle.
          */
         @Config(expectedCDefaultFieldName = "AERON_CONTEXT_IDLE_SLEEP_DURATION_NS_DEFAULT")
         public static final String IDLE_SLEEP_DURATION_PROP_NAME = "aeron.client.idle.sleep.duration";

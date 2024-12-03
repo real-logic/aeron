@@ -39,6 +39,7 @@
 
         <module name="SuppressWarningsHolder"/>
 
+        <module name="JavadocStyle"/>
         <module name="JavadocType"/>
         <module name="JavadocMethod"/>
         <module name="JavadocVariable">

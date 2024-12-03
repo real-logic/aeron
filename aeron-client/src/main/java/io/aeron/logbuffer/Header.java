@@ -248,9 +248,9 @@ public final class Header
     }
 
     /**
-     * The type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
+     * The type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}.
      *
-     * @return type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}
+     * @return type of the frame which should always be {@link DataHeaderFlyweight#HDR_TYPE_DATA}.
      */
     public int type()
     {

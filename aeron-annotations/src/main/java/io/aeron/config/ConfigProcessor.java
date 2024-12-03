@@ -28,7 +28,7 @@ import java.util.*;
 import java.util.stream.Stream;
 
 /**
- * ConfigOption processor
+ * ConfigOption processor.
  */
 @SupportedAnnotationTypes("io.aeron.config.Config")
 public class ConfigProcessor extends Processor
@@ -176,6 +176,7 @@ public class ConfigProcessor extends Processor
                     error("Property names must be Strings", element);
                 }
                 break;
+
             case DEFAULT:
                 id = getConfigId(element, DEFAULT_SUFFIXES, config.id());
                 configInfo = configInfoMap.computeIfAbsent(id, ConfigInfo::new);
@@ -198,6 +199,7 @@ public class ConfigProcessor extends Processor
                         DefaultType.fromCanonicalName(constantValue.getClass().getCanonicalName());
                 }
                 break;
+
             default:
                 error("unable to determine config type", element);
                 return null;
@@ -236,7 +238,7 @@ public class ConfigProcessor extends Processor
                 {
                     configInfo.isTimeValue =
                         Stream.of("timeout", "backoff", "delay", "linger", "interval", "duration")
-                            .anyMatch(k -> id.toLowerCase().contains(k));
+                            .anyMatch((k) -> id.toLowerCase().contains(k));
                 }
                 break;
             case TRUE:

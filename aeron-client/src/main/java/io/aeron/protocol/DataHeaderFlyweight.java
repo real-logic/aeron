@@ -335,9 +335,9 @@ public class DataHeaderFlyweight extends HeaderFlyweight
     }
 
     /**
-     * Return offset in buffer for data
+     * Return offset in buffer for data.
      *
-     * @return offset of data in the buffer
+     * @return offset of data in the buffer.
      */
     public int dataOffset()
     {

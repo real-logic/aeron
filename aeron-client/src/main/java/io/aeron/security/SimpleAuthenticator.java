@@ -89,7 +89,7 @@ public final class SimpleAuthenticator implements Authenticator
     }
 
     /**
-     * Builder to create instances of SimpleAuthenticator
+     * Builder to create instances of SimpleAuthenticator.
      */
     public static class Builder
     {
@@ -106,8 +106,8 @@ public final class SimpleAuthenticator implements Authenticator
          *     .newInstance();
          * </pre>
          *
-         * @param encodedPrincipal      principal encoded as a byte array.
-         * @param encodedCredentials    credentials encoded as a byte array.
+         * @param encodedPrincipal   principal encoded as a byte array.
+         * @param encodedCredentials credentials encoded as a byte array.
          * @return this for a fluent API.
          */
         public Builder principal(final byte[] encodedPrincipal, final byte[] encodedCredentials)

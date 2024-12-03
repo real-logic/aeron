@@ -18,7 +18,7 @@ package io.aeron.cluster;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Supplies instances of the {@link PriorityHeapTimerService}
+ * Supplies instances of the {@link PriorityHeapTimerService}.
  */
 public class PriorityHeapTimerServiceSupplier implements TimerServiceSupplier
 {

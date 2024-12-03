@@ -31,7 +31,7 @@ import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
- * Version processor
+ * Version processor.
  */
 @SupportedAnnotationTypes("io.aeron.version.Versioned")
 @SupportedOptions({"io.aeron.version", "io.aeron.gitsha"})

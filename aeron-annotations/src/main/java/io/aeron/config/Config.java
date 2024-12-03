@@ -19,14 +19,14 @@ import java.lang.annotation.*;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Annotation to indicate this is a config option
+ * Annotation to indicate this is a config option.
  */
 @Target({ElementType.FIELD, ElementType.METHOD, ElementType.TYPE})
 @Retention(RetentionPolicy.SOURCE)
 public @interface Config
 {
     /**
-     * Type is used to indicate whether the annotation is marking a property name or a default value
+     * Type is used to indicate whether the annotation is marking a property name or a default value.
      */
     enum Type
     {
@@ -45,82 +45,82 @@ public @interface Config
     }
 
     /**
-     * @return what type of field is being annotated
+     * @return what type of field is being annotated.
      */
     Type configType() default Type.UNDEFINED;
 
     /**
-     * @return the unique id that ties together all the usages of the annotation across fields/methods
+     * @return the unique id that ties together all the usages of the annotation across fields/methods.
      */
     String id() default "";
 
     /**
-     * @return the uri parameter (if any) associated with this option
+     * @return the uri parameter (if any) associated with this option.
      */
     String uriParam() default "";
 
     /**
-     * @return whether or not this config option exists in the C code
+     * @return whether this config option exists in the C code.
      */
     boolean existsInC() default true;
 
     /**
-     * @return the expected C #define name that will be set with the env variable name for this option
+     * @return the expected C #define name that will be set with the env variable name for this option.
      */
     String expectedCEnvVarFieldName() default "";
 
     /**
-     * @return the expected C env variable name for this option
+     * @return the expected C env variable name for this option.
      */
     String expectedCEnvVar() default "";
 
     /**
-     * @return the expected C #define name that will be set with the default value for this option
+     * @return the expected C #define name that will be set with the default value for this option.
      */
     String expectedCDefaultFieldName() default "";
 
     /**
-     * @return the expected C default value for this option
+     * @return the expected C default value for this option.
      */
     String expectedCDefault() default "";
 
     /**
-     * @return whether to skip validation of the default in C
+     * @return whether to skip validation of the default in C.
      */
     boolean skipCDefaultValidation() default false;
 
     /**
-     * @return what's the type of default (string, int, etc...)
+     * @return what's the type of default (string, int, etc...).
      */
     DefaultType defaultType() default DefaultType.UNDEFINED;
 
     /**
-     * @return specify the default boolean, if defaultType is BOOLEAN
+     * @return specify the default boolean, if defaultType is BOOLEAN.
      */
     boolean defaultBoolean() default false;
 
     /**
-     * @return specify the default int, if defaultType is INT
+     * @return specify the default int, if defaultType is INT.
      */
     int defaultInt() default 0;
 
     /**
-     * @return specify the default long, if defaultType is LONG
+     * @return specify the default long, if defaultType is LONG.
      */
     long defaultLong() default 0;
 
     /**
-     * @return specify the default double, if defaultType is DOUBLE
+     * @return specify the default double, if defaultType is DOUBLE.
      */
     double defaultDouble() default 0.0;
 
     /**
-     * @return specify the default string, if defaultType is STRING
+     * @return specify the default string, if defaultType is STRING.
      */
     String defaultString() default "";
 
     /**
-     * @return specify a string that acts as a stand-in for the default value when generating documentation
+     * @return specify a string that acts as a stand-in for the default value when generating documentation.
      */
     String defaultValueString() default "";
 
@@ -144,17 +144,17 @@ public @interface Config
     }
 
     /**
-     * @return whether the default value is a time value
+     * @return whether the default value is a time value.
      */
     IsTimeValue isTimeValue() default IsTimeValue.UNDEFINED;
 
     /**
-     * @return the time unit if the default value is a time value of some sort
+     * @return the time unit if the default value is a time value of some sort.
      */
     TimeUnit timeUnit() default TimeUnit.NANOSECONDS;
 
     /**
-     * @return whether this config option has a 'context'
+     * @return whether this config option has a 'context'.
      */
     boolean hasContext() default true;
 }

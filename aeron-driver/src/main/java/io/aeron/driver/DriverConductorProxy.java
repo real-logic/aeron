@@ -160,7 +160,7 @@ public final class DriverConductorProxy
     }
 
     /**
-     * Handle a response setup message from the remote "server"
+     * Handle a response setup message from the remote "server".
      *
      * @param responseCorrelationId correlationId of the subscription that will handle responses.
      * @param responseSessionId     sessionId that will be associated with the incoming messages.

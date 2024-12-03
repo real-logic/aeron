@@ -80,7 +80,7 @@ public final class DataCollector
     }
 
     /**
-     * Add a file/directory to be preserved.  Converting from a File to a Path if not null.
+     * Add a file/directory to be preserved. Converting from a File to a Path if not null.
      *
      * @param location file or directory to preserve.
      * @see #dumpData(String, byte[])
@@ -148,7 +148,7 @@ public final class DataCollector
     }
 
     /**
-     * Find all the driver cnc files
+     * Find all the driver cnc files.
      *
      * @return list of paths to collected driver cnc files.
      */
@@ -160,8 +160,8 @@ public final class DataCollector
     /**
      * Find all mark files for specific dissector.
      *
-     * @param dissector to use as a filter
-     * @return list of paths to the associated mark files
+     * @param dissector to use as a filter.
+     * @return list of paths to the associated mark files.
      */
     public List<Path> markFiles(final SystemTestWatcher.MarkFileDissector dissector)
     {
@@ -260,8 +260,7 @@ public final class DataCollector
     /**
      * Add a specific exclusion for a file to be captured.
      *
-     * @param fileExclusion predicate that returns true of a specific file should
-     *                      not be captured.
+     * @param fileExclusion predicate that returns true of a specific file should not be captured.
      */
     public void addFileExclusion(final Predicate<Path> fileExclusion)
     {
@@ -444,7 +443,7 @@ public final class DataCollector
         {
             Files.walkFileTree(
                 src,
-                new SimpleFileVisitor<Path>()
+                new SimpleFileVisitor<>()
                 {
                     public FileVisitResult preVisitDirectory(final Path dir, final BasicFileAttributes attrs)
                         throws IOException

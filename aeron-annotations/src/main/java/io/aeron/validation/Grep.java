@@ -23,14 +23,14 @@ import java.util.function.BiConsumer;
 import java.util.stream.Collectors;
 
 /**
- * A utility class for running 'grep'
+ * A utility class for running 'grep'.
  */
 public final class Grep
 {
     /**
-     * @param pattern the regex pattern passed to grep
-     * @param sourceDir the base directory where the search should begin
-     * @return a Grep object with the results of the action
+     * @param pattern the regex pattern passed to grep.
+     * @param sourceDir the base directory where the search should begin.
+     * @return a Grep object with the results of the action.
      */
     public static Grep execute(final String pattern, final String sourceDir)
     {
@@ -84,7 +84,7 @@ public final class Grep
     }
 
     /**
-     * @return whether or not grep succeeded
+     * @return whether grep succeeded.
      */
     public boolean success()
     {
@@ -94,7 +94,7 @@ public final class Grep
     /**
      * @param expectOneLine many of the usages expect only a single line to be found.
      *                      if more than one are found, that counts as a failure
-     * @return whether or not grep succeeded
+     * @return whether grep succeeded.
      */
     public boolean success(final boolean expectOneLine)
     {

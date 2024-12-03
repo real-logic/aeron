@@ -129,7 +129,8 @@ public class StressUnicastServer implements Agent
     }
 
     /**
-     * Entry point
+     * Entry point.
+     *
      * @param args command line args.
      */
     public static void main(final String[] args)

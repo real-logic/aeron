@@ -249,11 +249,11 @@ public final class ClusterMarkFile implements AutoCloseable
     }
 
     /**
-     * Determines if this path name matches the service mark file name pattern
+     * Determines if this path name matches the service mark file name pattern.
      *
-     * @param path       to examine
-     * @param attributes ignored, only needed for BiPredicate signature matching
-     * @return true if the name matches
+     * @param path       to examine.
+     * @param attributes ignored, only needed for BiPredicate signature matching.
+     * @return true if the name matches.
      */
     public static boolean isServiceMarkFile(final Path path, final BasicFileAttributes attributes)
     {
@@ -265,7 +265,7 @@ public final class ClusterMarkFile implements AutoCloseable
      * Determines if this path name matches the consensus module file name pattern.
      *
      * @param path       to examine.
-     * @param attributes ignored, only needed for BiPredicate signature matching,
+     * @param attributes ignored, only needed for BiPredicate signature matching.
      * @return true if the name matches.
      */
     public static boolean isConsensusModuleMarkFile(final Path path, final BasicFileAttributes attributes)

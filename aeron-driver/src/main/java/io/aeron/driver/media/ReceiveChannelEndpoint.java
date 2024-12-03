@@ -929,7 +929,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
     }
 
     /**
-     * Send a response setup message
+     * Send a response setup message.
      *
      * @param controlAddresses  of the sources.
      * @param sessionId         for the image.

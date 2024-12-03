@@ -37,7 +37,7 @@ public class FlowControlReceivers
     public static final String NAME = "fc-receivers";
 
     /**
-     * Allocate a new flow control receivers counter for a stream
+     * Allocate a new flow control receivers counter for a stream.
      *
      * @param tempBuffer      to build the label.
      * @param countersManager to allocate the counter from.

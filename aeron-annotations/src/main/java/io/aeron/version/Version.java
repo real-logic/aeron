@@ -16,27 +16,27 @@
 package io.aeron.version;
 
 /**
- * version information for a specific component
+ * Version information for a specific component.
  */
 public interface Version
 {
-     /**
-      * @return     major version portion
-      */
+    /**
+     * @return major version portion.
+     */
     int majorVersion();
 
-     /**
-      * @return     minor version portion
-      */
+    /**
+     * @return minor version portion.
+     */
     int minorVersion();
 
-     /**
-      * @return     patched version portion
-      */
+    /**
+     * @return patched version portion.
+     */
     int patchVersion();
 
-     /**
-      * @return     git SHA
-      */
+    /**
+     * @return git SHA.
+     */
     String gitSha();
 }

@@ -1982,7 +1982,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Indicates if this node should take standby snapshots
+         * Indicates if this node should take standby snapshots.
          *
          * @return <code>true</code> if this should take standby snapshots, <code>false</code> otherwise.
          * @see ClusteredServiceContainer.Configuration#STANDBY_SNAPSHOT_ENABLED_PROP_NAME
@@ -1995,7 +1995,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         }
 
         /**
-         * Indicates if this node should take standby snapshots
+         * Indicates if this node should take standby snapshots.
          *
          * @param standbySnapshotEnabled if this node should take standby snapshots.
          * @return this for a fluent API.

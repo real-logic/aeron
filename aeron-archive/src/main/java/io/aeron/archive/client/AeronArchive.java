@@ -2808,7 +2808,7 @@ public final class AeronArchive implements AutoCloseable
         }
 
         /**
-         * The value of system property {@link #CONTROL_CHANNEL_PROP_NAME} if set, null otherwise
+         * The value of system property {@link #CONTROL_CHANNEL_PROP_NAME} if set, null otherwise.
          *
          * @return system property {@link #CONTROL_CHANNEL_PROP_NAME} if set.
          */

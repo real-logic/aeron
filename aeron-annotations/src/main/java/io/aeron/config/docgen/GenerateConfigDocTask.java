@@ -18,17 +18,15 @@ package io.aeron.config.docgen;
 import io.aeron.utility.ElementIO;
 
 /**
- * A gradle task for generating config documentation
+ * A gradle task for generating config documentation.
  */
 public class GenerateConfigDocTask
 {
     /**
      * @param args
-     * Arg 0 should be the location of a config-info.xml file with a list of ConfigInfo objects
-     * Arg 1 should be the location of an output file where a .md file is to be written
-     *
-     * @throws Exception
-     * it sure does
+     * Arg 0 should be the location of a config-info.xml file with a list of ConfigInfo objects.
+     * Arg 1 should be the location of an output file where a .md file is to be written.
+     * @throws Exception on IO failure.
      */
     public static void main(final String[] args) throws Exception
     {

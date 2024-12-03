@@ -67,14 +67,14 @@ public interface ConsensusModuleExtension extends AutoCloseable
      * Cluster election is complete and new publication is added for the leadership term. If the node is a follower
      * then the publication will be null.
      *
-     * @param consensusControlState state to allow extension to control the consensus module
+     * @param consensusControlState state to allow extension to control the consensus module.
      */
     void onElectionComplete(ConsensusControlState consensusControlState);
 
     /**
-     * New Leadership term and the consensus control state has changed
+     * New Leadership term and the consensus control state has changed.
      *
-     * @param consensusControlState state to allow extension to control the consensus module
+     * @param consensusControlState state to allow extension to control the consensus module.
      */
     void onNewLeadershipTerm(ConsensusControlState consensusControlState);
 

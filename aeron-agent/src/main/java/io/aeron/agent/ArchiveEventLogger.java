@@ -106,7 +106,7 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a state change event for an archive replay session
+     * Log a state change event for an archive replay session.
      *
      * @param <E>         type representing the state change.
      * @param oldState    before the change.
@@ -114,8 +114,8 @@ public final class ArchiveEventLogger
      * @param sessionId   identity for the replay session on the Archive.
      * @param recordingId recording id on the Archive.
      * @param position    position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                    if not relevant)
-     * @param reason      a string indicating the reason for the state change
+     *                    if not relevant).
+     * @param reason      a string indicating the reason for the state change.
      */
     public <E extends Enum<E>> void logReplaySessionStateChange(
         final E oldState,
@@ -155,15 +155,15 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a state change event for an archive recording session
+     * Log a state change event for an archive recording session.
      *
      * @param <E>         type representing the state change.
      * @param oldState    before the change.
      * @param newState    after the change.
      * @param recordingId recording id on the Archive.
      * @param position    position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                    if not relevant)
-     * @param reason      a string indicating the reason for the state change
+     *                    if not relevant).
+     * @param reason      a string indicating the reason for the state change.
      */
     public <E extends Enum<E>> void logRecordingSessionStateChange(
         final E oldState,
@@ -201,7 +201,7 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a state change event for an archive replication session
+     * Log a state change event for an archive replication session.
      *
      * @param <E>            type representing the state change.
      * @param oldState       before the change.
@@ -210,8 +210,8 @@ public final class ArchiveEventLogger
      * @param srcRecordingId source recording id on the Archive.
      * @param dstRecordingId destination recording id on the Archive.
      * @param position       position of state change ({@link io.aeron.archive.client.AeronArchive#NULL_POSITION}
-     *                       if not relevant)
-     * @param reason         a string indicating the reason for the state change
+     *                       if not relevant).
+     * @param reason         a string indicating the reason for the state change.
      */
     public <E extends Enum<E>> void logReplicationSessionStateChange(
         final E oldState,
@@ -253,7 +253,7 @@ public final class ArchiveEventLogger
     }
 
     /**
-     * Log a state change event for an archive control session
+     * Log a state change event for an archive control session.
      *
      * @param <E>              type representing the state change.
      * @param oldState         before the change.

@@ -76,7 +76,7 @@ public class StressMdcClient implements Agent
     private Counter clientSendCount;
 
     /**
-     * Construct Stress Client
+     * Construct Stress Client.
      *
      * @param serverAddress server address to connect to.
      * @param clientAddress local address to get responses.

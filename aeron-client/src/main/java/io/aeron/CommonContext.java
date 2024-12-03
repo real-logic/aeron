@@ -136,13 +136,13 @@ public class CommonContext implements Cloneable
     public static final String AERON_DIR_PROP_NAME = "aeron.dir";
 
     /**
-     * The value of the top level Aeron directory unless overridden by {@link #aeronDirectoryName(String)}
+     * The value of the top level Aeron directory unless overridden by {@link #aeronDirectoryName(String)}.
      */
     @Config(id = "AERON_DIR", defaultType = DefaultType.STRING, defaultString = "OS specific")
     public static final String AERON_DIR_PROP_DEFAULT;
 
     /**
-     * Should new/experimental features be enabled.\
+     * Should new/experimental features be enabled.
      *
      * @since 1.44.0
      */
@@ -167,12 +167,12 @@ public class CommonContext implements Cloneable
     public static final String UDP_MEDIA = "udp";
 
     /**
-     * URI base used for IPC channels for {@link Publication}s and {@link Subscription}s
+     * URI base used for IPC channels for {@link Publication}s and {@link Subscription}s.
      */
     public static final String IPC_CHANNEL = "aeron:ipc";
 
     /**
-     * URI base used for UDP channels for {@link Publication}s and {@link Subscription}s
+     * URI base used for UDP channels for {@link Publication}s and {@link Subscription}s.
      */
     public static final String UDP_CHANNEL = "aeron:udp";
 
@@ -266,7 +266,7 @@ public class CommonContext implements Cloneable
     public static final String RELIABLE_STREAM_PARAM_NAME = "reliable";
 
     /**
-     * Key for the tags for a channel
+     * Key for the tags for a channel.
      */
     public static final String TAGS_PARAM_NAME = "tags";
 
@@ -406,21 +406,21 @@ public class CommonContext implements Cloneable
     public static final String NAK_DELAY_PARAM_NAME = "nak-delay";
 
     /**
-     * Parameter name to set explicit untethered window limit timeout (e.g. {@code untethered-window-limit-timeout=10s})
+     * Parameter name to set explicit untethered window limit timeout, e.g. {@code untethered-window-limit-timeout=10s}.
      *
      * @since 1.45.0
      */
     public static final String UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME = "untethered-window-limit-timeout";
 
     /**
-     * Parameter name to set explicit untethered resting timeout (e.g. {@code untethered-resting-timeout=10s})
+     * Parameter name to set explicit untethered resting timeout, e.g. {@code untethered-resting-timeout=10s}.
      *
      * @since 1.45.0
      */
     public static final String UNTETHERED_RESTING_TIMEOUT_PARAM_NAME = "untethered-resting-timeout";
 
     /**
-     * Parameter name to set the max number of outstanding active retransmits for a publication
+     * Parameter name to set the max number of outstanding active retransmits for a publication.
      *
      * @since 1.45.0
      */
@@ -728,7 +728,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Set the driver timeout in milliseconds
+     * Set the driver timeout in milliseconds.
      *
      * @param driverTimeoutMs to indicate liveness of driver
      * @return this for a fluent API.
@@ -1019,7 +1019,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Read the error log to a given {@link PrintStream}
+     * Read the error log to a given {@link PrintStream}.
      *
      * @param out to write the error log contents to.
      * @return the number of observations from the error log.
@@ -1038,7 +1038,7 @@ public class CommonContext implements Cloneable
     }
 
     /**
-     * Read the error log to a given {@link PrintStream}
+     * Read the error log to a given {@link PrintStream}.
      *
      * @param out           to write the error log contents to.
      * @param cncByteBuffer containing the error log.

@@ -16,7 +16,7 @@
 package io.aeron.driver;
 
 /**
- * Handler for sending a retransmit
+ * Handler for sending a retransmit.
  */
 @FunctionalInterface
 public interface RetransmitSender

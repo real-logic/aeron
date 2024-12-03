@@ -20,7 +20,7 @@ import java.util.Map;
 import java.util.Objects;
 
 /**
- * Indicates the 'type' of the default field/value
+ * Indicates the 'type' of the default field/value.
  */
 public enum DefaultType
 {
@@ -60,8 +60,8 @@ public enum DefaultType
     }
 
     /**
-     * @param canonicalName the name of the java class
-     * @return the associated DefaultType
+     * @param canonicalName the name of the java class.
+     * @return the associated DefaultType.
      */
     public static DefaultType fromCanonicalName(final String canonicalName)
     {
@@ -69,8 +69,8 @@ public enum DefaultType
     }
 
     /**
-     * @param defaultType a DefaultType or null
-     * @return true if the type is null or if it's UNDEFINED, otherwise false
+     * @param defaultType a DefaultType or null.
+     * @return true if the type is null or if it's UNDEFINED, otherwise false.
      */
     public static boolean isUndefined(final DefaultType defaultType)
     {
@@ -89,7 +89,7 @@ public enum DefaultType
     }
 
     /**
-     * @return indicates whether or not the value is numeric (int or long)
+     * @return indicates whether the value is numeric (int or long).
      */
     public boolean isNumeric()
     {
@@ -97,7 +97,7 @@ public enum DefaultType
     }
 
     /**
-     * @return a simple name, for display purposes
+     * @return a simple name, for display purposes.
      */
     public String getSimpleName()
     {

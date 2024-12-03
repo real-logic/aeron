@@ -59,12 +59,12 @@ public enum ClusterEventCode implements EventCode
     REQUEST_VOTE(6, ClusterEventDissector::dissectRequestVote),
 
     /**
-     * Notification of a follower's catchup position
+     * Notification of a follower's catchup position.
      */
     CATCHUP_POSITION(7, ClusterEventDissector::dissectCatchupPosition),
 
     /**
-     * A request to stop follower catchup
+     * A request to stop follower catchup.
      */
     STOP_CATCHUP(8, ClusterEventDissector::dissectStopCatchup),
 
@@ -74,47 +74,47 @@ public enum ClusterEventCode implements EventCode
     TRUNCATE_LOG_ENTRY(9, ClusterEventDissector::dissectTruncateLogEntry),
 
     /**
-     * Event when a new leadership term is replayed
+     * Event when a new leadership term is replayed.
      */
     REPLAY_NEW_LEADERSHIP_TERM(10, ClusterEventDissector::dissectReplayNewLeadershipTerm),
 
     /**
-     * Event when an append position is received
+     * Event when an append position is received.
      */
     APPEND_POSITION(11, ClusterEventDissector::dissectAppendPosition),
 
     /**
-     * Event when a commit position is received
+     * Event when a commit position is received.
      */
     COMMIT_POSITION(12, ClusterEventDissector::dissectCommitPosition),
 
     /**
-     * Event when an event to add a new passive member is received
+     * Event when an event to add a new passive member is received.
      */
     ADD_PASSIVE_MEMBER(13, ClusterEventDissector::dissectAddPassiveMember),
 
     /**
-     * Event when a session is closed
+     * Event when a session is closed.
      */
     APPEND_SESSION_CLOSE(14, ClusterEventDissector::dissectAppendCloseSession),
 
     /**
-     * Event when the DynamicJoin changes state (Unused)
+     * Event when the DynamicJoin changes state (Unused).
      */
     DYNAMIC_JOIN_STATE_CHANGE_UNUSED(15, ClusterEventDissector::dissectNoOp),
 
     /**
-     * Event when the ClusterBackup changes state
+     * Event when the ClusterBackup changes state.
      */
     CLUSTER_BACKUP_STATE_CHANGE(16, ClusterEventDissector::dissectStateChange),
 
     /**
-     * Event when a node is instructed to terminate
+     * Event when a node is instructed to terminate.
      */
     TERMINATION_POSITION(17, ClusterEventDissector::dissectTerminationPosition),
 
     /**
-     * Event when a node acks the termination request
+     * Event when a node acks the termination request.
      */
     TERMINATION_ACK(18, ClusterEventDissector::dissectTerminationAck),
 
@@ -129,7 +129,7 @@ public enum ClusterEventCode implements EventCode
     REPLICATION_ENDED(20, ClusterEventDissector::dissectReplicationEnded),
 
     /**
-     * Event when a standby snapshot notification has been received by a consensus module
+     * Event when a standby snapshot notification has been received by a consensus module.
      */
     STANDBY_SNAPSHOT_NOTIFICATION(21, ClusterEventDissector::dissectStandbySnapshotNotification),
 

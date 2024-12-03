@@ -118,7 +118,7 @@ public enum DriverEventCode implements EventCode
      */
     CMD_OUT_EXCLUSIVE_PUBLICATION_READY(33, DriverEventDissector::dissectCommand),
     /**
-     * Error response
+     * Error response.
      */
     CMD_OUT_ERROR(34, DriverEventDissector::dissectCommand),
     /**
@@ -213,7 +213,7 @@ public enum DriverEventCode implements EventCode
         (code, buffer, offset, builder) -> DriverEventDissector.dissectResend(buffer, offset, builder)),
 
     /**
-     * Remove destination by id
+     * Remove destination by id.
      */
     CMD_IN_REMOVE_DESTINATION_BY_ID(56, DriverEventDissector::dissectCommand),
 

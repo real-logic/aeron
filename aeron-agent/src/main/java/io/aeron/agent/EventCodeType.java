@@ -36,7 +36,7 @@ enum EventCodeType
     CLUSTER(2),
 
     /**
-     * Events related to cluster standby operations including standby consensus and transitioning
+     * Events related to cluster standby operations including standby consensus and transitioning.
      */
     STANDBY(3),
 

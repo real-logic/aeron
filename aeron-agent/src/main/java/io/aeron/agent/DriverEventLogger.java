@@ -49,7 +49,7 @@ public final class DriverEventLogger
     public static final int MAX_HOST_NAME_LENGTH = 256;
 
     /**
-     * Maximum length of a Channel URI
+     * Maximum length of a Channel URI.
      */
     public static final int MAX_CHANNEL_URI_LENGTH = 4096;
 
@@ -390,9 +390,9 @@ public final class DriverEventLogger
      *
      * @param resolverName simple class name of the resolver
      * @param durationNs   of the call in nanoseconds.
-     * @param name         host name being resolved
-     * @param isReLookup   address that was resolved to, can be null
-     * @param resolvedName address that was resolved to, can be null
+     * @param name         host name being resolved.
+     * @param isReLookup   address that was resolved to, can be null.
+     * @param resolvedName address that was resolved to, can be null.
      */
     public void logLookup(
         final String resolverName,

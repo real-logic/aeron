@@ -20,7 +20,7 @@ import io.aeron.Subscription;
 
 /**
  * Class that collects the parameters of the <code>RecordingDescriptor Consumer</code> callback for use with the
- * <code>RecordingDescriptorCollector</code>
+ * <code>RecordingDescriptorCollector</code>.
  *
  * @see io.aeron.archive.client.RecordingDescriptorConsumer
  * @see RecordingDescriptorCollector
@@ -156,7 +156,7 @@ public class RecordingDescriptor
     }
 
     /**
-     * startPosition of the recording against the recorded publication, the {@link Image#joinPosition()}
+     * startPosition of the recording against the recorded publication, the {@link Image#joinPosition()}.
      *
      * @return startPosition
      */
@@ -237,6 +237,7 @@ public class RecordingDescriptor
 
     /**
      * strippedChannel of the recorded stream which is used for the recording subscription in the archive.
+     *
      * @return strippedChannel
      */
     public String strippedChannel()

@@ -37,7 +37,7 @@ public class MdcDestinations
     public static final String NAME = "mdc-num-dest";
 
     /**
-     * Allocate a new MDC destinations counter for an endpoint
+     * Allocate a new MDC destinations counter for an endpoint.
      *
      * @param tempBuffer      to build the label.
      * @param countersManager to allocate the counter from.

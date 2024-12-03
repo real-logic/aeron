@@ -109,7 +109,7 @@ public class ClusterTool
         AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_PROP_NAME, AERON_CLUSTER_TOOL_REPLAY_STREAM_ID_DEFAULT);
 
     /**
-     * timeout in milliseconds used by the tool
+     * Timeout in milliseconds used by the tool for operations.
      */
     public static final long TIMEOUT_MS =
         NANOSECONDS.toMillis(getDurationInNanos(AERON_CLUSTER_TOOL_TIMEOUT_PROP_NAME, 0));
@@ -378,7 +378,7 @@ public class ClusterTool
     }
 
     /**
-     * Determine if the given node is a leader
+     * Determine if a given node is a leader.
      *
      * @param out        to print the output to.
      * @param clusterDir where the cluster is running.

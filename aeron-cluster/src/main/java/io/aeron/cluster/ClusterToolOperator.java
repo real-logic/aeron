@@ -60,13 +60,14 @@ import io.aeron.cluster.service.ConsensusModuleProxy;
 
 /**
  * Actions for an operator tool to control cluster.
- * This class is used by {@link ClusterTool} by Aeron but also allows to be used / extended by other tools
+ * This class is used by {@link ClusterTool} by Aeron but also allows to be used / extended by other tools.
+ *
  * @see ClusterTool
  */
 public class ClusterToolOperator
 {
     /**
-     * successful action return value = exist status
+     * Successful action return value = exist status.
      */
     public static final int SUCCESS = 0;
     private static final int MARK_FILE_VERSION_WITH_CLUSTER_SERVICES_DIR = 1;
@@ -77,11 +78,11 @@ public class ClusterToolOperator
     private final long timeoutMs;
 
     /**
-     * constructor
+     * Constructor.
      *
-     * @param toolChannel       channel to use
-     * @param toolStreamId      stream id to use
-     * @param timeoutMs         timeout in milliseconds
+     * @param toolChannel  channel to use.
+     * @param toolStreamId stream id to use.
+     * @param timeoutMs    timeout in milliseconds.
      */
     protected ClusterToolOperator(
         final String toolChannel,
@@ -98,7 +99,7 @@ public class ClusterToolOperator
      *
      * @param out        to print the output to.
      * @param clusterDir where the cluster is running.
-     * @return exit status
+     * @return exit status.
      */
     protected int pid(final File clusterDir, final PrintStream out)
     {
@@ -421,7 +422,7 @@ public class ClusterToolOperator
     }
 
     /**
-     * Determine if the given node is a leader
+     * Determine if the given node is a leader.
      *
      * @param clusterDir where the cluster is running.
      * @param out        to print the output to.
@@ -740,8 +741,8 @@ public class ClusterToolOperator
     /**
      * Print out a summary of the state captured in the latest consensus module snapshot.
      *
-     * @param clusterDir                        where the cluster is running.
-     * @param out                               where to print the operation result.
+     * @param clusterDir where the cluster is running.
+     * @param out        where to print the operation result.
      * @return SUCCESS is the operation was successfully requested, else FAILURE
      */
     protected int describeLatestConsensusModuleSnapshot(
@@ -757,9 +758,9 @@ public class ClusterToolOperator
     /**
      * Print out a summary of the state captured in the latest consensus module snapshot.
      *
-     * @param clusterDir                        where the cluster is running.
-     * @param out                               where to print the operation result.
-     * @param postConsensusImageDescriber       describing of image after consensus module state
+     * @param clusterDir                  where the cluster is running.
+     * @param out                         where to print the operation result.
+     * @param postConsensusImageDescriber describing of image after consensus module state
      * @return SUCCESS is the operation was successfully requested, else FAILURE
      */
     protected int describeLatestConsensusModuleSnapshot(
@@ -1127,8 +1128,6 @@ public class ClusterToolOperator
         return SUCCESS;
     }
 
-    /////////////////////////////////////////////////////////////////////////
-
     File resolveClusterServicesDir(final File clusterDir, final MarkFileHeaderDecoder decoder)
     {
         final File clusterServicesDir;
@@ -1304,7 +1303,7 @@ public class ClusterToolOperator
     }
 
     /**
-     * @return  channel to use
+     * @return channel to use.
      */
     protected String toolChannel()
     {
@@ -1312,7 +1311,7 @@ public class ClusterToolOperator
     }
 
     /**
-     * @return  stream id to use
+     * @return stream id to use.
      */
     protected int toolStreamId()
     {
@@ -1320,7 +1319,7 @@ public class ClusterToolOperator
     }
 
     /**
-     * @return  timeout in milliseconds to use
+     * @return timeout in milliseconds to use.
      */
     protected long timeoutMs()
     {

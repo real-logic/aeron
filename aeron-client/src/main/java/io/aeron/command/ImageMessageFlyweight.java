@@ -21,7 +21,7 @@ import static org.agrona.BitUtil.SIZE_OF_INT;
 import static org.agrona.BitUtil.SIZE_OF_LONG;
 
 /**
- * Control message flyweight for any message that needs to represent a connection
+ * Control message flyweight for any message that needs to represent a connection.
  * <pre>
  *   0                   1                   2                   3
  *   0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1 2 3 4 5 6 7 8 9 0 1
@@ -80,7 +80,7 @@ public class ImageMessageFlyweight
     /**
      * Set the correlation id field.
      *
-     * @param correlationId field value
+     * @param correlationId field value.
      * @return this for a fluent API.
      */
     public ImageMessageFlyweight correlationId(final long correlationId)
@@ -103,7 +103,7 @@ public class ImageMessageFlyweight
     /**
      * Set the registration ID for the subscription.
      *
-     * @param registrationId for the subscription
+     * @param registrationId for the subscription.
      * @return this for a fluent API.
      */
     public ImageMessageFlyweight subscriptionRegistrationId(final long registrationId)
@@ -163,9 +163,9 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * Set the channel field as ASCII
+     * Set the channel field as ASCII.
      *
-     * @param channel field value
+     * @param channel field value.
      * @return this for a fluent API.
      */
     public ImageMessageFlyweight channel(final String channel)
@@ -176,11 +176,11 @@ public class ImageMessageFlyweight
     }
 
     /**
-     * Get the length of the current message
+     * Get the length of the current message.
      * <p>
      * NB: must be called after the data is written in order to be accurate.
      *
-     * @return the length of the current message
+     * @return the length of the current message.
      */
     public int length()
     {

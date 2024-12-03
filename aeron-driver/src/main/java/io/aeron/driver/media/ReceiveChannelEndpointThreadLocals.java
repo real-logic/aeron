@@ -190,9 +190,9 @@ public final class ReceiveChannelEndpointThreadLocals
     }
 
     /**
-     * Flyweight over the {@link #responseSetupBuffer()}
+     * Flyweight over the {@link #responseSetupBuffer()}.
      *
-     * @return flyweight over the {@link #responseSetupBuffer()}
+     * @return flyweight over the {@link #responseSetupBuffer()}.
      */
     public ResponseSetupFlyweight responseSetupHeader()
     {
@@ -210,9 +210,9 @@ public final class ReceiveChannelEndpointThreadLocals
     }
 
     /**
-     * Flyweight over the {@link #errorBuffer()}
+     * Flyweight over the {@link #errorBuffer()}.
      *
-     * @return flyweight over the {@link #errorBuffer()}
+     * @return flyweight over the {@link #errorBuffer()}.
      */
     public ErrorFlyweight errorFlyweight()
     {

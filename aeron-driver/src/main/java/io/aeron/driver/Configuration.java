@@ -425,7 +425,7 @@ public final class Configuration
     public static final String PUBLICATION_CONNECTION_TIMEOUT_PROP_NAME = "aeron.publication.connection.timeout";
 
     /**
-     * Timeout for {@link Publication} connection timeout in nanoseconds
+     * Timeout for {@link Publication} connection timeout in nanoseconds.
      */
     @Config(
         expectedCDefaultFieldName = "AERON_PUBLICATION_CONNECTION_TIMEOUT_NS_DEFAULT",

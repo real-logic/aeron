@@ -94,7 +94,7 @@ public class ArchiveException extends AeronException
     public static final int UNAUTHORISED_ACTION = 13;
 
     /**
-     * The replication session failed to connect to the source archive
+     * The replication session failed to connect to the source archive.
      */
     public static final int REPLICATION_CONNECTION_FAILURE = 14;
 

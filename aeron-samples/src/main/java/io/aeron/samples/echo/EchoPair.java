@@ -45,9 +45,10 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
 
     /**
      * Construct the echo pair.
-     * @param correlationId user supplied correlation id
-     * @param subscription to read fragments from
-     * @param publication to send fragments back to
+     *
+     * @param correlationId user supplied correlation id.
+     * @param subscription  to read fragments from.
+     * @param publication   to send fragments back to.
      */
     public EchoPair(final long correlationId, final Subscription subscription, final Publication publication)
     {
@@ -98,7 +99,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
     /**
      * Poll subscription of the echo pair.
      *
-     * @return number of fragments processed
+     * @return number of fragments processed.
      */
     public int poll()
     {
@@ -106,8 +107,9 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
     }
 
     /**
-     * Get the correlationId
-     * @return user supplied correlationId
+     * Get the correlationId.
+     *
+     * @return user supplied correlationId.
      */
     public long correlationId()
     {
@@ -125,7 +127,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
     }
 
     /**
-     * Close the echo pair
+     * Close the echo pair.
      */
     public void close()
     {
@@ -135,8 +137,9 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
     private final class EchoMonitor implements EchoMonitorMBean
     {
         /**
-         * Get the correaltionId
-         * @return correlationId
+         * Get the correlationId.
+         *
+         * @return correlationId.
          */
         public long getCorrelationId()
         {
@@ -146,7 +149,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
         /**
          * Number of times echo pair has experienced back pressure when copying to the publication.
          *
-         * @return number of back pressure events
+         * @return number of back pressure events.
          */
         public long getBackPressureCount()
         {
@@ -156,7 +159,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
         /**
          * Number of fragments processed.
          *
-         * @return number of fragments
+         * @return number of fragments.
          */
         public long getFragmentCount()
         {
@@ -164,7 +167,7 @@ public class EchoPair implements ControlledFragmentHandler, AutoCloseable
         }
 
         /**
-         * Number of bytes processed
+         * Number of bytes processed.
          *
          * @return number of bytes.
          */

@@ -31,7 +31,7 @@ public class RandomLossGenerator implements LossGenerator
     /**
      * Construct loss generator with given loss rate as percentage.
      *
-     * @param lossRate for generating loss
+     * @param lossRate for generating loss.
      */
     public RandomLossGenerator(final double lossRate)
     {
@@ -39,10 +39,10 @@ public class RandomLossGenerator implements LossGenerator
     }
 
     /**
-     * Construct loss generator with given loss rate as percentage and random seed
+     * Construct loss generator with given loss rate as percentage and random seed.
      *
-     * @param lossRate for generating loss
-     * @param lossSeed for random seeding
+     * @param lossRate for generating loss.
+     * @param lossSeed for random seeding.
      */
     public RandomLossGenerator(final double lossRate, final long lossSeed)
     {

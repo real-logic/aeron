@@ -70,7 +70,7 @@ import static org.agrona.SystemUtil.loadPropertiesFiles;
 import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 /**
- * Main class for JVM-based media driver
+ * Main class for JVM-based media driver.
  * <p>
  * Usage:
  * <code>
@@ -3551,7 +3551,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Wildcard port range used for the Sender
+         * Wildcard port range used for the Sender.
          *
          * @return port range as a string in the format "low high".
          */
@@ -3579,7 +3579,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         /**
-         * Wildcard port range used for the Receiver
+         * Wildcard port range used for the Receiver.
          *
          * @return port range as a string in the format "low high".
          */
@@ -3588,7 +3588,6 @@ public final class MediaDriver implements AutoCloseable
         {
             return receiverWildcardPortRange;
         }
-
 
         /**
          * Set the wildcard port range to be used for the Receiver.

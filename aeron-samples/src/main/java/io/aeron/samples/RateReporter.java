@@ -51,7 +51,7 @@ class RateReporterRhsPadding extends RateReporterValues
 public final class RateReporter extends RateReporterRhsPadding implements Runnable
 {
     /**
-     * Interface for reporting of rate information
+     * Interface for reporting of rate information.
      */
     @FunctionalInterface
     public interface Reporter
@@ -59,10 +59,10 @@ public final class RateReporter extends RateReporterRhsPadding implements Runnab
         /**
          * Called for a rate report.
          *
-         * @param messagesPerSec since last report
-         * @param bytesPerSec    since last report
-         * @param totalMessages  since beginning of reporting
-         * @param totalBytes     since beginning of reporting
+         * @param messagesPerSec since last report.
+         * @param bytesPerSec    since last report.
+         * @param totalMessages  since beginning of reporting.
+         * @param totalBytes     since beginning of reporting.
          */
         void onReport(double messagesPerSec, double bytesPerSec, long totalMessages, long totalBytes);
     }
@@ -78,8 +78,8 @@ public final class RateReporter extends RateReporterRhsPadding implements Runnab
     /**
      * Create a rate reporter with the given report interval in nanoseconds and the reporting function.
      *
-     * @param reportInterval in nanoseconds
-     * @param reportingFunc  to call for reporting rates
+     * @param reportInterval in nanoseconds.
+     * @param reportingFunc  to call for reporting rates.
      */
     public RateReporter(final long reportInterval, final Reporter reportingFunc)
     {
@@ -90,7 +90,7 @@ public final class RateReporter extends RateReporterRhsPadding implements Runnab
     }
 
     /**
-     * Run loop for the rate reporter
+     * Run loop for the rate reporter.
      */
     public void run()
     {

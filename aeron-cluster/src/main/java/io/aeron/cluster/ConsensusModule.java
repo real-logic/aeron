@@ -83,7 +83,7 @@ import static org.agrona.SystemUtil.*;
 public final class ConsensusModule implements AutoCloseable
 {
     /**
-     * Default set of flags when taking a snapshot
+     * Default set of flags when taking a snapshot.
      */
     public static final int CLUSTER_ACTION_FLAGS_DEFAULT = 0;
 
@@ -939,7 +939,7 @@ public final class ConsensusModule implements AutoCloseable
             "aeron.cluster.replication.progress.interval";
 
         /**
-         * Property name of enabling the acceptance of standby snapshots
+         * Property name of enabling the acceptance of standby snapshots.
          */
         @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
         public static final String CLUSTER_ACCEPT_STANDBY_SNAPSHOTS_PROP_NAME =
@@ -4218,7 +4218,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Indicate whether this node should accept snapshots from standby nodes
+         * Indicate whether this node should accept snapshots from standby nodes.
          *
          * @return <code>true</code> if this node should accept snapshots from standby nodes, <code>false</code>
          * otherwise.
@@ -4232,7 +4232,7 @@ public final class ConsensusModule implements AutoCloseable
         }
 
         /**
-         * Indicate whether this node should accept snapshots from standby nodes
+         * Indicate whether this node should accept snapshots from standby nodes.
          *
          * @param acceptStandbySnapshots <code>true</code> if this node should accept snapshots from standby nodes,
          *                               <code>false</code> otherwise.

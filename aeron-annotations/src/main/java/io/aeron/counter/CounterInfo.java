@@ -18,7 +18,7 @@ package io.aeron.counter;
 import java.io.Serializable;
 
 /**
- * A handy class for storing data that gets serialized into json
+ * A handy class for storing data that gets serialized into json.
  */
 public class CounterInfo implements Serializable
 {
@@ -50,6 +50,7 @@ public class CounterInfo implements Serializable
     public String expectedCName;
 
     /**
+     * Default constructor.
      */
     public CounterInfo()
     {

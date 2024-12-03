@@ -96,7 +96,7 @@ public class SubscriptionReadyFlyweight
     }
 
     /**
-     * Set channel status counter id field
+     * Set channel status counter id field.
      *
      * @param counterId field value.
      * @return this for a fluent API.

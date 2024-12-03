@@ -54,7 +54,7 @@ public class ResolutionEntryFlyweight extends HeaderFlyweight
     public static final int ADDRESS_LENGTH_IP6 = 16;
 
     /**
-     * (S) - Self flag
+     * (S) - Self flag.
      */
     public static final short SELF_FLAG = 0x80;
 

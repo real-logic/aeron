@@ -15,10 +15,7 @@
  */
 package io.aeron.archive.client;
 
-import io.aeron.Aeron;
-import io.aeron.ChannelUriStringBuilder;
-import io.aeron.Publication;
-import io.aeron.Subscription;
+import io.aeron.*;
 import io.aeron.archive.codecs.*;
 import io.aeron.security.CredentialsSupplier;
 import io.aeron.security.NullCredentialsSupplier;
@@ -44,7 +41,7 @@ public final class ArchiveProxy
     private final CredentialsSupplier credentialsSupplier;
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(256);
-    private final Publication publication;
+    private final ExclusivePublication publication;
     private final MessageHeaderEncoder messageHeader = new MessageHeaderEncoder();
     private StartRecordingRequestEncoder startRecordingRequest;
     private StartRecordingRequest2Encoder startRecordingRequest2;
@@ -79,15 +76,33 @@ public final class ArchiveProxy
     private ReplayTokenRequestEncoder replayTokenRequestEncoder;
 
     /**
-     * Create a proxy with a {@link Publication} for sending control message requests.
+     * Create a proxy with a {@link ExclusivePublication} for sending control message requests.
      * <p>
      * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
      * with a defaults of {@link AeronArchive.Configuration#MESSAGE_TIMEOUT_DEFAULT_NS} and
      * {@link #DEFAULT_RETRY_ATTEMPTS}.
      *
      * @param publication publication for sending control messages to an archive.
+     * @throws ClassCastException if {@code publication} is not an instance of {@link ExclusivePublication}.
+     * @deprecated Use another constructor with an {@link ExclusivePublication}.
      */
+    @Deprecated(forRemoval = true, since = "1.47.0")
     public ArchiveProxy(final Publication publication)
+    {
+        this((ExclusivePublication)publication);
+    }
+
+    /**
+     * Create a proxy with a {@link ExclusivePublication} for sending control message requests.
+     * <p>
+     * This provides a default {@link IdleStrategy} of a {@link YieldingIdleStrategy} when offers are back pressured
+     * with a defaults of {@link AeronArchive.Configuration#MESSAGE_TIMEOUT_DEFAULT_NS} and
+     * {@link #DEFAULT_RETRY_ATTEMPTS}.
+     *
+     * @param publication publication for sending control messages to an archive.
+     * @throws ClassCastException if {@code publication} is not an instance of {@link ExclusivePublication}.
+     */
+    public ArchiveProxy(final ExclusivePublication publication)
     {
         this(
             publication,
@@ -99,7 +114,7 @@ public final class ArchiveProxy
     }
 
     /**
-     * Create a proxy with a {@link Publication} for sending control message requests.
+     * Create a proxy with a {@link ExclusivePublication} for sending control message requests.
      *
      * @param publication         publication for sending control messages to an archive.
      * @param retryIdleStrategy   for what should happen between retry attempts at offering messages.
@@ -107,9 +122,40 @@ public final class ArchiveProxy
      * @param connectTimeoutNs    for connection requests.
      * @param retryAttempts       for offering control messages before giving up.
      * @param credentialsSupplier for the AuthConnectRequest
+     * @throws ClassCastException if {@code publication} is not an instance of {@link ExclusivePublication}.
+     * @deprecated Use another constructor with an {@link ExclusivePublication}.
      */
+    @Deprecated(forRemoval = true, since = "1.47.0")
     public ArchiveProxy(
         final Publication publication,
+        final IdleStrategy retryIdleStrategy,
+        final NanoClock nanoClock,
+        final long connectTimeoutNs,
+        final int retryAttempts,
+        final CredentialsSupplier credentialsSupplier)
+    {
+        this(
+            (ExclusivePublication)publication,
+            retryIdleStrategy,
+            nanoClock,
+            connectTimeoutNs,
+            retryAttempts,
+            credentialsSupplier);
+    }
+
+    /**
+     * Create a proxy with a {@link ExclusivePublication} for sending control message requests.
+     *
+     * @param publication         publication for sending control messages to an archive.
+     * @param retryIdleStrategy   for what should happen between retry attempts at offering messages.
+     * @param nanoClock           to be used for calculating checking deadlines.
+     * @param connectTimeoutNs    for connection requests.
+     * @param retryAttempts       for offering control messages before giving up.
+     * @param credentialsSupplier for the AuthConnectRequest
+     * @since 1.47.0
+     */
+    public ArchiveProxy(
+        final ExclusivePublication publication,
         final IdleStrategy retryIdleStrategy,
         final NanoClock nanoClock,
         final long connectTimeoutNs,

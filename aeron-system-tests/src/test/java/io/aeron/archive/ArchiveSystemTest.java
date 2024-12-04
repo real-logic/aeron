@@ -199,7 +199,7 @@ class ArchiveSystemTest
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final ExclusivePublication controlPublication = client.addExclusivePublication(controlChannel, controlStreamId);
         final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -237,7 +237,7 @@ class ArchiveSystemTest
         final String recordingChannel = archive.context().recordingEventsChannel();
         final int recordingStreamId = archive.context().recordingEventsStreamId();
 
-        final Publication controlPublication = client.addPublication(controlChannel, controlStreamId);
+        final ExclusivePublication controlPublication = client.addExclusivePublication(controlChannel, controlStreamId);
         final Subscription recordingEvents = client.addSubscription(recordingChannel, recordingStreamId);
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 
@@ -273,7 +273,7 @@ class ArchiveSystemTest
     {
         before(threadingMode, archiveThreadingMode);
 
-        final Publication controlPublication = client.addPublication(
+        final ExclusivePublication controlPublication = client.addExclusivePublication(
             archive.context().localControlChannel(), archive.context().localControlStreamId());
         final ArchiveProxy archiveProxy = new ArchiveProxy(controlPublication);
 

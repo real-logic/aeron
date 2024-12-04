@@ -232,7 +232,7 @@ public final class AeronArchive implements AutoCloseable
     public static AeronArchive connect(final Context ctx)
     {
         Subscription subscription = null;
-        Publication publication = null;
+        ExclusivePublication publication = null;
         AsyncConnect asyncConnect = null;
         try
         {
@@ -3965,7 +3965,8 @@ public final class AeronArchive implements AutoCloseable
 
         final String channel = uriBuilder.build();
 
-        try (Publication publication = aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
+        try (ExclusivePublication publication =
+            aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
         {
             final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
 
@@ -4035,7 +4036,8 @@ public final class AeronArchive implements AutoCloseable
 
         final String channel = uriBuilder.build();
 
-        try (Publication publication = aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
+        try (ExclusivePublication publication =
+            aeron.addExclusivePublication(channel, context().controlRequestStreamId()))
         {
             final ArchiveProxy responseArchiveProxy = new ArchiveProxy(publication);
 

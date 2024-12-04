@@ -31,6 +31,7 @@ import java.time.temporal.ChronoUnit;
 import static io.aeron.agent.AgentTests.verifyLogHeader;
 import static io.aeron.agent.ArchiveEventCode.*;
 import static io.aeron.agent.ArchiveEventEncoder.replicationSessionDoneLength;
+import static io.aeron.agent.ArchiveEventEncoder.replicationSessionStateChangeLength;
 import static io.aeron.agent.ArchiveEventLogger.CONTROL_REQUEST_EVENTS;
 import static io.aeron.agent.CommonEventEncoder.*;
 import static io.aeron.agent.EventConfiguration.MAX_EVENT_LENGTH;
@@ -280,6 +281,49 @@ class ArchiveEventLoggerTest
             " replayPosition=" + replayPosition + " srcStopPosition=" + srcStopPosition +
             " dstRecordingId=" + dstRecordingId + " dstStopPosition=" + dstStopPosition + " position=" + position +
             " isClosed=" + isClosed + " isEndOfStream=" + isEndOfStream + " isSynced=" + isSynced;
+
+        assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
+    }
+
+    @Test
+    void logReplicationSessionStateChange()
+    {
+        final ChronoUnit oldState = ChronoUnit.ERAS;
+        final ChronoUnit newState = ChronoUnit.MILLENNIA;
+        final long replicationId = 456456;
+        final long srcRecordingId = 345123;
+        final long dstRecordingId = 435675346;
+        final long position = 3425234;
+        final String reason = "some text goes here";
+
+        final int offset = ALIGNMENT * 3;
+        logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, offset);
+
+        logger.logReplicationSessionStateChange(
+            oldState,
+            newState,
+            replicationId,
+            srcRecordingId,
+            dstRecordingId,
+            position,
+            reason);
+
+        verifyLogHeader(
+            logBuffer,
+            offset,
+            REPLICATION_SESSION_STATE_CHANGE.toEventCodeId(),
+            replicationSessionStateChangeLength(oldState, newState, reason),
+            replicationSessionStateChangeLength(oldState, newState, reason));
+
+        final StringBuilder sb = new StringBuilder();
+        ArchiveEventDissector.dissectReplicationSessionStateChange(
+            logBuffer, encodedMsgOffset(offset), sb);
+
+        final String expectedMessagePattern =
+            "\\[[0-9]+\\.[0-9]+] ARCHIVE: REPLICATION_SESSION_STATE_CHANGE \\[76/76]:" +
+            " replicationId=" + replicationId + " srcRecordingId=" + srcRecordingId +
+            " dstRecordingId=" + dstRecordingId + " position=" + position +
+            " " + oldState.name() + " -> " + newState.name() + " reason=\"" + reason + "\"";
 
         assertThat(sb.toString(), Matchers.matchesPattern(expectedMessagePattern));
     }

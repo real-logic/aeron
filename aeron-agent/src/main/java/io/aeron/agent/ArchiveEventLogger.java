@@ -226,7 +226,7 @@ public final class ArchiveEventLogger
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
-        final int index = ringBuffer.tryClaim(RECORDING_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
+        final int index = ringBuffer.tryClaim(REPLICATION_SESSION_STATE_CHANGE.toEventCodeId(), encodedLength);
 
         if (index > 0)
         {

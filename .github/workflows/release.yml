@@ -31,36 +31,12 @@ jobs:
       contents: read
       security-events: write
 
-  github-release:
-    name: Create Github Release
-    permissions:
-      contents: write
-    needs: [ ci, ci-low-cadence, codeql ]
-    runs-on: ubuntu-latest
-    outputs:
-      upload_url: ${{ steps.create-release.outputs.upload_url }}
-    steps:
-      - id: checkout
-        name: Checkout
-        uses: actions/checkout@v4
-        with:
-          ref: ${{ github.ref }}
-      - id: create-release
-        name: Create Release
-        uses: actions/create-release@v1
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        with:
-          tag_name: ${{ github.ref }}
-          release_name: Release ${{ github.ref }}
-          draft: true
-
   release-java:
     name: Release java artifacts
     permissions:
       contents: read
       packages: write
-    needs: github-release
+    needs: [ ci, ci-low-cadence, codeql ]
     runs-on: ubuntu-latest
     steps:
       - name: Checkout code
@@ -86,7 +62,7 @@ jobs:
       contents: write
       id-token: write
       packages: write
-    needs: github-release
+    needs: [ ci, ci-low-cadence, codeql ]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -139,15 +115,6 @@ jobs:
           artifact_name=aeron-$(cat version.txt)-${{ matrix.distro }}-${{ matrix.version }}-x86_64.tar.gz
           echo "artifact_name=$artifact_name" >> $GITHUB_ENV
           mv ./build/*.tar.gz ./build/$artifact_name
-#      - name: Upload to Github Release
-#        uses: actions/upload-release-asset@v1
-#        env:
-#          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-#        with:
-#          upload_url: ${{ needs.github-release.outputs.upload_url }}
-#          asset_path: ./build/${{ env.artifact_name }}
-#          asset_name: ${{ env.artifact_name }}
-#          asset_content_type: application/gzip
       - name: Setup JFrog CLI
         uses: jfrog/setup-jfrog-cli@v4
         env:

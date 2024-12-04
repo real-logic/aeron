@@ -54,6 +54,7 @@ import java.util.function.Supplier;
 
 import static io.aeron.AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
+import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -863,7 +864,7 @@ class MultiDestinationSubscriptionTest
 
                 countersReader.forEach(socketAddressCapture);
                 assertEquals(2, receiveSocketCount.intValue());
-                assertNotEquals(CountersReader.NULL_COUNTER_ID, countersReader.findByTypeIdAndRegistrationId(
+                assertNotEquals(NULL_COUNTER_ID, countersReader.findByTypeIdAndRegistrationId(
                     DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID, registrationId));
             }
 
@@ -875,7 +876,7 @@ class MultiDestinationSubscriptionTest
                 return 0 == receiveSocketCount.intValue();
             });
 
-            assertEquals(CountersReader.NULL_COUNTER_ID, countersReader.findByTypeIdAndRegistrationId(
+            Tests.await(() -> NULL_COUNTER_ID == countersReader.findByTypeIdAndRegistrationId(
                 DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID, registrationId));
         }
     }

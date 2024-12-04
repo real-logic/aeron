@@ -951,6 +951,64 @@ class RecordingLogTest
         }
     }
 
+    int nextSnapshotIndex(final RecordingLog recordingLog)
+    {
+        for (int i = recordingLog.entries().size() - 1; i >= 0; i--)
+        {
+            final Entry entry = recordingLog.entries().get(i);
+            if (RecordingLog.isValidAnySnapshot(entry))
+            {
+                return i;
+            }
+        }
+
+        return -1;
+    }
+
+    @Test
+    void shouldInvalidateLatestAnySnapshots(@TempDir final File tempDir)
+    {
+        try (RecordingLog log = new RecordingLog(tempDir, true))
+        {
+            log.appendTerm(1, 1, 0, 1_000_000_000L);
+            log.appendTerm(1, 2, 0, 1_000_000_000L);
+            log.appendTerm(1, 3, 0, 1_000_000_000L);
+            log.appendTerm(1, 4, 0, 1_000_000_000L);
+
+            // 1
+            log.appendSnapshot(1, 1, 0, 1000, 1_000_000_000L, 0);
+            log.appendSnapshot(2, 1, 0, 1000, 1_000_000_000L, SERVICE_ID);
+
+            // 2
+            log.appendStandbySnapshot(3, 2, 1000, 2000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(4, 2, 1000, 2000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+
+            // 3
+            log.appendSnapshot(5, 3, 2000, 3000, 1_000_000_000L, 0);
+            log.appendSnapshot(6, 3, 2000, 3000, 1_000_000_000L, SERVICE_ID);
+
+            // 4
+            log.appendStandbySnapshot(7, 4, 1000, 4000, 1_000_000_000L, 0, "remotehost.aeron.io:20002");
+            log.appendStandbySnapshot(8, 4, 1000, 4000, 1_000_000_000L, SERVICE_ID, "remotehost.aeron.io:20002");
+            log.appendSnapshot(9, 4, 2000, 4000, 1_000_000_000L, 0);
+            log.appendSnapshot(10, 4, 2000, 4000, 1_000_000_000L, SERVICE_ID);
+
+            assertEquals(13, nextSnapshotIndex(log));
+        }
+
+        try (RecordingLog log = new RecordingLog(tempDir, false))
+        {
+            log.invalidateLatestSnapshot();
+            assertEquals(8, nextSnapshotIndex(log));
+
+            log.invalidateLatestSnapshot();
+            assertEquals(5, nextSnapshotIndex(log));
+
+            log.invalidateLatestSnapshot();
+            assertEquals(2, nextSnapshotIndex(log));
+        }
+    }
+
     @Test
     void shouldNotIncludeStandbySnapshotInRecoveryPlan(@TempDir final File tempDir)
     {

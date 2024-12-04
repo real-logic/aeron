@@ -34,14 +34,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
 import java.nio.file.StandardOpenOption;
-import java.util.ArrayList;
-import java.util.Comparator;
-import java.util.EnumSet;
-import java.util.List;
-import java.util.Map;
-import java.util.NavigableMap;
-import java.util.Objects;
-import java.util.TreeMap;
+import java.util.*;
 
 import static io.aeron.Aeron.NULL_VALUE;
 import static io.aeron.archive.client.AeronArchive.NULL_POSITION;
@@ -996,32 +989,52 @@ public final class RecordingLog implements AutoCloseable
      */
     public boolean invalidateLatestSnapshot()
     {
-        int index = -1;
-        for (int i = entriesCache.size() - 1; i >= 0; i--)
-        {
-            final Entry entry = entriesCache.get(i);
-            if (isValidSnapshot(entry) && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
-            {
-                if (!cacheIndexByLeadershipTermIdMap.containsKey(entry.leadershipTermId))
-                {
-                    throw new ClusterException(
-                        "no matching term for snapshot: leadershipTermId=" + entry.leadershipTermId);
-                }
+        final IntArrayList indices = new IntArrayList();
+        long highLogPosition = NULL_POSITION;
 
-                index = i;
-                break;
+        for (int idx = entriesCache.size() - 1; idx >= 0; idx--)
+        {
+            final Entry entry = entriesCache.get(idx);
+            if (isValidAnySnapshot(entry) && ConsensusModule.Configuration.SERVICE_ID == entry.serviceId)
+            {
+                if (entry.logPosition >= highLogPosition)
+                {
+                    if (!cacheIndexByLeadershipTermIdMap.containsKey(entry.leadershipTermId))
+                    {
+                        throw new ClusterException(
+                            "no matching term for snapshot: leadershipTermId=" + entry.leadershipTermId);
+                    }
+
+                    if (entry.logPosition > highLogPosition)
+                    {
+                        indices.clear();
+                        highLogPosition = entry.logPosition;
+                    }
+
+                    indices.pushInt(idx);
+                }
+                else
+                {
+                    // found an earlier snapshot, so stop searching through the cache
+                    break;
+                }
             }
         }
 
-        if (index >= 0)
+        final boolean found = !indices.isEmpty();
+
+        while (!indices.isEmpty())
         {
+            final int startingIndex = indices.popInt();
+
             int serviceId = ConsensusModule.Configuration.SERVICE_ID;
-            for (int i = index; i >= 0; i--)
+
+            for (int idx = startingIndex; idx >= 0; idx--)
             {
-                final Entry entry = entriesCache.get(i);
-                if (isValidSnapshot(entry) && entry.serviceId == serviceId)
+                final Entry entry = entriesCache.get(idx);
+                if (isValidAnySnapshot(entry) && entry.serviceId == serviceId)
                 {
-                    invalidateEntry(i);
+                    invalidateEntry(idx);
                     serviceId++;
                 }
                 else
@@ -1029,11 +1042,9 @@ public final class RecordingLog implements AutoCloseable
                     break;
                 }
             }
-
-            return true;
         }
 
-        return false;
+        return found;
     }
 
     /**
@@ -1490,6 +1501,11 @@ public final class RecordingLog implements AutoCloseable
     static boolean isInvalidSnapshot(final Entry entry)
     {
         return !entry.isValid && ENTRY_TYPE_SNAPSHOT == entry.type;
+    }
+
+    static boolean isValidAnySnapshot(final Entry entry)
+    {
+        return entry.isValid && (ENTRY_TYPE_SNAPSHOT == entry.type || ENTRY_TYPE_STANDBY_SNAPSHOT == entry.type);
     }
 
     void ensureCoherent(

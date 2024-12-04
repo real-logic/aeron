@@ -300,6 +300,8 @@ public final class DriverConductor implements Agent
             try
             {
                 final long registrationId = toDriverCommands.nextCorrelationId();
+                //todo:
+                final boolean sparse = false;
                 rawLog = newPublicationImageLog(
                     sessionId,
                     streamId,
@@ -307,7 +309,8 @@ public final class DriverConductor implements Agent
                     termBufferLength,
                     isOldestSubscriptionSparse(subscriberPositions),
                     senderMtuLength,
-                    registrationId);
+                    registrationId,
+                        sparse);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -1772,7 +1775,7 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, params.isSparse, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1786,7 +1789,7 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, params.isSparse, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1798,6 +1801,7 @@ public final class DriverConductor implements Agent
         final int initialTermId,
         final int mtuLength,
         final long registrationId,
+        final boolean isSparse,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1811,6 +1815,7 @@ public final class DriverConductor implements Agent
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
+        sparse(logMetaData, isSparse);
     }
 
     private static void initialisePositionCounters(
@@ -1850,10 +1855,11 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final boolean isSparse,
         final int senderMtuLength,
-        final long correlationId)
+        final long correlationId,
+        final boolean sparse)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, sparse, rawLog);
 
         return rawLog;
     }

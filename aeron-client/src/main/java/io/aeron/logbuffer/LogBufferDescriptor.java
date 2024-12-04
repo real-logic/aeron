@@ -136,6 +136,12 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     /**
+     * Offset within the log metadata where the sparse property is stored.
+     */
+    public static final int LOG_SPARSE_OFFSET;
+
+
+    /**
      * Maximum length of a frame header.
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
@@ -213,6 +219,8 @@ public class LogBufferDescriptor
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_SPARSE_OFFSET = offset + SIZE_OF_INT;
+
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -907,5 +915,27 @@ public class LogBufferDescriptor
         final int remainingPayload = length % maxPayloadSize;
 
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
+    }
+
+    /**
+     * Get the value of the sparse property.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the value of the sparse property (true if set, false otherwise).
+     */
+    public static boolean sparse(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getInt(LOG_SPARSE_OFFSET) == 1;
+    }
+
+    /**
+     * Set the sparse property.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param sparse         true to set sparse, false otherwise.
+     */
+    public static void sparse(final UnsafeBuffer metadataBuffer, final boolean sparse)
+    {
+        metadataBuffer.putInt(LOG_SPARSE_OFFSET, sparse ? 1 : 0);
     }
 }

@@ -117,4 +117,11 @@ public interface ConsensusModuleControl
      * @see ConsensusModule.Context#clusterId(int)
      */
     int clusterId();
+
+    /**
+     * The current cluster member for this node.
+     *
+     * @return cluster member for this node.
+     */
+    ClusterMember clusterMember();
 }

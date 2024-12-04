@@ -526,6 +526,11 @@ final class ConsensusModuleAgent
         return ctx.clusterId();
     }
 
+    public ClusterMember clusterMember()
+    {
+        return thisMember;
+    }
+
     public void onLoadBeginSnapshot(
         final int appVersion, final TimeUnit timeUnit, final DirectBuffer buffer, final int offset, final int length)
     {

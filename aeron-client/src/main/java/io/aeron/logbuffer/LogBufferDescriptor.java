@@ -826,55 +826,25 @@ public class LogBufferDescriptor
      */
     public static int positionBitsToShift(final int termBufferLength)
     {
-        switch (termBufferLength)
+        return switch (termBufferLength)
         {
-            case 64 * 1024:
-                return 16;
-
-            case 128 * 1024:
-                return 17;
-
-            case 256 * 1024:
-                return 18;
-
-            case 512 * 1024:
-                return 19;
-
-            case 1024 * 1024:
-                return 20;
-
-            case 2 * 1024 * 1024:
-                return 21;
-
-            case 4 * 1024 * 1024:
-                return 22;
-
-            case 8 * 1024 * 1024:
-                return 23;
-
-            case 16 * 1024 * 1024:
-                return 24;
-
-            case 32 * 1024 * 1024:
-                return 25;
-
-            case 64 * 1024 * 1024:
-                return 26;
-
-            case 128 * 1024 * 1024:
-                return 27;
-
-            case 256 * 1024 * 1024:
-                return 28;
-
-            case 512 * 1024 * 1024:
-                return 29;
-
-            case 1024 * 1024 * 1024:
-                return 30;
-        }
-
-        throw new IllegalArgumentException("invalid term buffer length: " + termBufferLength);
+            case 64 * 1024 -> 16;
+            case 128 * 1024 -> 17;
+            case 256 * 1024 -> 18;
+            case 512 * 1024 -> 19;
+            case 1024 * 1024 -> 20;
+            case 2 * 1024 * 1024 -> 21;
+            case 4 * 1024 * 1024 -> 22;
+            case 8 * 1024 * 1024 -> 23;
+            case 16 * 1024 * 1024 -> 24;
+            case 32 * 1024 * 1024 -> 25;
+            case 64 * 1024 * 1024 -> 26;
+            case 128 * 1024 * 1024 -> 27;
+            case 256 * 1024 * 1024 -> 28;
+            case 512 * 1024 * 1024 -> 29;
+            case 1024 * 1024 * 1024 -> 30;
+            default -> throw new IllegalArgumentException("invalid term buffer length: " + termBufferLength);
+        };
     }
 
     /**

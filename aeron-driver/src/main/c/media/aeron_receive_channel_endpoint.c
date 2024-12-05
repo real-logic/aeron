@@ -983,7 +983,7 @@ int aeron_receiver_channel_endpoint_validate_sender_mtu_length(
         return -1;
     }
 
-    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(socket_rcvbuf, window_max_length, "Sender MTU", ctx))
+    if (!aeron_receive_channel_endpoint_validate_so_rcvbuf(socket_rcvbuf, sender_mtu_length, "Sender MTU", ctx))
     {
         return -1;
     }

@@ -17,34 +17,48 @@ package io.aeron.archive;
 
 import io.aeron.Aeron;
 import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.v6.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
 import io.aeron.security.NullCredentialsSupplier;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.*;
 
-class ControlSessionDemuxerV6Test
+class ControlSessionAdapterV6Test
 {
 
     public static final long CONTROL_SESSION_ID = 928374L;
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
-    private final Image mockImage = mock(Image.class);
+    private final Subscription mockControlSubsciption = mock(Subscription.class);
+    private final Subscription mockLocalControlSubsciption = mock(Subscription.class);
     private final AuthorisationService mockAuthorisationService = mock(AuthorisationService.class);
     private final Header mockHeader = mock(Header.class);
     private final ControlSession mockSession = mock(ControlSession.class);
 
     public static final int SCHEMA_VERSION_6 = 6;
 
+    @BeforeEach
+    void before()
+    {
+        final Image image = mock(Image.class);
+        when(mockHeader.context()).thenReturn(image);
+    }
+
     @Test
     void shouldHandleVersion6ReplicationRequest2()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -70,7 +84,7 @@ class ControlSessionDemuxerV6Test
             .replicationChannel("replication");
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final ReplicateRequest2Decoder expected = new ReplicateRequest2Decoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -94,9 +108,13 @@ class ControlSessionDemuxerV6Test
     @Test
     void shouldHandleVersion6ReplayRequest2()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -116,7 +134,7 @@ class ControlSessionDemuxerV6Test
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final ReplayRequestDecoder expected = new ReplayRequestDecoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -134,9 +152,13 @@ class ControlSessionDemuxerV6Test
     @Test
     void shouldHandleVersion6BoundedReplayRequest()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -155,7 +177,7 @@ class ControlSessionDemuxerV6Test
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final BoundedReplayRequestDecoder expected = new BoundedReplayRequestDecoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -171,7 +193,7 @@ class ControlSessionDemuxerV6Test
             expected.replayChannel());
     }
 
-    private void setupControlSession(final ControlSessionDemuxer controlSessionDemuxer)
+    private void setupControlSession(final ControlSessionAdapter controlSessionAdapter)
     {
         final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder2 = new MessageHeaderEncoder();
@@ -189,6 +211,6 @@ class ControlSessionDemuxerV6Test
         doReturn(CONTROL_SESSION_ID).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 
-        controlSessionDemuxer.onFragment(buffer, 0, connectRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, connectRequestLength, mockHeader);
     }
 }

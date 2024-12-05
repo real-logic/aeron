@@ -16,35 +16,49 @@
 package io.aeron.archive;
 
 import io.aeron.Image;
+import io.aeron.Subscription;
 import io.aeron.archive.codecs.*;
 import io.aeron.logbuffer.Header;
 import io.aeron.security.AuthorisationService;
 import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.mockito.Mockito.*;
 
-class ControlSessionDemuxerTest
+class ControlSessionAdapterTest
 {
 
     public static final long CONTROL_SESSION_ID = 928374L;
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
-    private final Image mockImage = mock(Image.class);
+    private final Subscription mockControlSubsciption = mock(Subscription.class);
+    private final Subscription mockLocalControlSubsciption = mock(Subscription.class);
     private final AuthorisationService mockAuthorisationService = mock(AuthorisationService.class);
     private final Header mockHeader = mock(Header.class);
     private final ControlSession mockSession = mock(ControlSession.class);
 
     public static final int SCHEMA_VERSION_6 = 6;
 
+    @BeforeEach
+    void before()
+    {
+        final Image image = mock(Image.class);
+        when(mockHeader.context()).thenReturn(image);
+    }
+
     @Test
     void shouldHandleReplicationRequest2()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter, CONTROL_SESSION_ID);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -70,7 +84,7 @@ class ControlSessionDemuxerTest
             .srcResponseChannel("response");
         final int replicateRequestLength = replicateRequest2Encoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final ReplicateRequest2Decoder expected = new ReplicateRequest2Decoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -102,9 +116,13 @@ class ControlSessionDemuxerTest
     @Test
     void shouldHandleReplayRequest()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter, CONTROL_SESSION_ID);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -123,7 +141,7 @@ class ControlSessionDemuxerTest
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final ReplayRequestDecoder expected = new ReplayRequestDecoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -141,9 +159,13 @@ class ControlSessionDemuxerTest
     @Test
     void shouldHandleBoundedReplayRequest()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter, CONTROL_SESSION_ID);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -163,7 +185,7 @@ class ControlSessionDemuxerTest
 
         final int replicateRequestLength = replayRequestEncoder.encodedLength();
 
-        controlSessionDemuxer.onFragment(buffer, 0, replicateRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replicateRequestLength, mockHeader);
 
         final BoundedReplayRequestDecoder expected = new BoundedReplayRequestDecoder()
             .wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
@@ -182,9 +204,13 @@ class ControlSessionDemuxerTest
     @Test
     void shouldHandleReplayTokenRequest()
     {
-        final ControlSessionDemuxer controlSessionDemuxer = new ControlSessionDemuxer(
-            new ControlRequestDecoders(), mockImage, mockConductor, mockAuthorisationService);
-        setupControlSession(controlSessionDemuxer, CONTROL_SESSION_ID);
+        final ControlSessionAdapter controlSessionAdapter = new ControlSessionAdapter(
+            new ControlRequestDecoders(),
+            mockControlSubsciption,
+            mockLocalControlSubsciption,
+            mockConductor,
+            mockAuthorisationService);
+        setupControlSession(controlSessionAdapter, CONTROL_SESSION_ID);
 
         final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder = new MessageHeaderEncoder();
@@ -199,12 +225,12 @@ class ControlSessionDemuxerTest
             .correlationId(9382475L)
             .recordingId(recordingId);
 
-        controlSessionDemuxer.onFragment(buffer, 0, replayTokenRequestEncoder.encodedLength(), mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, replayTokenRequestEncoder.encodedLength(), mockHeader);
 
         verify(mockConductor).generateReplayToken(mockSession, recordingId);
     }
 
-    private void setupControlSession(final ControlSessionDemuxer controlSessionDemuxer, final long controlSessionId)
+    private void setupControlSession(final ControlSessionAdapter controlSessionAdapter, final long controlSessionId)
     {
         final MutableDirectBuffer buffer = new ExpandableArrayBuffer();
         final MessageHeaderEncoder headerEncoder2 = new MessageHeaderEncoder();
@@ -222,6 +248,6 @@ class ControlSessionDemuxerTest
         doReturn(controlSessionId).when(mockSession).sessionId();
         doReturn(true).when(mockAuthorisationService).isAuthorised(anyInt(), anyInt(), any(), any());
 
-        controlSessionDemuxer.onFragment(buffer, 0, connectRequestLength, mockHeader);
+        controlSessionAdapter.onFragment(buffer, 0, connectRequestLength, mockHeader);
     }
 }

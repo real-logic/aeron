@@ -36,7 +36,7 @@ class ControlSessionTest
     private static final long CONNECT_TIMEOUT_MS = TimeUnit.SECONDS.toMillis(5);
     private static final long SESSION_LIVENESS_CHECK_INTERVAL_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
-    private final ControlSessionDemuxer mockDemuxer = mock(ControlSessionDemuxer.class);
+    private final ControlSessionAdapter mockDemuxer = mock(ControlSessionAdapter.class);
     private final ArchiveConductor mockConductor = mock(ArchiveConductor.class);
     private final Aeron mockAeron = mock(Aeron.class);
     private final ExclusivePublication mockControlPublication = mock(ExclusivePublication.class);

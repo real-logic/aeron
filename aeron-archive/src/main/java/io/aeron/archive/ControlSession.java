@@ -68,7 +68,7 @@ final class ControlSession implements Session
     private final ArrayDeque<BooleanSupplier> syncResponseQueue = new ArrayDeque<>(8);
     private final ManyToOneConcurrentLinkedQueue<BooleanSupplier> asyncResponseQueue =
         new ManyToOneConcurrentLinkedQueue<>();
-    private final ControlSessionDemuxer demuxer;
+    private final ControlSessionAdapter controlSessionAdapter;
     private final String invalidVersionMessage;
     private State state = State.INIT;
     private boolean isInactive = false;
@@ -80,7 +80,7 @@ final class ControlSession implements Session
         final long sessionLivenessCheckIntervalMs,
         final long controlPublicationId,
         final String invalidVersionMessage,
-        final ControlSessionDemuxer demuxer,
+        final ControlSessionAdapter controlSessionAdapter,
         final Aeron aeron,
         final ArchiveConductor conductor,
         final CachedEpochClock cachedEpochClock,
@@ -93,7 +93,7 @@ final class ControlSession implements Session
         this.connectTimeoutMs = connectTimeoutMs;
         this.sessionLivenessCheckIntervalMs = sessionLivenessCheckIntervalMs;
         this.invalidVersionMessage = invalidVersionMessage;
-        this.demuxer = demuxer;
+        this.controlSessionAdapter = controlSessionAdapter;
         this.aeron = aeron;
         this.controlPublicationId = controlPublicationId;
         this.conductor = conductor;
@@ -145,7 +145,7 @@ final class ControlSession implements Session
             CloseHelper.close(conductor.context().countedErrorHandler(), controlPublication);
         }
 
-        demuxer.removeControlSession(controlSessionId);
+        controlSessionAdapter.removeControlSession(controlSessionId);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
             conductor.context().controlSessionsCounter().decrementOrdered();

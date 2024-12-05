@@ -38,10 +38,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 
 import java.io.File;
 import java.nio.file.Paths;
-import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Set;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 import static io.aeron.agent.ArchiveEventCode.*;
@@ -54,7 +51,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(InterruptingTestCallback.class)
 class ArchiveLoggingAgentTest
 {
-    private static final Set<ArchiveEventCode> WAIT_LIST = synchronizedSet(EnumSet.noneOf(ArchiveEventCode.class));
+    private static final Set<ArchiveEventCode> WAIT_LIST = synchronizedSet(new HashSet<>());
 
     private File testDir;
 
@@ -80,7 +77,7 @@ class ArchiveLoggingAgentTest
 
     @Test
     @InterruptAfter(10)
-    void logControlSessionDemuxerOnFragment()
+    void logControlSessionAdapterOnFragment()
     {
         testArchiveLogging(CMD_IN_KEEP_ALIVE.name() + "," + CMD_IN_AUTH_CONNECT.id(),
             EnumSet.of(CMD_IN_AUTH_CONNECT, CMD_IN_KEEP_ALIVE));

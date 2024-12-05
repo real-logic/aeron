@@ -70,7 +70,7 @@ import static org.agrona.concurrent.status.CountersReader.METADATA_LENGTH;
 
 abstract class ArchiveConductor
     extends SessionWorker<Session>
-    implements AvailableImageHandler, UnavailableCounterHandler
+    implements UnavailableImageHandler, UnavailableCounterHandler
 {
     private static final EnumSet<StandardOpenOption> FILE_OPTIONS = EnumSet.of(READ, WRITE);
     static final String DELETE_SUFFIX = ".del";
@@ -114,6 +114,7 @@ abstract class ArchiveConductor
     private final RecordingEventsProxy recordingEventsProxy;
     private final Authenticator authenticator;
     private final AuthorisationService authorisationService;
+    private final ControlSessionAdapter controlSessionAdapter;
     private final ControlResponseProxy controlResponseProxy = new ControlResponseProxy();
     private final ControlSessionProxy controlSessionProxy = new ControlSessionProxy(controlResponseProxy);
     private final DutyCycleTracker dutyCycleTracker;
@@ -166,7 +167,7 @@ abstract class ArchiveConductor
             final ChannelUri controlChannelUri = ChannelUri.parse(ctx.controlChannel());
             controlChannelUri.put(CommonContext.SPARSE_PARAM_NAME, Boolean.toString(ctx.controlTermBufferSparse()));
             controlSubscription = aeron.addSubscription(
-                controlChannelUri.toString(), ctx.controlStreamId(), this, null);
+                controlChannelUri.toString(), ctx.controlStreamId(), null, this);
         }
         else
         {
@@ -174,7 +175,10 @@ abstract class ArchiveConductor
         }
 
         localControlSubscription = aeron.addSubscription(
-            ctx.localControlChannel(), ctx.localControlStreamId(), this, null);
+            ctx.localControlChannel(), ctx.localControlStreamId(), null, this);
+
+        controlSessionAdapter = new ControlSessionAdapter(
+            decoders, controlSubscription, localControlSubscription, this, authorisationService);
     }
 
     public void onStart()
@@ -185,9 +189,9 @@ abstract class ArchiveConductor
         dutyCycleTracker.update(nanoClock.nanoTime());
     }
 
-    public void onAvailableImage(final Image image)
+    public void onUnavailableImage(final Image image)
     {
-        addSession(new ControlSessionDemuxer(decoders, image, this, authorisationService));
+        controlSessionAdapter.abortControlSessionByImage(image);
     }
 
     public void onUnavailableCounter(
@@ -307,6 +311,9 @@ abstract class ArchiveConductor
                 markFile.updateActivityTimestamp(nowMs);
             }
         }
+
+        workCount += controlSessionAdapter.poll();
+
         workCount += checkReplayTokens(nowNs);
         workCount += invokeDriverConductor();
         workCount += runTasks(taskQueue);
@@ -371,7 +378,7 @@ abstract class ArchiveConductor
         final int version,
         final String channel,
         final byte[] encodedCredentials,
-        final ControlSessionDemuxer demuxer)
+        final ControlSessionAdapter controlSessionAdapter)
     {
         final ChannelUri channelUri = ChannelUri.parse(channel);
 
@@ -414,7 +421,7 @@ abstract class ArchiveConductor
             sessionLivenessCheckIntervalMs,
             aeron.asyncAddExclusivePublication(responseChannel, streamId),
             invalidVersionMessage,
-            demuxer,
+            controlSessionAdapter,
             aeron,
             this,
             cachedEpochClock,

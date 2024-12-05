@@ -136,9 +136,14 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     /**
-     * Offset within the log metadata where the sparse property is stored.
+     * Offset within the log metadata where the receive buffer size (rcvBuf) is stored.
      */
-    public static final int LOG_SPARSE_OFFSET;
+    public static final int LOG_RCVBUF_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the send buffer size (sndBuf) is stored.
+     */
+    public static final int LOG_SNDBUF_LENGTH_OFFSET;
 
 
     /**
@@ -189,6 +194,10 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                          Page Size                            |
      *  +---------------------------------------------------------------+
+     *  |                  Socket Receive Buffer Length                 |
+     *  +---------------------------------------------------------------+
+     *  |                   Socket Send Buffer Length                   |
+     *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
@@ -219,8 +228,8 @@ public class LogBufferDescriptor
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_SPARSE_OFFSET = offset + SIZE_OF_INT;
-
+        LOG_RCVBUF_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
+        LOG_SNDBUF_LENGTH_OFFSET = LOG_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -918,24 +927,46 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get the value of the sparse property.
+     * Get the value of the socket receive buffer length (rcvBuf) for this log.
      *
      * @param metadataBuffer containing the meta data.
-     * @return the value of the sparse property (true if set, false otherwise).
+     * @return the value of the receive buffer length (rcvBuf) used for this log.
      */
-    public static boolean sparse(final UnsafeBuffer metadataBuffer)
+    public static int rcvbufLength(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getInt(LOG_SPARSE_OFFSET) == 1;
+        return metadataBuffer.getInt(LOG_RCVBUF_LENGTH_OFFSET);
     }
 
     /**
-     * Set the sparse property.
+     * Set the value of the socket receive buffer length for this log.
      *
      * @param metadataBuffer containing the meta data.
-     * @param sparse         true to set sparse, false otherwise.
+     * @param rcvBuf         value to be set.
      */
-    public static void sparse(final UnsafeBuffer metadataBuffer, final boolean sparse)
+    public static void rcvbufLength(final UnsafeBuffer metadataBuffer, final int rcvBuf)
     {
-        metadataBuffer.putInt(LOG_SPARSE_OFFSET, sparse ? 1 : 0);
+        metadataBuffer.putInt(LOG_RCVBUF_LENGTH_OFFSET, rcvBuf);
+    }
+
+    /**
+     * Get the value of the send buffer length for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the value of the send buffer length.
+     */
+    public static int sndbufLength(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getInt(LOG_SNDBUF_LENGTH_OFFSET);
+    }
+
+    /**
+     * Set the value of the send buffer length used for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param sndBuf         value to be set.
+     */
+    public static void sndbufLength(final UnsafeBuffer metadataBuffer, final int sndBuf)
+    {
+        metadataBuffer.putInt(LOG_SNDBUF_LENGTH_OFFSET, sndBuf);
     }
 }

@@ -2284,8 +2284,8 @@ public final class Configuration
         if (ctx.osMaxSocketRcvbufLength() < ctx.socketRcvbufLength())
         {
             System.err.println(
-                "WARNING: Could not set desired SO_RCVBUF, adjust OS to allow " + SOCKET_SNDBUF_LENGTH_PROP_NAME +
-                " attempted=" + ctx.socketSndbufLength() + ", actual=" + ctx.osMaxSocketSndbufLength());
+                "WARNING: Could not set desired SO_RCVBUF, adjust OS to allow " + SOCKET_RCVBUF_LENGTH_PROP_NAME +
+                " attempted=" + ctx.socketRcvbufLength() + ", actual=" + ctx.osMaxSocketRcvbufLength());
         }
 
         final int soSndBuf = 0 == ctx.socketSndbufLength() ?

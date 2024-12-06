@@ -1102,6 +1102,7 @@ TEST_F(AeronArchiveWrapperTest, shouldListRegisteredRecordingSubscriptions)
     const std::string channelThree = "aeron:udp?endpoint=localhost:4321";
 
     std::shared_ptr<AeronArchive> aeronArchive = AeronArchive::connect(m_context);
+    auto countersReader = aeronArchive->context().aeron()->countersReader();
 
     const std::int64_t subIdOne = aeronArchive->startRecording(
         channelOne, expectedStreamId, AeronArchive::SourceLocation::LOCAL);
@@ -1109,6 +1110,15 @@ TEST_F(AeronArchiveWrapperTest, shouldListRegisteredRecordingSubscriptions)
         channelTwo, expectedStreamId + 1, AeronArchive::SourceLocation::LOCAL);
     const std::int64_t subIdThree = aeronArchive->startRecording(
         channelThree, expectedStreamId + 2, AeronArchive::SourceLocation::LOCAL);
+
+    std::shared_ptr<Publication> pub2 = addPublication(
+        *aeronArchive->context().aeron(), channelTwo, expectedStreamId + 1);
+    std::shared_ptr<Publication> pub3 = addPublication(
+        *aeronArchive->context().aeron(), channelThree, expectedStreamId + 2);
+
+    // await recording started
+    const auto sub2CounterId = getRecordingCounterId(pub2->sessionId(), countersReader);
+    const auto sub3CounterId = getRecordingCounterId(pub3->sessionId(), countersReader);
 
     const std::int32_t countOne = aeronArchive->listRecordingSubscriptions(
         0, 5, "ipc", expectedStreamId, true, consumer);
@@ -1126,6 +1136,15 @@ TEST_F(AeronArchiveWrapperTest, shouldListRegisteredRecordingSubscriptions)
 
     aeronArchive->stopRecording(subIdTwo);
     descriptors.clear();
+
+    // await recording stopped
+    while (CountersReader::RECORD_RECLAIMED != countersReader.getCounterState(sub2CounterId))
+    {
+        std::this_thread::yield();
+    }
+
+    const std::int32_t stateAllocated = CountersReader::RECORD_ALLOCATED;
+    EXPECT_EQ(stateAllocated, countersReader.getCounterState(sub3CounterId));
 
     const std::int32_t countThree = aeronArchive->listRecordingSubscriptions(
         0, 5, "", expectedStreamId, false, consumer);
@@ -1489,6 +1508,10 @@ TEST_F(AeronArchiveWrapperTest, shouldFindMultipleRecordingDescriptors)
     std::int64_t subscriptionId2 = aeronArchive->startRecording(
         recordingChannel2, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
 
+    const std::int64_t nullCounterId = CountersReader::NULL_COUNTER_ID;
+    EXPECT_NE(
+        nullCounterId, getRecordingCounterId(publication2->sessionId(), aeron->countersReader()));
+
     std::set<std::int32_t> found_session_ids;
 
     int32_t count = aeronArchive->listRecordings(
@@ -1534,6 +1557,10 @@ TEST_F(AeronArchiveWrapperTest, shouldFindRecordingDescriptorForUri)
 
     std::int64_t subscriptionId2 = aeronArchive->startRecording(
         recordingChannel2, m_recordingStreamId, AeronArchive::SourceLocation::LOCAL);
+
+    const std::int64_t nullCounterId = CountersReader::NULL_COUNTER_ID;
+    EXPECT_NE(
+        nullCounterId, getRecordingCounterId(publication2->sessionId(), aeron->countersReader()));
 
     std::set<std::int32_t> found_session_ids;
 

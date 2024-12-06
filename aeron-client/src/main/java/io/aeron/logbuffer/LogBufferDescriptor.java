@@ -930,7 +930,7 @@ public class LogBufferDescriptor
      * Get the value of the socket receive buffer length (rcvBuf) for this log.
      *
      * @param metadataBuffer containing the meta data.
-     * @return the value of the receive buffer length (rcvBuf) used for this log.
+     * @return the value of the receive buffer length.
      */
     public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer)
     {
@@ -952,7 +952,7 @@ public class LogBufferDescriptor
      * Get the value of the socket send buffer length for this log.
      *
      * @param metadataBuffer containing the meta data.
-     * @return the value of the send buffer length.
+     * @return the value of the socket send buffer length.
      */
     public static int socketSndbufLength(final UnsafeBuffer metadataBuffer)
     {

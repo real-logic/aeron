@@ -22,11 +22,7 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.driver.media.ControlMode;
-import io.aeron.driver.media.ReceiveChannelEndpoint;
-import io.aeron.driver.media.ReceiveDestinationTransport;
-import io.aeron.driver.media.SendChannelEndpoint;
-import io.aeron.driver.media.UdpChannel;
+import io.aeron.driver.media.*;
 import io.aeron.driver.status.*;
 import io.aeron.exceptions.AeronEvent;
 import io.aeron.exceptions.AeronException;
@@ -301,18 +297,6 @@ public final class DriverConductor implements Agent
             {
                 final long registrationId = toDriverCommands.nextCorrelationId();
 
-                int rcvbufLength = channelEndpoint.socketRcvbufLength();
-                if (rcvbufLength == 0)
-                {
-                    rcvbufLength = ctx.osDefaultSocketRcvbufLength();
-                }
-
-                int sndbufLength = channelEndpoint.socketSndbufLength();
-                if (sndbufLength == 0)
-                {
-                    sndbufLength = ctx.osDefaultSocketSndbufLength();
-                }
-
                 rawLog = newPublicationImageLog(
                     sessionId,
                     streamId,
@@ -321,8 +305,8 @@ public final class DriverConductor implements Agent
                     isOldestSubscriptionSparse(subscriberPositions),
                     senderMtuLength,
                     registrationId,
-                    rcvbufLength,
-                    sndbufLength);
+                    getRcvbufLength(channelEndpoint),
+                    getSndbufLength(channelEndpoint));
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -1704,19 +1688,8 @@ public final class DriverConductor implements Agent
             initialTermId,
             params.termLength);
 
-        int rcvbufLength = channelEndpoint.socketRcvbufLength();
-        if (rcvbufLength == 0)
-        {
-            rcvbufLength = ctx.osDefaultSocketRcvbufLength();
-        }
-
-        int sndbufLength = channelEndpoint.socketSndbufLength();
-        if (sndbufLength == 0)
-        {
-            sndbufLength = ctx.osDefaultSocketSndbufLength();
-        }
-
-        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, rcvbufLength, sndbufLength, params);
+        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId,
+            getRcvbufLength(channelEndpoint), getSndbufLength(channelEndpoint), params);
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1791,6 +1764,32 @@ public final class DriverConductor implements Agent
         }
     }
 
+    private int getSndbufLength(final UdpChannelTransport channelEndpoint)
+    {
+        final int sndbufLength = channelEndpoint.socketSndbufLength();
+        if (sndbufLength == 0)
+        {
+            return ctx.osDefaultSocketSndbufLength();
+        }
+        else
+        {
+            return sndbufLength;
+        }
+    }
+
+    private int getRcvbufLength(final UdpChannelTransport channelEndpoint)
+    {
+        final int rcvbufLength = channelEndpoint.socketRcvbufLength();
+        if (rcvbufLength == 0)
+        {
+            return ctx.osDefaultSocketRcvbufLength();
+        }
+        else
+        {
+            return rcvbufLength;
+        }
+    }
+
     private RawLog newNetworkPublicationLog(
         final int sessionId,
         final int streamId,
@@ -1801,7 +1800,8 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rcvbufLength, sndbufLength, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rcvbufLength,
+            sndbufLength, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1888,7 +1888,8 @@ public final class DriverConductor implements Agent
         final int sndbufLength)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rcvbufLength, sndbufLength, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rcvbufLength, sndbufLength,
+            rawLog);
 
         return rawLog;
     }

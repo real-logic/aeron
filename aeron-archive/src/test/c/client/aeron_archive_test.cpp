@@ -1785,6 +1785,15 @@ TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
         AERON_ARCHIVE_SOURCE_LOCATION_LOCAL,
         false));
 
+    const auto pub2 = addPublication(channelTwo, expected_stream_id + 1);
+    const auto pub3 = addPublication(channelThree, expected_stream_id + 2);
+
+    // await recording started
+    auto countersReader = aeron_counters_reader(m_aeron);
+    const auto sub2CounterId =
+        getRecordingCounterId(aeron_publication_session_id(pub2), countersReader);
+    const auto sub3CounterId = getRecordingCounterId(aeron_publication_session_id(pub3), countersReader);
+
     int32_t count_one;
     ASSERT_EQ_ERR(0, aeron_archive_list_recording_subscriptions(
         &count_one,
@@ -1820,6 +1829,21 @@ TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
         subscription_id_two));
     clientd.descriptors.clear();
 
+    // await recording stopped
+    int state;
+    while (true)
+    {
+        EXPECT_EQ(0, aeron_counters_reader_counter_state(countersReader, sub2CounterId, &state));
+        if (AERON_COUNTER_RECORD_ALLOCATED != state)
+        {
+            break;
+        }
+        std::this_thread::yield();
+    }
+
+    EXPECT_EQ(0, aeron_counters_reader_counter_state(countersReader, sub3CounterId, &state));
+    EXPECT_EQ(AERON_COUNTER_RECORD_ALLOCATED, state);
+
     int32_t count_three;
     ASSERT_EQ_ERR(0, aeron_archive_list_recording_subscriptions(
         &count_three,
@@ -1833,18 +1857,6 @@ TEST_F(AeronCArchiveTest, shouldListRegisteredRecordingSubscriptions)
         &clientd));
     EXPECT_EQ(2, clientd.descriptors.size());
     EXPECT_EQ(2, count_three);
-
-    /* TODO figure out why this won't compile in CI
-    EXPECT_EQ(1, std::count_if(
-        clientd.descriptors.begin(),
-        clientd.descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor) { return descriptor.m_subscriptionId == subscription_id_one; }));
-
-    EXPECT_EQ(1, std::count_if(
-        clientd.descriptors.begin(),
-        clientd.descriptors.end(),
-        [=](const SubscriptionDescriptor &descriptor) { return descriptor.m_subscriptionId == subscription_id_three; }));
-     */
 }
 
 TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)

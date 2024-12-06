@@ -232,13 +232,15 @@ public interface Cluster
      *     cluster.idleStrategy().idle();
      * }
      * }</pre>
-     *
+     * <p>
      * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
      * shutdown if required.
      *
      * @param correlationId to identify the timer when it expires. {@link Long#MAX_VALUE} not supported.
      * @param deadline      time after which the timer will fire. {@link Long#MAX_VALUE} not supported.
-     * @return true if the request to schedule a timer has been sent or false if back-pressure is applied.
+     * @return {@code true} if the request to schedule a timer has been sent or {@code false} in case of
+     * {@link io.aeron.Publication#ADMIN_ACTION} or {@link io.aeron.Publication#BACK_PRESSURED}.
+     * @throws ClusterException if request fails with an error.
      * @see #cancelTimer(long)
      */
     boolean scheduleTimer(long correlationId, long deadline);
@@ -267,7 +269,9 @@ public interface Cluster
      * }</pre>
      *
      * @param correlationId for the timer provided when it was scheduled. {@link Long#MAX_VALUE} not supported.
-     * @return true if the request to cancel a timer has been sent or false if back-pressure is applied.
+     * @return {@code true} if the request to cancel a timer has been sent or {@code false} in case of
+     * {@link io.aeron.Publication#ADMIN_ACTION} or {@link io.aeron.Publication#BACK_PRESSURED}.
+     * @throws ClusterException if request fails with an error.
      * @see #scheduleTimer(long, long)
      */
     boolean cancelTimer(long correlationId);
@@ -299,7 +303,7 @@ public interface Cluster
      *     cluster.idleStrategy.idle();
      * }
      * }</pre>
-     *
+     * <p>
      * The cluster's idle strategy must be used in the body of the loop to allow for the clustered service to be
      * shutdown if required.
      *

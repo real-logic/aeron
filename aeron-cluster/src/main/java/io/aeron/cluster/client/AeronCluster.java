@@ -237,7 +237,7 @@ public final class AeronCluster implements AutoCloseable
      *
      * @param listenerExtension listener extension.
      */
-    public void extendEgressListener(final EgressListenerExtension listenerExtension)
+    public void egressListenerExtension(final EgressListenerExtension listenerExtension)
     {
         this.egressListenerExtension = listenerExtension;
     }
@@ -247,7 +247,7 @@ public final class AeronCluster implements AutoCloseable
      *
      * @param listenerExtension listener extension.
      */
-    public void extendControlledEgressListener(final ControlledEgressListenerExtension listenerExtension)
+    public void controlledEgressListenerExtension(final ControlledEgressListenerExtension listenerExtension)
     {
         this.controlledEgressListenerExtension = listenerExtension;
     }
@@ -723,10 +723,12 @@ public final class AeronCluster implements AutoCloseable
                     buffer,
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     length - MessageHeaderDecoder.ENCODED_LENGTH);
-                return;
             }
-            throw new ClusterException("expected schemaId=" +
-                MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            else
+            {
+                throw new ClusterException(
+                    "expected cluster egress schemaId=" + MessageHeaderDecoder.SCHEMA_ID + " actual=" + schemaId);
+            }
         }
 
         switch (templateId)
@@ -864,8 +866,11 @@ public final class AeronCluster implements AutoCloseable
                     offset + MessageHeaderDecoder.ENCODED_LENGTH,
                     length - MessageHeaderDecoder.ENCODED_LENGTH);
             }
-            throw new ClusterException("expected schemaId=" +
-                MessageHeaderDecoder.SCHEMA_ID + ", actual=" + schemaId);
+            else
+            {
+                throw new ClusterException(
+                    "expected cluster egress schemaId=" + MessageHeaderDecoder.SCHEMA_ID + " actual=" + schemaId);
+            }
         }
 
         switch (templateId)

@@ -136,6 +136,17 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
     /**
+     * Offset within the log metadata where the receive buffer size (rcvBuf) is stored.
+     */
+    public static final int LOG_SOCKET_RCVBUF_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the send buffer size (sndBuf) is stored.
+     */
+    public static final int LOG_SOCKET_SNDBUF_LENGTH_OFFSET;
+
+
+    /**
      * Maximum length of a frame header.
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
@@ -183,6 +194,10 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                          Page Size                            |
      *  +---------------------------------------------------------------+
+     *  |                  Socket Receive Buffer Length                 |
+     *  +---------------------------------------------------------------+
+     *  |                   Socket Send Buffer Length                   |
+     *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
@@ -213,6 +228,8 @@ public class LogBufferDescriptor
         LOG_MTU_LENGTH_OFFSET = LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
+        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -877,5 +894,49 @@ public class LogBufferDescriptor
         final int remainingPayload = length % maxPayloadSize;
 
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
+    }
+
+    /**
+     * Get the value of the socket receive buffer length (rcvBuf) for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the value of the receive buffer length.
+     */
+    public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET);
+    }
+
+    /**
+     * Set the value of the socket receive buffer length for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param rcvBuf         value to be set.
+     */
+    public static void socketRcvbufLength(final UnsafeBuffer metadataBuffer, final int rcvBuf)
+    {
+        metadataBuffer.putInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET, rcvBuf);
+    }
+
+    /**
+     * Get the value of the socket send buffer length for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the value of the socket send buffer length.
+     */
+    public static int socketSndbufLength(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET);
+    }
+
+    /**
+     * Set the value of the socket send buffer length used for this log.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param sndBuf         value to be set.
+     */
+    public static void socketSndbufLength(final UnsafeBuffer metadataBuffer, final int sndBuf)
+    {
+        metadataBuffer.putInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET, sndBuf);
     }
 }

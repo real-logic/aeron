@@ -372,7 +372,7 @@ jobs:
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo mkdir -p /etc/apt/keyrings/
           curl --retry ${INSTALL_COMPILER_RETRIES} https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] https://apt.llvm.org/focal/ llvm-toolchain-focal-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libstdc++-7-dev libbsd-dev uuid-dev libidn11
       - name: Build
@@ -396,7 +396,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '13', '14', '15', '16', '17', '18' ]
+        version: [ '13', '14', '15', '16', '17', '18', '19' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -427,7 +427,7 @@ jobs:
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo mkdir -p /etc/apt/keyrings/
           curl --retry ${INSTALL_COMPILER_RETRIES} https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Setup small temp file system
@@ -460,7 +460,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        version: [ '18' ]
+        version: [ '19' ]
     env:
       CC: clang-${{ matrix.version }}
       CXX: clang++-${{ matrix.version }}
@@ -491,7 +491,7 @@ jobs:
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
           sudo mkdir -p /etc/apt/keyrings/
           curl --retry ${INSTALL_COMPILER_RETRIES} https://apt.llvm.org/llvm-snapshot.gpg.key | sudo gpg --dearmor -o /etc/apt/keyrings/llvm-snapshot.gpg
-          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] http://apt.llvm.org/jammy/ llvm-toolchain-jammy-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
+          echo "deb [signed-by=/etc/apt/keyrings/llvm-snapshot.gpg] https://apt.llvm.org/noble/ llvm-toolchain-noble-${{ matrix.version }} main" | sudo tee /etc/apt/sources.list.d/llvm.list
           sudo apt-get update
           sudo apt-get install -y clang-${{ matrix.version }} libbsd-dev uuid-dev
       - name: Build

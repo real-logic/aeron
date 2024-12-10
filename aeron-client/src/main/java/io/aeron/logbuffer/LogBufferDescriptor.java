@@ -141,6 +141,13 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
     /**
+     * The offset where the channel uri can be found. The first 4 bytes contain the size
+     * and the rest is the string content.
+     */
+    public static final int LOG_CHANNEL_URI_OFFSET;
+
+
+    /**
      * Total length of the log metadata buffer in bytes.
      * <pre>
      *   0                   1                   2                   3
@@ -193,6 +200,8 @@ public class LogBufferDescriptor
      */
     public static final int LOG_META_DATA_LENGTH;
 
+    private static final int LOG_CHANNEL_URI_MAX_LENGTH;
+
     static
     {
         int offset = 0;
@@ -217,7 +226,20 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        LOG_META_DATA_LENGTH = align(offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH, PAGE_MIN_SIZE);
+
+        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
+
+        LOG_CHANNEL_URI_OFFSET = 1024;
+
+        LOG_META_DATA_LENGTH = 2 * PAGE_MIN_SIZE;
+        LOG_CHANNEL_URI_MAX_LENGTH = LOG_META_DATA_LENGTH - (LOG_CHANNEL_URI_OFFSET + SIZE_OF_INT + 1);
+
+        System.out.println("offset:" + offset);
+        System.out.println("LOG_DEFAULT_FRAME_HEADER_OFFSET:" + LOG_DEFAULT_FRAME_HEADER_OFFSET);
+        System.out.println("LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH:" + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
+        System.out.println("LOG_CHANNEL_URI_OFFSET:" + LOG_CHANNEL_URI_OFFSET);
+        System.out.println("LOG_META_DATA_LENGTH:" + LOG_META_DATA_LENGTH);
+        System.out.println("LOG_CHANNEL_URI_MAX_LENGTH:" + LOG_CHANNEL_URI_MAX_LENGTH);
     }
 
     /**
@@ -877,5 +899,33 @@ public class LogBufferDescriptor
         final int remainingPayload = length % maxPayloadSize;
 
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
+    }
+
+    /**
+     * Set the channel URI in the metadata buffer as a length-prefixed ASCII-string.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param channelUri     the channel URI to set.
+     * @throws IllegalArgumentException if the URI exceeds the maximum length.
+     */
+    public static void channelUri(final UnsafeBuffer metadataBuffer, final String channelUri)
+    {
+        if (channelUri.length() > LOG_CHANNEL_URI_MAX_LENGTH)
+        {
+            throw new IllegalArgumentException("Channel URI exceeds max length of " + LOG_CHANNEL_URI_MAX_LENGTH);
+        }
+
+        metadataBuffer.putStringAscii(LOG_CHANNEL_URI_OFFSET, channelUri);
+    }
+
+    /**
+     * Get the channel URI from the metadata buffer as a length-prefixed ASCII-string.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the channel URI as a string.
+     */
+    public static String channelUri(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getStringAscii(LOG_CHANNEL_URI_OFFSET);
     }
 }

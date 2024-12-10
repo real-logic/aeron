@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
@@ -299,6 +300,10 @@ public final class DriverConductor implements Agent
             UnsafeBufferPosition hwmPos = null;
             UnsafeBufferPosition rcvPos = null;
 
+            final String enrichedChannelUri = enrichImagePublicationChannelUri(channelEndpoint.udpChannel().channelUri(),
+                channelEndpoint, streamId, initialTermId, termBufferLength, initialTermOffset, senderMtuLength,
+                sessionId);
+
             try
             {
                 final long registrationId = toDriverCommands.nextCorrelationId();
@@ -309,7 +314,8 @@ public final class DriverConductor implements Agent
                     termBufferLength,
                     isOldestSubscriptionSparse(subscriberPositions),
                     senderMtuLength,
-                    registrationId);
+                    registrationId,
+                    enrichedChannelUri);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -380,6 +386,52 @@ public final class DriverConductor implements Agent
                 throw ex;
             }
         }
+    }
+
+    private static String enrichImagePublicationChannelUri(
+        final ChannelUri channelUri,
+        final ReceiveChannelEndpoint receiveChannelEndpoint,
+        final int streamId,
+        final int initialTermId,
+        final int termBufferLength,
+        final int termOffset,
+        final int senderMtuLength,
+        final int sessionId)
+    {
+        final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder(channelUri);
+        uriStringBuilder.mtu(senderMtuLength);
+        uriStringBuilder.streamId(streamId);
+        uriStringBuilder.termOffset(termOffset);
+        uriStringBuilder.initialTermId(initialTermId);
+        uriStringBuilder.termLength(termBufferLength);
+        uriStringBuilder.sessionId(sessionId);
+
+//        uriStringBuilder.reliable()
+//
+        uriStringBuilder.socketRcvbufLength(receiveChannelEndpoint.socketRcvbufLength());
+        uriStringBuilder.socketSndbufLength(receiveChannelEndpoint.socketSndbufLength());
+//        // todo:
+//        uriStringBuilder.flowControl("stuff");
+//        // todo:
+//        uriStringBuilder.congestionControl("stuff");
+//        uriStringBuilder.linger(params.lingerTimeoutNs);
+//        uriStringBuilder.untetheredRestingTimeoutNs(params.untetheredWindowLimitTimeoutNs);
+//        uriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
+//        uriStringBuilder.sparse(params.isSparse);
+//        uriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
+
+        //uriStringBuilder.tether(params.is)
+        //uriStringBuilder.rejoin(params.re)
+        //uriStringBuilder.reliable(channelUri.get(RELIABLE_STREAM_PARAM_NAME))
+
+
+//        rcv-wnd
+//        reliable
+//                sparse
+//        rejoin
+//        tether
+
+        return uriStringBuilder.toString();
     }
 
     void onChannelEndpointError(final long statusIndicatorId, final Exception ex)
@@ -1724,8 +1776,14 @@ public final class DriverConductor implements Agent
             params.initialTermId,
             params.termLength);
 
+        final String enrichedChannelUri = enrichNetworkPublicationChannelUri(udpChannel.channelUri(), streamId,
+            udpChannel, channelEndpoint, flowControl, params);
+
+
         final RawLog rawLog =
-            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
+            enrichedChannelUri, params);
+
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1800,15 +1858,63 @@ public final class DriverConductor implements Agent
         }
     }
 
+    private  String enrichNetworkPublicationChannelUri(
+        final ChannelUri channelUri,
+        final int streamId,
+        final UdpChannel udpChannel,
+        final SendChannelEndpoint channelEndpoint,
+        FlowControl flowControl, final PublicationParams params)
+    {
+        final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder(channelUri);
+
+        uriStringBuilder.linger(params.lingerTimeoutNs);
+
+        uriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
+        uriStringBuilder.untetheredRestingTimeoutNs(params.untetheredRestingTimeoutNs);
+
+        uriStringBuilder.mtu(params.mtuLength);
+        uriStringBuilder.termLength(params.termLength);
+        uriStringBuilder.initialTermId(params.initialTermId);
+        uriStringBuilder.termId(params.hasPosition ? params.termId : params.initialTermId);
+        uriStringBuilder.termOffset(params.hasPosition ? params.termOffset : 0);
+
+        if(!uriStringBuilder.isSessionIdTagged()){
+            uriStringBuilder.sessionId(params.sessionId);
+        }
+        uriStringBuilder.streamId(streamId);
+        uriStringBuilder.maxResend(params.maxResend);
+        uriStringBuilder.sparse(params.isSparse);
+
+        uriStringBuilder.eos(params.signalEos);
+        uriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
+
+        uriStringBuilder.flowControl(flowControl.getClass().getName());
+        final String ccStr = udpChannel.channelUri().get(CONGESTION_CONTROL_PARAM_NAME);
+        uriStringBuilder.congestionControl(null == ccStr ? "static" : ccStr);
+
+        uriStringBuilder.socketRcvbufLength(channelEndpoint.socketRcvbufLength());
+        uriStringBuilder.socketSndbufLength(channelEndpoint.socketSndbufLength());
+
+        if (udpChannel.isMulticast() && !udpChannel.hasMulticastTtl())
+        {
+            uriStringBuilder.ttl(ctx.socketMulticastTtl());
+        }
+
+//        int publicationWindowLength;
+
+        return uriStringBuilder.toString();
+    }
+
     private RawLog newNetworkPublicationLog(
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final String channelUri,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, channelUri, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1819,10 +1925,11 @@ public final class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final String channelUri,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, channelUri, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1834,6 +1941,7 @@ public final class DriverConductor implements Agent
         final int initialTermId,
         final int mtuLength,
         final long registrationId,
+        final String channelUri,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1847,6 +1955,9 @@ public final class DriverConductor implements Agent
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
+        channelUri(logMetaData, channelUri);
+
+        System.out.println("Set channelUri:" + channelUri(logMetaData));
     }
 
     private static void initialisePositionCounters(
@@ -1886,10 +1997,11 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final boolean isSparse,
         final int senderMtuLength,
-        final long correlationId)
+        final long correlationId,
+        final String channelUri)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, channelUri, rawLog);
 
         return rawLog;
     }
@@ -2273,8 +2385,10 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
+        final String enrichedChannelUri = enrichIpcPublicationChannelUri(channel, streamId, params);
+
         final RawLog rawLog =
-            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, enrichedChannelUri, params);
 
         UnsafeBufferPosition publisherPosition = null;
         UnsafeBufferPosition publisherLimit = null;
@@ -2319,6 +2433,22 @@ public final class DriverConductor implements Agent
             CloseHelper.quietCloseAll(rawLog, publisherPosition, publisherLimit);
             throw ex;
         }
+    }
+
+    private static String enrichIpcPublicationChannelUri(
+        final String channel,
+        final int streamId,
+        final PublicationParams params)
+    {
+        // todo: How to get access to the channelUri.
+        final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder(channel);
+        uriStringBuilder.streamId(streamId);
+//        uriStringBuilder.sessionId(sessionId);
+//        uriStringBuilder.initialTermId(initialTermId);
+//        uriStringBuilder.termId(params.hasPosition ? params.termId : initialTermId);
+        uriStringBuilder.termOffset(params.hasPosition ? params.termOffset : 0);
+
+        return uriStringBuilder.toString();
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)

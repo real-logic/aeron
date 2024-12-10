@@ -194,6 +194,11 @@ public class CommonContext implements Cloneable
     public static final String INTERFACE_PARAM_NAME = "interface";
 
     /**
+     * The identifier of the stream.
+     */
+    public static final String STREAM_ID_PARAM_NAME = "stream-id";
+
+    /**
      * Initial term id to be used when creating an {@link ExclusivePublication}.
      */
     public static final String INITIAL_TERM_ID_PARAM_NAME = "init-term-id";

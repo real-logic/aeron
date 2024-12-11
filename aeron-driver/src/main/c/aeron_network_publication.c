@@ -134,11 +134,18 @@ int aeron_network_publication_create(
 
     char path[AERON_MAX_PATH];
     int path_length = aeron_network_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
+    if (path_length < 0)
+    {
+        AERON_APPEND_ERR("%s", "Could not resolve network publication file path");
+        aeron_free(_pub);
+        return -1;
+    }
+
     _pub->log_file_name = NULL;
     if (aeron_alloc((void **)(&_pub->log_file_name), (size_t)path_length + 1) < 0)
     {
-        aeron_free(_pub);
         AERON_APPEND_ERR("%s", "Could not allocate network publication log_file_name");
+        aeron_free(_pub);
         return -1;
     }
 

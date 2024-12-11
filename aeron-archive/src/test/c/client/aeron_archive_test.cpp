@@ -116,8 +116,8 @@ public:
 
     void DoSetUp(std::int64_t archiveId = 42)
     {
-        char aeron_dir[100];
-        aeron_default_path(aeron_dir, 100);
+        char aeron_dir[AERON_MAX_PATH];
+        aeron_default_path(aeron_dir, sizeof(aeron_dir));
 
         std::string sourceArchiveDir = m_archiveDir + AERON_FILE_SEP + "source";
         m_testArchive = std::make_shared<TestArchive>(
@@ -427,8 +427,8 @@ public:
 
     void startDestArchive()
     {
-        char aeron_dir[100];
-        aeron_default_path(aeron_dir, 100);
+        char aeron_dir[AERON_MAX_PATH];
+        aeron_default_path(aeron_dir, sizeof(aeron_dir));
         std::string dest_aeron_dir = std::string(aeron_dir) + "_dest";
 
         const std::string archiveDir = m_archiveDir + AERON_FILE_SEP + "dest";
@@ -1869,11 +1869,11 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
     const char *live_endpoint = "localhost:23267";
     const char *replay_endpoint = "localhost:0";
 
-    char publication_channel[AERON_MAX_PATH + 1];
-    char live_destination[AERON_MAX_PATH + 1];
-    char replay_destination[AERON_MAX_PATH + 1];
-    char recording_channel[AERON_MAX_PATH + 1];
-    char subscription_channel[AERON_MAX_PATH + 1];
+    char publication_channel[AERON_URI_MAX_LENGTH];
+    char live_destination[AERON_URI_MAX_LENGTH];
+    char replay_destination[AERON_URI_MAX_LENGTH];
+    char recording_channel[AERON_URI_MAX_LENGTH];
+    char subscription_channel[AERON_URI_MAX_LENGTH];
 
     {
         aeron_uri_string_builder_t builder;
@@ -1887,7 +1887,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         aeron_uri_string_builder_put(&builder, AERON_URI_FC_KEY, "tagged,g:99901/1,t:5s");
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, termLength);
 
-        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, publication_channel, sizeof(publication_channel));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -1900,7 +1900,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, live_endpoint);
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_CONTROL_KEY, control_endpoint);
 
-        aeron_uri_string_builder_sprint(&builder, live_destination, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, live_destination, sizeof(live_destination));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -1912,7 +1912,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, replay_endpoint);
 
-        aeron_uri_string_builder_sprint(&builder, replay_destination, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, replay_destination, sizeof(replay_destination));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -1937,7 +1937,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_ENDPOINT_KEY, recording_endpoint);
         aeron_uri_string_builder_put(&builder, AERON_UDP_CHANNEL_CONTROL_KEY, control_endpoint);
 
-        aeron_uri_string_builder_sprint(&builder, recording_channel, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, recording_channel, sizeof(recording_channel));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -1951,7 +1951,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
             &builder, AERON_UDP_CHANNEL_CONTROL_MODE_KEY, AERON_UDP_CHANNEL_CONTROL_MODE_MANUAL_VALUE);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id);
 
-        aeron_uri_string_builder_sprint(&builder, subscription_channel, AERON_MAX_PATH + 1);
+        aeron_uri_string_builder_sprint(&builder, subscription_channel, sizeof(subscription_channel));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -2004,7 +2004,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
     {
         aeron_subscription_t *subscription = addSubscription(subscription_channel, m_recordingStreamId);
 
-        char replay_channel[AERON_MAX_PATH + 1];
+        char replay_channel[AERON_URI_MAX_LENGTH];
         {
             aeron_uri_string_builder_t builder;
 
@@ -2013,7 +2013,7 @@ TEST_F(AeronCArchiveTest, shouldMergeFromReplayToLive)
             aeron_uri_string_builder_put(&builder, AERON_URI_STRING_BUILDER_MEDIA_KEY, "udp");
             aeron_uri_string_builder_put_int32(&builder, AERON_URI_SESSION_ID_KEY, session_id);
 
-            aeron_uri_string_builder_sprint(&builder, replay_channel, AERON_MAX_PATH + 1);
+            aeron_uri_string_builder_sprint(&builder, replay_channel, sizeof(replay_channel));
             aeron_uri_string_builder_close(&builder);
         }
 
@@ -3589,7 +3589,7 @@ TEST_P(AeronCArchiveParamTest, shouldRecordAndExtend)
         &clientd));
     EXPECT_EQ(1, count);
 
-    char recordingChannel2[AERON_MAX_PATH];
+    char recordingChannel2[AERON_URI_MAX_LENGTH];
 
     aeron_uri_string_builder_t builder;
     ASSERT_EQ_ERR(0, aeron_uri_string_builder_init_on_string(&builder, "aeron:udp?endpoint=localhost:3332"));
@@ -3686,7 +3686,7 @@ TEST_F(AeronCArchiveTest, shouldPurgeSegments)
 
     connect(&rsc_cd);
 
-    char publication_channel[AERON_MAX_PATH];
+    char publication_channel[AERON_URI_MAX_LENGTH];
     {
         aeron_uri_string_builder_t builder;
 
@@ -3697,7 +3697,7 @@ TEST_F(AeronCArchiveTest, shouldPurgeSegments)
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
 
-        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_sprint(&builder, publication_channel, sizeof(publication_channel));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -3755,7 +3755,7 @@ TEST_F(AeronCArchiveTest, shouldDetachAndDeleteSegments)
 
     connect(&rsc_cd);
 
-    char publication_channel[AERON_MAX_PATH];
+    char publication_channel[AERON_URI_MAX_LENGTH];
     {
         aeron_uri_string_builder_t builder;
 
@@ -3766,7 +3766,7 @@ TEST_F(AeronCArchiveTest, shouldDetachAndDeleteSegments)
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
 
-        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_sprint(&builder, publication_channel, sizeof(publication_channel));
         aeron_uri_string_builder_close(&builder);
     }
 
@@ -3828,7 +3828,7 @@ TEST_F(AeronCArchiveTest, shouldDetachAndReattachSegments)
 
     connect(&rsc_cd);
 
-    char publication_channel[AERON_MAX_PATH];
+    char publication_channel[AERON_URI_MAX_LENGTH];
     {
         aeron_uri_string_builder_t builder;
 
@@ -3839,7 +3839,7 @@ TEST_F(AeronCArchiveTest, shouldDetachAndReattachSegments)
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_TERM_LENGTH_KEY, TERM_LENGTH);
         aeron_uri_string_builder_put_int32(&builder, AERON_URI_MTU_LENGTH_KEY, MTU_LENGTH);
 
-        aeron_uri_string_builder_sprint(&builder, publication_channel, AERON_MAX_PATH);
+        aeron_uri_string_builder_sprint(&builder, publication_channel, sizeof(publication_channel));
         aeron_uri_string_builder_close(&builder);
     }
 

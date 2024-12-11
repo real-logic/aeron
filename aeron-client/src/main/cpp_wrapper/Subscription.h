@@ -236,7 +236,7 @@ public:
      */
     std::string tryResolveChannelEndpointPort() const
     {
-        char uri_buffer[AERON_MAX_PATH] = { 0 };
+        char uri_buffer[AERON_CLIENT_MAX_LOCAL_ADDRESS_STR_LEN] = { 0 };
 
         if (aeron_subscription_try_resolve_channel_endpoint_port(m_subscription, uri_buffer, sizeof(uri_buffer)) < 0)
         {

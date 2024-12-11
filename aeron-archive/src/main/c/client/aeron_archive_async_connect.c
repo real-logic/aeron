@@ -449,7 +449,7 @@ int aeron_archive_check_and_setup_response_channel(aeron_archive_context_t *ctx,
     {
         aeron_uri_string_builder_close(&builder); // close the previous builder
 
-        char uri[AERON_MAX_PATH];
+        char uri[AERON_URI_MAX_LENGTH];
         if (aeron_uri_string_builder_init_on_string(&builder,ctx->control_request_channel) < 0 ||
             aeron_uri_string_builder_put_int64(&builder,AERON_URI_RESPONSE_CORRELATION_ID_KEY,subscription_id) < 0 ||
             aeron_uri_string_builder_sprint(&builder,uri, sizeof(uri)) < 0 ||

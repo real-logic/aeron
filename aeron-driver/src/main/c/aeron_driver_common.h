@@ -22,7 +22,6 @@
 #include <stdbool.h>
 
 #define AERON_MAX_HOSTNAME_LEN (256)
-#define AERON_MAX_PATH (384)
 #define AERON_CHANNEL_STATUS_INDICATOR_NOT_ALLOCATED (-1)
 #define AERON_URI_INVALID_TAG (-1)
 

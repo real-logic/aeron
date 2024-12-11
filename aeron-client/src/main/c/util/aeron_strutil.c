@@ -30,7 +30,6 @@
 #define AERON_DLL_EXPORTS
 
 #include "util/aeron_strutil.h"
-#include "aeron_windows.h"
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp)
 {
@@ -165,7 +164,26 @@ int aeron_tokenise(char *input, char delimiter, int max_tokens, char **tokens)
     return num_tokens;
 }
 
-#if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
+#if defined(AERON_COMPILER_MSVC)
+
+char *aeron_strndup(const char *value, size_t length)
+{
+    size_t str_length = strlen(value);
+    char *dup = NULL;
+
+    str_length = (str_length > length) ? length : str_length;
+    if (aeron_alloc((void **)&dup, str_length + 1) < 0)
+    {
+        errno = ENOMEM;
+        return NULL;
+    }
+
+    strncpy(dup, value, str_length);
+    dup[str_length] = '\0';
+    return dup;
+}
+
+#ifndef AERON_NO_GETOPT
 
 // Taken and modified from https://www.codeproject.com/KB/cpp/xgetopt/XGetopt_demo.zip
 // *****************************************************************
@@ -259,6 +277,7 @@ int getopt(int argc, char *const argv[], const char *opt_string)
 
     return c;
 }
+#endif
 
 #endif
 

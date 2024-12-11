@@ -62,8 +62,8 @@ void aeron_error_stat_on_observation(
     size_t error_length,
     void *clientd)
 {
-    char first_timestamp[AERON_MAX_PATH];
-    char last_timestamp[AERON_MAX_PATH];
+    char first_timestamp[AERON_FORMAT_DATE_MAX_LENGTH];
+    char last_timestamp[AERON_FORMAT_DATE_MAX_LENGTH];
 
     aeron_format_date(first_timestamp, sizeof(first_timestamp), first_observation_timestamp);
     aeron_format_date(last_timestamp, sizeof(last_timestamp), last_observation_timestamp);
@@ -82,7 +82,7 @@ void aeron_error_stat_on_observation(
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
-    aeron_default_path(default_directory, AERON_MAX_PATH);
+    aeron_default_path(default_directory, sizeof(default_directory));
     aeron_error_stat_settings_t settings =
         {
             .base_path = default_directory,

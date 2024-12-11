@@ -87,7 +87,7 @@ static void printStats(
     const char *cnc_version)
 {
     int64_t now_ms = aeron_epoch_clock();
-    char currentTime[AERON_MAX_PATH];
+    char currentTime[AERON_FORMAT_DATE_MAX_LENGTH];
     aeron_format_date(currentTime, sizeof(currentTime) - 1, now_ms);
     const int64_t heartbeat_ms = aeron_cnc_to_driver_heartbeat(aeron_cnc);
 
@@ -105,7 +105,7 @@ static void printStats(
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
-    aeron_default_path(default_directory, AERON_MAX_PATH);
+    aeron_default_path(default_directory, sizeof(default_directory));
     aeron_stat_settings_t settings =
         {
             .base_path = default_directory,

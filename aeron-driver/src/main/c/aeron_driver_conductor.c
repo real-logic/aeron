@@ -2574,7 +2574,7 @@ aeron_receive_channel_endpoint_t *aeron_driver_conductor_get_or_add_receive_chan
     {
         aeron_atomic_counter_t status_indicator;
         int ensure_capacity_result = 0;
-        char bind_addr_and_port[AERON_MAX_PATH];
+        char bind_addr_and_port[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
         int bind_addr_and_port_length;
 
         AERON_ARRAY_ENSURE_CAPACITY(

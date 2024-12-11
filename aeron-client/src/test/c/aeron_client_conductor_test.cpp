@@ -274,7 +274,7 @@ public:
 
     void transmitOnPublicationReady(aeron_async_add_publication_t *async, const std::string &logFile, bool isExclusive)
     {
-        char response_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_MAX_PATH];
+        char response_buffer[sizeof(aeron_publication_buffers_ready_t) + AERON_ERROR_MAX_TOTAL_LENGTH];
         auto response = reinterpret_cast<aeron_publication_buffers_ready_t *>(response_buffer);
         int32_t position_limit_counter_id = 10, channel_status_indicator_id = 11;
 
@@ -316,7 +316,7 @@ public:
 
     void transmitOnError(aeron_async_add_publication_t *async, int32_t errorCode, const std::string &errorMessage)
     {
-        char response_buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+        char response_buffer[sizeof(aeron_error_response_t) + AERON_ERROR_MAX_TOTAL_LENGTH];
         auto response = reinterpret_cast<aeron_error_response_t *>(response_buffer);
 
         response->offending_command_correlation_id = async->registration_id;

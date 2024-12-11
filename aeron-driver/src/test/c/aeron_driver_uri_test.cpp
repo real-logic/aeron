@@ -458,7 +458,7 @@ protected:
 
 TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     ASSERT_EQ(resolve_host_and_port("192.168.1.20:55", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
@@ -469,7 +469,7 @@ TEST_F(UriResolverTest, shouldResolveIpv4DottedDecimalAndPort)
 
 TEST_F(UriResolverTest, shouldResolveIpv4MaxPort)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     const std::string uri = std::string("127.0.0.1:") + std::to_string(UINT16_MAX);
     ASSERT_EQ(resolve_host_and_port(uri.c_str(), &m_addr), 0) << aeron_errmsg();
@@ -489,7 +489,7 @@ TEST_F(UriResolverTest, shouldResolveIpv4MulticastDottedDecimalAndPort)
 
 TEST_F(UriResolverTest, shouldResolveIpv6AndPort)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     ASSERT_EQ(resolve_host_and_port("[::1]:1234", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET6);
@@ -517,7 +517,7 @@ TEST_F(UriResolverTest, shouldResolveIpv6MulticastAndPort)
 
 TEST_F(UriResolverTest, shouldResolveLocalhost)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     ASSERT_EQ(resolve_host_and_port("localhost:1234", &m_addr), 0) << aeron_errmsg();
     EXPECT_EQ(m_addr.ss_family, AF_INET);
@@ -550,7 +550,7 @@ TEST_F(UriResolverTest, shouldNotResolvePortBeyoundMax)
 
 TEST_F(UriResolverTest, shouldResolveIpv4Interface)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("192.168.1.20", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 32u);
@@ -578,7 +578,7 @@ TEST_F(UriResolverTest, shouldResolveIpv4Interface)
 
 TEST_F(UriResolverTest, shouldResolveIpv6Interface)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_URI_MAX_LENGTH];
 
     ASSERT_EQ(aeron_interface_parse_and_resolve("[::1]", &m_addr, &m_prefixlen), 0) << aeron_errmsg();
     EXPECT_EQ(m_prefixlen, 128u);

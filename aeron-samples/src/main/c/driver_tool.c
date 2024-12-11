@@ -56,7 +56,12 @@ static void aeron_driver_tool_print_error_and_usage(const char *message)
 int main(int argc, char **argv)
 {
     char default_directory[AERON_MAX_PATH];
-    aeron_default_path(default_directory, AERON_MAX_PATH);
+    if (aeron_default_path(default_directory, sizeof(default_directory)) < 0)
+    {
+        aeron_driver_tool_print_error_and_usage("failed to resolve aeron directory path");
+        return EXIT_FAILURE;
+    }
+
     aeron_driver_tool_settings_t settings =
         {
             .base_path = default_directory,
@@ -132,9 +137,9 @@ int main(int argc, char **argv)
         int64_t now_ms = aeron_epoch_clock();
         const int64_t heartbeat_ms = aeron_cnc_to_driver_heartbeat(aeron_cnc);
 
-        char now_timestamp_buffer[AERON_MAX_PATH];
-        char start_timestamp_buffer[AERON_MAX_PATH];
-        char heartbeat_timestamp_buffer[AERON_MAX_PATH];
+        char now_timestamp_buffer[AERON_FORMAT_DATE_MAX_LENGTH];
+        char start_timestamp_buffer[AERON_FORMAT_DATE_MAX_LENGTH];
+        char heartbeat_timestamp_buffer[AERON_FORMAT_DATE_MAX_LENGTH];
         aeron_format_date(now_timestamp_buffer, sizeof(now_timestamp_buffer), now_ms);
         aeron_format_date(start_timestamp_buffer, sizeof(start_timestamp_buffer), cnc_constants.start_timestamp);
         aeron_format_date(heartbeat_timestamp_buffer, sizeof(heartbeat_timestamp_buffer), heartbeat_ms);

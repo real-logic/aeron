@@ -18,9 +18,10 @@
 #define AERON_COMMON_H
 
 #include <stdint.h>
+#include <stdbool.h>
 #include <stddef.h>
 
-#define AERON_MAX_PATH (384)
+#define AERON_MAX_PATH (4096) // max path name including NUL character
 
 typedef void (*aeron_idle_strategy_func_t)(void *state, int work_count);
 typedef int (*aeron_idle_strategy_init_func_t)(void **state, const char *env_var, const char *init_args);

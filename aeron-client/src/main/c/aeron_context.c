@@ -64,20 +64,17 @@ int aeron_context_init(aeron_context_t **context)
         goto error;
     }
 
-    _context->aeron_dir = NULL;
-    if (aeron_alloc((void **)&_context->aeron_dir, AERON_MAX_PATH) < 0)
-    {
-        AERON_APPEND_ERR("%s", "Unable to allocate aeron_dir path");
-        goto error;
-    }
-
     if (aeron_mpsc_concurrent_array_queue_init(&_context->command_queue, AERON_CLIENT_COMMAND_QUEUE_CAPACITY) < 0)
     {
         AERON_APPEND_ERR("%s", "Unable to init command_queue");
         goto error;
     }
 
-    aeron_default_path(_context->aeron_dir, AERON_MAX_PATH - 1);
+    if (aeron_default_path(_context->aeron_dir, sizeof(_context->aeron_dir)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Failed to resolve default aeron directory path");
+        goto error;
+    }
 
     _context->client_name = NULL;
     _context->error_handler = aeron_default_error_handler;
@@ -112,7 +109,11 @@ int aeron_context_init(aeron_context_t **context)
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
-        snprintf(_context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+        if (aeron_context_set_dir(_context, value) < 0)
+        {
+            AERON_APPEND_ERR("%s", "");
+            goto error;
+        }
     }
 
     if ((value = getenv(AERON_CLIENT_NAME_ENV_VAR)))
@@ -192,7 +193,6 @@ int aeron_context_close(aeron_context_t *context)
 
         aeron_mpsc_concurrent_array_queue_close(&context->command_queue);
 
-        aeron_free((void *)context->aeron_dir);
         aeron_free((void *)context->client_name);
         aeron_free(context->idle_strategy_state);
         aeron_free(context);
@@ -218,7 +218,7 @@ int aeron_context_set_dir(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, context);
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
-    snprintf(context->aeron_dir, AERON_MAX_PATH - 1, "%s", value);
+    snprintf(context->aeron_dir, sizeof(context->aeron_dir), "%s", value);
     return 0;
 }
 
@@ -233,23 +233,13 @@ int aeron_context_set_client_name(aeron_context_t *context, const char *value)
     AERON_CONTEXT_SET_CHECK_ARG_AND_RETURN(-1, value);
 
     size_t copy_length = 0;
-    if (!aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH, &copy_length))
+    if (!aeron_str_length(value, AERON_COUNTER_MAX_CLIENT_NAME_LENGTH + 1, &copy_length))
     {
         AERON_SET_ERR(EINVAL, "client_name length must <= %d", AERON_COUNTER_MAX_CLIENT_NAME_LENGTH);
         return -1;
     }
 
-    char *client_name = NULL;
-
-    if (aeron_alloc((void **)&client_name, copy_length + 1) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
-    }
-
-    memcpy(client_name, value, copy_length);
-
-    context->client_name = client_name;
+    context->client_name = aeron_strndup(value, copy_length);
     return 0;
 }
 

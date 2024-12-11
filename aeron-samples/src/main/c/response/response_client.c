@@ -38,6 +38,7 @@
 
 #include "../samples_configuration.h"
 #include "../sample_util.h"
+#include "uri/aeron_uri.h"
 
 typedef struct response_client_stct response_client_t;
 
@@ -333,8 +334,8 @@ int response_client_create(
     response_client_t *response_client;
     aeron_async_add_subscription_t *async_add_sub;
     aeron_async_add_publication_t *async_add_pub;
-    char _response_channel_buf[AERON_MAX_PATH] = { 0 };
-    char _channel_buf[AERON_MAX_PATH] = { 0 };
+    char _response_channel_buf[AERON_URI_MAX_LENGTH] = { 0 };
+    char _channel_buf[AERON_URI_MAX_LENGTH] = { 0 };
     int64_t subscriber_registration_id;
     aeron_subscription_constants_t constants;
 

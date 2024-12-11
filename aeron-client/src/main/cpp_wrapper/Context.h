@@ -20,13 +20,13 @@
 #include <memory>
 #include <iostream>
 
-#include "util/Exceptions.h"
+#include "aeron_common.h"
+#include "aeronc.h"
+#include "CncFileDescriptor.h"
 #include "concurrent/AgentRunner.h"
 #include "concurrent/CountersReader.h"
-#include "CncFileDescriptor.h"
 #include "status/PublicationErrorFrame.h"
-
-#include "aeronc.h"
+#include "util/Exceptions.h"
 
 namespace aeron
 {
@@ -568,28 +568,27 @@ public:
 
     static std::string defaultAeronPath()
     {
-        char path[1024];
-        std::size_t length = sizeof(path);
-        int result = aeron_default_path(path, length);
+        char path[AERON_MAX_PATH];
+        int result = aeron_default_path(path, sizeof(path));
 
         if (result < 0)
         {
             std::string errMsg = std::string("Failed to get default path, result: ") += std::to_string(result);
             throw IllegalStateException(errMsg, SOURCEINFO);
         }
-        else if (length <= static_cast<std::size_t>(result))
+        else if (AERON_MAX_PATH <= static_cast<std::size_t>(result))
         {
             std::string errMsg = std::string("Path information was truncated, buffer length: ");
-            errMsg += std::to_string(length);
+            errMsg += std::to_string(AERON_MAX_PATH);
             errMsg += ", path length: ";
             errMsg += std::to_string(result);
-            errMsg += ", path: ";
-            errMsg += std::string(path, 0, length);
+            errMsg += ", truncated path: ";
+            errMsg += std::string(path, 0, AERON_MAX_PATH);
 
             throw IllegalStateException(errMsg, SOURCEINFO);
         }
 
-        return { path, 0, length };
+        return { path, 0, (std::size_t)result };
     }
 
 private:

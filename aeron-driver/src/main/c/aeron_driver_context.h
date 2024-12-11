@@ -120,7 +120,7 @@ typedef void (*aeron_driver_name_resolver_on_host_name_t)(
 
 typedef struct aeron_driver_context_stct
 {
-    char *aeron_dir;                                        /* aeron.dir */
+    char aeron_dir[AERON_MAX_PATH];                         /* aeron.dir */
     aeron_threading_mode_t threading_mode;                  /* aeron.threading.mode = DEDICATED */
     aeron_inferable_boolean_t receiver_group_consideration; /* aeron.receiver.group.consideration = INFER */
     bool dirs_delete_on_start;                              /* aeron.dir.delete.on.start = false */

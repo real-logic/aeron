@@ -86,7 +86,7 @@ TEST_F(CSystemTest, shouldReallocateBindingsClientd)
     const char *name1 = "name1";
     int val1 = 11;
 
-    aeron_temp_filename(aeron_dir, AERON_MAX_PATH - 1);
+    aeron_temp_filename(aeron_dir, sizeof(aeron_dir));
 
     aeron_env_set("AERON_UDP_CHANNEL_INCOMING_INTERCEPTORS", "loss");
 

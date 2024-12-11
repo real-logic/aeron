@@ -37,8 +37,8 @@ typedef enum aeron_udp_channel_control_mode_en aeron_udp_channel_control_mode;
 
 typedef struct aeron_udp_channel_stct
 {
-    char original_uri[AERON_MAX_PATH];
-    char canonical_form[AERON_MAX_PATH];
+    char original_uri[AERON_URI_MAX_LENGTH];
+    char canonical_form[AERON_URI_MAX_LENGTH];
     aeron_uri_t uri;
     struct sockaddr_storage remote_data;
     struct sockaddr_storage local_data;
@@ -136,7 +136,7 @@ inline bool aeron_udp_channel_control_modes_match(aeron_udp_channel_t *channel, 
 
 inline bool aeron_udp_channel_equals(aeron_udp_channel_t *a, aeron_udp_channel_t *b)
 {
-    return a == b || (a != NULL && 0 == strncmp(a->canonical_form, b->canonical_form, AERON_MAX_PATH));
+    return a == b || (a != NULL && 0 == strncmp(a->canonical_form, b->canonical_form, AERON_URI_MAX_LENGTH));
 }
 
 inline size_t aeron_udp_channel_receiver_window(aeron_udp_channel_t *channel, size_t default_receiver_window)

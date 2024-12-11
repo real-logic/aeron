@@ -150,6 +150,13 @@ int aeron_publication_image_create(
 
     char path[AERON_MAX_PATH];
     int path_length = aeron_publication_image_location(path, sizeof(path), context->aeron_dir, correlation_id);
+    if (path_length < 0)
+    {
+        AERON_APPEND_ERR("%s", "Could not resolve publication image file path");
+        aeron_free(_image);
+        return -1;
+    }
+
     _image->log_file_name = NULL;
     if (aeron_alloc((void **)(&_image->log_file_name), (size_t)path_length + 1) < 0)
     {

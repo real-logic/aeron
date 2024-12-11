@@ -481,7 +481,7 @@ int aeron_parse_get_line(char *str, size_t max_length, const char *buffer)
 
 void aeron_config_prop_warning(const char *name, const char *str)
 {
-    char buffer[AERON_MAX_PATH];
+    char buffer[AERON_ERROR_MAX_TOTAL_LENGTH];
     snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s=%s is invalid, using default\n", name, str);
     fprintf(stderr, "%s", buffer);
 }

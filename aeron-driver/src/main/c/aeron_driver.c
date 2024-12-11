@@ -63,8 +63,8 @@ static void error_log_reader_save_to_file(
     void *clientd)
 {
     FILE *saved_errors_file = (FILE *)clientd;
-    char first_datestamp[AERON_MAX_PATH];
-    char last_datestamp[AERON_MAX_PATH];
+    char first_datestamp[AERON_FORMAT_DATE_MAX_LENGTH];
+    char last_datestamp[AERON_FORMAT_DATE_MAX_LENGTH];
 
     aeron_format_date(first_datestamp, sizeof(first_datestamp) - 1, first_observation_timestamp);
     aeron_format_date(last_datestamp, sizeof(last_datestamp) - 1, last_observation_timestamp);
@@ -80,7 +80,7 @@ static void error_log_reader_save_to_file(
 
 int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron_dir)
 {
-    char buffer[AERON_MAX_PATH * 2];
+    char buffer[AERON_MAX_PATH];
     int result = 0;
 
     aeron_cnc_metadata_t *metadata = (aeron_cnc_metadata_t *)cnc_map->addr;
@@ -88,7 +88,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
     if (aeron_semantic_version_major(AERON_CNC_VERSION) == aeron_semantic_version_major(metadata->cnc_version) &&
         aeron_error_log_exists(aeron_cnc_error_log_buffer(cnc_map->addr), (size_t)metadata->error_log_buffer_length))
     {
-        char datestamp[AERON_MAX_PATH];
+        char datestamp[AERON_FORMAT_DATE_MAX_LENGTH];
         FILE *saved_errors_file = NULL;
 
         aeron_format_date(datestamp, sizeof(datestamp) - 1, aeron_epoch_clock());
@@ -103,7 +103,7 @@ int aeron_report_existing_errors(aeron_mapped_file_t *cnc_map, const char *aeron
             *invalid_win_symbol = '-';
         }
 
-        snprintf(buffer, sizeof(buffer) - 1, "%s-%s-error.log", aeron_dir, datestamp);
+        snprintf(buffer, sizeof(buffer), "%s-%s-error.log", aeron_dir, datestamp);
 
         if ((saved_errors_file = fopen(buffer, "w")) != NULL)
         {
@@ -141,15 +141,15 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         if (context->warn_if_dirs_exist)
         {
             log_func = aeron_log_func_stderr;
-            snprintf(buffer, sizeof(buffer) - 1, "WARNING: %s exists", dirname);
+            snprintf(buffer, sizeof(buffer), "WARNING: %s exists", dirname);
             log_func(buffer);
         }
 
         if (context->dirs_delete_on_start)
         {
-            if (0 != aeron_delete_directory(context->aeron_dir))
+            if (0 != aeron_delete_directory(dirname))
             {
-                snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to delete: %s", context->aeron_dir);
+                snprintf(buffer, sizeof(buffer), "INFO: failed to delete: %s", dirname);
                 log_func(buffer);
                 return -1;
             }
@@ -158,7 +158,13 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         {
             aeron_mapped_file_t cnc_mmap = { .addr = NULL, .length = 0 };
 
-            aeron_cnc_resolve_filename(dirname, filename, sizeof(filename));
+            if (aeron_cnc_resolve_filename(dirname, filename, sizeof(filename)) < 0)
+            {
+                snprintf(buffer, sizeof(buffer), "INFO: failed to resole CnC file: path=%s, file=%s", dirname, filename);
+                log_func(buffer);
+                return -1;
+            }
+
             if (aeron_map_existing_file(&cnc_mmap, filename) < 0)
             {
                 if (ENOENT == aeron_errcode())
@@ -167,14 +173,14 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
                 }
                 else
                 {
-                    snprintf(buffer, sizeof(buffer) - 1, "INFO: failed to mmap CnC file: %s", filename);
+                    snprintf(buffer, sizeof(buffer), "INFO: failed to mmap CnC file: %s", filename);
                     log_func(buffer);
                     return -1;
                 }
             }
             else
             {
-                snprintf(buffer, sizeof(buffer) - 1, "INFO: Aeron CnC file %s exists", filename);
+                snprintf(buffer, sizeof(buffer), "INFO: Aeron CnC file %s exists", filename);
                 log_func(buffer);
 
                 if (aeron_is_driver_active_with_cnc(
@@ -201,9 +207,9 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
         }
     }
 
-    if (aeron_mkdir_recursive(context->aeron_dir, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
+    if (aeron_mkdir_recursive(dirname, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        AERON_SET_ERR(errno, "Failed to mkdir aeron directory: %s", context->aeron_dir);
+        AERON_APPEND_ERR("Failed to mkdir aeron directory: %s", dirname);
         return -1;
     }
 
@@ -215,7 +221,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
     if (aeron_mkdir_recursive(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        AERON_SET_ERR(errno, "Failed to mkdir publications directory: %s", context->aeron_dir);
+        AERON_APPEND_ERR("Failed to mkdir publications directory: %s", filename);
         return -1;
     }
 
@@ -227,7 +233,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
     if (aeron_mkdir_recursive(filename, S_IRWXU | S_IRWXG | S_IRWXO) != 0)
     {
-        AERON_SET_ERR(errno, "Failed to mkdir images directory: %s", context->aeron_dir);
+        AERON_SET_ERR(errno, "Failed to mkdir images directory: %s", filename);
         return -1;
     }
 
@@ -289,7 +295,11 @@ int aeron_driver_create_cnc_file(aeron_driver_t *driver)
     driver->context->cnc_map.addr = NULL;
     driver->context->cnc_map.length = cnc_file_length;
 
-    snprintf(buffer, sizeof(buffer) - 1, "%s/%s", driver->context->aeron_dir, AERON_CNC_FILE);
+    if(aeron_file_resolve(driver->context->aeron_dir, AERON_CNC_FILE, buffer, sizeof(buffer)) < 0)
+    {
+        AERON_APPEND_ERR("Failed to resolve CnC file path: dir=%s, filename=%s", driver->context->aeron_dir, AERON_CNC_FILE);
+        return -1;
+    }
 
     if (aeron_map_new_file(&driver->context->cnc_map, buffer, true) < 0)
     {

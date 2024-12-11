@@ -20,13 +20,33 @@
 #include <stdint.h>
 #include <stddef.h>
 #include <stdbool.h>
+#include "util/aeron_platform.h"
+
+#define AERON_FORMAT_DATE_MAX_LENGTH (100)
+#define AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN (32)
+#define AERON_FORMAT_HEX_LENGTH(b) ((2 * (b)) + 1)
+
+#if defined(AERON_COMPILER_GCC)
+
+#define aeron_strndup strndup
+
+#elif defined(AERON_COMPILER_MSVC)
+
+char *aeron_strndup(const char *value, size_t length);
+
+#ifndef AERON_NO_GETOPT
+AERON_EXPORT extern char *optarg;
+AERON_EXPORT extern int optind;
+
+int getopt(int argc, char *const argv[], const char *opt_string);
+#endif
+
+#endif
 
 void aeron_format_date(char *str, size_t count, int64_t timestamp);
 
-#define AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN (32)
 char *aeron_format_number_to_locale(long long value, char *buffer, size_t buffer_len);
 
-#define AERON_FORMAT_HEX_LENGTH(b) ((2 * (b)) + 1)
 void aeron_format_to_hex(char *str, size_t str_length, const uint8_t *data, size_t data_len);
 
 /*
@@ -53,10 +73,6 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
     return hval;
 }
 
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
-
 /*
  * Splits a null terminated string using the delimiter specified, which is replaced with \0 characters.
  * Each of the tokens is stored in reverse order in the tokens array.
@@ -70,13 +86,6 @@ int aeron_tokenise(char *input, char delimiter, int max_tokens, char **tokens);
 #define AERON_EXPORT __declspec(dllexport)
 #else
 #define AERON_EXPORT __declspec(dllimport)
-#endif
-
-#if defined(_MSC_VER) && !defined(AERON_NO_GETOPT)
-AERON_EXPORT extern char *optarg;
-AERON_EXPORT extern int optind;
-
-int getopt(int argc, char *const argv[], const char *opt_string);
 #endif
 
 /**

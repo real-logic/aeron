@@ -47,7 +47,12 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     }
 
     _ctx->aeron = NULL;
-    aeron_default_path(_ctx->aeron_directory_name, sizeof(_ctx->aeron_directory_name));
+    if (aeron_default_path(_ctx->aeron_directory_name, sizeof(_ctx->aeron_directory_name)) < 0)
+    {
+        AERON_APPEND_ERR("%s", "Unable to resolve default aeron directory path");
+        return -1;
+    }
+
     _ctx->owns_aeron_client = false;
 
     _ctx->control_request_channel = NULL;
@@ -92,12 +97,7 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
 
     if ((value = getenv(AERON_DIR_ENV_VAR)))
     {
-        int result = snprintf(_ctx->aeron_directory_name, AERON_MAX_PATH - 1, "%s", value);
-        if (result < 0)
-        {
-            AERON_SET_ERR(result, "Failed to set aeron.dir: %s", value);
-            goto error;
-        }
+        aeron_archive_context_set_aeron_directory_name(_ctx, value);
     }
 
     if ((value = getenv(AERON_ARCHIVE_CONTROL_CHANNEL_ENV_VAR)))
@@ -362,7 +362,7 @@ int aeron_archive_context_conclude(aeron_archive_context_t *ctx)
         }
     }
 
-    char uri[AERON_MAX_PATH];
+    char uri[AERON_URI_MAX_LENGTH];
     if (aeron_uri_string_builder_sprint(&request_channel, uri, sizeof(uri)) < 0 ||
         aeron_archive_context_set_control_request_channel(ctx, uri) < 0)
     {

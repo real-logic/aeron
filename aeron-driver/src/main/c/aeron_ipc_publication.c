@@ -40,6 +40,11 @@ int aeron_ipc_publication_create(
 {
     char path[AERON_MAX_PATH];
     int path_length = aeron_ipc_publication_location(path, sizeof(path), context->aeron_dir, registration_id);
+    if (path_length < 0)
+    {
+        AERON_APPEND_ERR("%s", "Could not resolve IPC publication file path");
+        return -1;
+    }
     aeron_ipc_publication_t *_pub = NULL;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(params->term_length, context->file_page_size);
 

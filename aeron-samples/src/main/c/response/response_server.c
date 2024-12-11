@@ -32,6 +32,7 @@
 #include "aeronc.h"
 #include "concurrent/aeron_atomic.h"
 #include "collections/aeron_int64_to_ptr_hash_map.h"
+#include "uri/aeron_uri.h"
 #include "util/aeron_strutil.h"
 #include "aeron_agent.h"
 #include "aeron_alloc.h"
@@ -279,7 +280,7 @@ struct response_server_stct
     aeron_t *aeron;
     aeron_subscription_t *subscription;
     aeron_fragment_handler_t delegate;
-    char response_control_channel[AERON_MAX_PATH];
+    char response_control_channel[AERON_URI_MAX_LENGTH];
     int32_t response_stream_id;
     aeron_int64_to_ptr_hash_map_t response_channel_info_map;
     aeron_mutex_t info_lock;
@@ -314,7 +315,7 @@ void response_server_handle_available_image(void *clientd, aeron_subscription_t 
     response_channel_info->subscription = subscription;
 
     {
-        char _channel_buf[AERON_MAX_PATH] = { 0 };
+        char _channel_buf[AERON_URI_MAX_LENGTH] = { 0 };
 
         SNPRINTF(
             _channel_buf,

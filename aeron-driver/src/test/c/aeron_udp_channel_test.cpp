@@ -93,7 +93,7 @@ public:
     }
 
 protected:
-    char m_buffer[AERON_MAX_PATH] = {};
+    char m_buffer[AERON_NETUTIL_FORMATTED_MAX_LENGTH] = {};
     aeron_udp_channel_t *m_channel = nullptr;
     aeron_name_resolver_t m_resolver = {};
 };

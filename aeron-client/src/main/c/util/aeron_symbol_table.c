@@ -80,9 +80,8 @@ void* aeron_symbol_table_obj_load(
     void *obj = aeron_symbol_table_obj_scan(table, table_length, name);
     if (NULL == obj)
     {
-        char copied_name[AERON_MAX_PATH] = { 0 };
-
-        snprintf(copied_name, sizeof(copied_name) - 1, "%s", name);
+        char copied_name[AERON_SYMBOL_TABLE_NAME_MAX_LENGTH + 1] = { 0 };
+        snprintf(copied_name, sizeof(copied_name), "%s", name);
         obj = aeron_dlsym(RTLD_DEFAULT, copied_name);
     }
 

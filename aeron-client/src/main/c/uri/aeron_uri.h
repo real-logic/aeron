@@ -17,7 +17,6 @@
 #ifndef AERON_URI_H
 #define AERON_URI_H
 
-#include <stdbool.h>
 #include "aeron_common.h"
 
 typedef struct aeron_uri_param_stct
@@ -81,6 +80,8 @@ aeron_uri_params_t;
 #define AERON_URI_MAX_RESEND_KEY "max-resend"
 #define AERON_URI_INVALID_TAG (-1)
 
+#define AERON_URI_MAX_LENGTH (4096) // max channel uri length including NUL character
+
 typedef struct aeron_udp_channel_params_stct
 {
     const char *endpoint;
@@ -110,7 +111,7 @@ aeron_uri_type_t;
 
 typedef struct aeron_uri_stct
 {
-    char mutable_uri[AERON_MAX_PATH];
+    char mutable_uri[AERON_URI_MAX_LENGTH];
     aeron_uri_type_t type;
 
     union

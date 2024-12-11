@@ -198,23 +198,6 @@ void localtime_r(const time_t *timep, struct tm *result)
     localtime_s(result, timep);
 }
 
-char *aeron_strndup(const char *value, size_t length)
-{
-    size_t str_length = strlen(value);
-    char *dup = NULL;
-
-    str_length = (str_length > length) ? length : str_length;
-    if (aeron_alloc((void **)&dup, str_length + 1) < 0)
-    {
-        errno = ENOMEM;
-        return NULL;
-    }
-
-    strncpy(dup, value, str_length);
-    dup[str_length] = '\0';
-    return dup;
-}
-
 #else
 
 typedef int aeron_make_into_non_empty_translation_unit_t;

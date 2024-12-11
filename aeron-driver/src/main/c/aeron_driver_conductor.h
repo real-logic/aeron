@@ -88,7 +88,7 @@ aeron_subscribable_list_entry_t;
 
 typedef struct aeron_subscription_link_stct
 {
-    char channel[AERON_MAX_PATH];
+    char channel[AERON_URI_MAX_LENGTH];
     bool is_tether;
     bool is_sparse;
     bool is_reliable;

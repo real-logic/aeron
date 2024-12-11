@@ -17,6 +17,7 @@
 #include <functional>
 
 #include <gtest/gtest.h>
+#include "command/aeron_control_protocol.h"
 
 extern "C"
 {
@@ -117,9 +118,32 @@ TEST_F(UriTest, shouldParseWithMultipleParams)
     EXPECT_EQ(std::string(m_uri.params.udp.additional_params.array[0].value), "4567");
 }
 
-#ifdef _MSC_VER
-#define strdup _strdup
-#endif
+TEST_F(UriTest, shouldRejectsUriIfLengthExceedsMaxUriLength)
+{
+    EXPECT_EQ(aeron_uri_parse(1000000, "aeron:ipc", &m_uri), -1);
+    EXPECT_EQ(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
+    EXPECT_NE(
+        std::string::npos,
+        std::string(aeron_errmsg()).find("URI length (1000000) exceeds max supported length (4095): aeron:ipc"));
+}
+
+TEST_F(UriTest, shouldRejectsUriIfLengthMatchesMaxUriLength)
+{
+    EXPECT_EQ(aeron_uri_parse(AERON_URI_MAX_LENGTH, "aeron:ipc", &m_uri), -1);
+    EXPECT_EQ(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
+    EXPECT_NE(
+        std::string::npos,
+        std::string(aeron_errmsg()).find("URI length (4096) exceeds max supported length (4095): aeron:ipc"));
+}
+
+TEST_F(UriTest, shouldCanParseUriOfMaxAllowedLength)
+{
+    const auto base_uri = std::string("aeron:ipc?alias=");
+    const auto uri = std::string(base_uri).append(AERON_URI_MAX_LENGTH - 1 - base_uri.length(), 'x');
+    ASSERT_EQ(AERON_URI_MAX_LENGTH - 1, uri.length());
+
+    EXPECT_EQ(aeron_uri_parse(uri.length(), uri.c_str(), &m_uri), 0);
+}
 
 /*
  * WARNING: single threaded only due to global lookup func usage

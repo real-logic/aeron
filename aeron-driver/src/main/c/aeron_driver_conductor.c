@@ -2813,7 +2813,7 @@ void aeron_driver_conductor_on_error(
     const size_t length = strlen(errmsg);
     const size_t response_length = sizeof(aeron_error_response_t) + length;
 
-    if (response_length > sizeof(aeron_error_response_t) + AERON_MAX_PATH)
+    if (response_length > sizeof(aeron_error_response_t) + AERON_ERROR_MAX_TOTAL_LENGTH)
     {
         char *buffer = NULL;
         if (aeron_alloc((void **)&buffer, response_length) < 0)
@@ -2828,14 +2828,13 @@ void aeron_driver_conductor_on_error(
     }
     else
     {
-        char buffer[sizeof(aeron_error_response_t) + AERON_MAX_PATH];
+        char buffer[sizeof(aeron_error_response_t) + AERON_ERROR_MAX_TOTAL_LENGTH];
         on_error(conductor, code, errmsg, length, correlation_id, response_length, buffer);
     }
 
 log_error:
     aeron_driver_conductor_log_explicit_error(conductor, code, errmsg);
 }
-
 
 void on_publication_ready(
     aeron_driver_conductor_t *conductor,

@@ -252,11 +252,16 @@ int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
 
 int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
 {
-    size_t copy_length = sizeof(params->mutable_uri) - 1;
-    copy_length = uri_length < copy_length ? uri_length : copy_length;
+    if (uri_length >= AERON_URI_MAX_LENGTH)
+    {
+        AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL,
+            "URI length (%" PRIu64 ") exceeds max supported length (%d): %.*s",
+            uri_length, (int32_t)AERON_URI_MAX_LENGTH - 1, AERON_URI_MAX_LENGTH, uri);
+        return -1;
+    }
 
-    memcpy(params->mutable_uri, uri, copy_length);
-    params->mutable_uri[copy_length] = '\0';
+    memcpy(params->mutable_uri, uri, uri_length);
+    params->mutable_uri[uri_length] = '\0';
 
     char *ptr = params->mutable_uri;
     params->type = AERON_URI_UNKNOWN;

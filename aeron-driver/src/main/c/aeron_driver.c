@@ -160,7 +160,7 @@ int aeron_driver_ensure_dir_is_recreated(aeron_driver_context_t *context)
 
             if (aeron_cnc_resolve_filename(dirname, filename, sizeof(filename)) < 0)
             {
-                snprintf(buffer, sizeof(buffer), "INFO: failed to resole CnC file: path=%s, file=%s", dirname, filename);
+                snprintf(buffer, sizeof(buffer), "INFO: failed to resole CnC file: path=%s", dirname);
                 log_func(buffer);
                 return -1;
             }

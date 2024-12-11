@@ -67,11 +67,6 @@ public final class ChannelUri
      */
     public static final long INVALID_TAG = Aeron.NULL_VALUE;
 
-    /**
-     * Max length in characters for the URI string.
-     */
-    public static final int MAX_URI_LENGTH = 4095;
-
     private static final int CHANNEL_TAG_INDEX = 0;
     private static final int ENTITY_TAG_INDEX = 1;
 
@@ -362,22 +357,15 @@ public final class ChannelUri
     /**
      * Parse a {@link CharSequence} which contains an Aeron URI.
      *
-     * @param uri to be parsed.
+     * @param cs to be parsed.
      * @return a new {@link ChannelUri} representing the URI string.
      */
     @SuppressWarnings("MethodLength")
-    public static ChannelUri parse(final CharSequence uri)
+    public static ChannelUri parse(final CharSequence cs)
     {
-        final int length = uri.length();
-        if (length > MAX_URI_LENGTH)
-        {
-            throw new IllegalArgumentException("URI length (" + length + ") exceeds max supported length (" +
-                MAX_URI_LENGTH + "): " + uri.subSequence(0, MAX_URI_LENGTH));
-        }
-
         int position = 0;
         final String prefix;
-        if (startsWith(uri, 0, SPY_PREFIX))
+        if (startsWith(cs, 0, SPY_PREFIX))
         {
             prefix = SPY_QUALIFIER;
             position = SPY_PREFIX.length();
@@ -387,9 +375,9 @@ public final class ChannelUri
             prefix = "";
         }
 
-        if (!startsWith(uri, position, AERON_PREFIX))
+        if (!startsWith(cs, position, AERON_PREFIX))
         {
-            throw new IllegalArgumentException("Aeron URIs must start with 'aeron:', found: " + uri);
+            throw new IllegalArgumentException("Aeron URIs must start with 'aeron:', found: " + cs);
         }
         else
         {
@@ -402,9 +390,9 @@ public final class ChannelUri
         String key = null;
 
         State state = State.MEDIA;
-        for (int i = position; i < length; i++)
+        for (int i = position, length = cs.length(); i < length; i++)
         {
-            final char c = uri.charAt(i);
+            final char c = cs.charAt(i);
             switch (state)
             {
                 case MEDIA:
@@ -420,7 +408,7 @@ public final class ChannelUri
                         case '|':
                         case '=':
                             throw new IllegalArgumentException(
-                                "encountered '" + c + "' within media definition at index " + i + " in " + uri);
+                                "encountered '" + c + "' within media definition at index " + i + " in " + cs);
 
                         default:
                             builder.append(c);
@@ -430,9 +418,9 @@ public final class ChannelUri
                 case PARAMS_KEY:
                     if (c == '=')
                     {
-                        if (builder.isEmpty())
+                        if (0 == builder.length())
                         {
-                            throw new IllegalStateException("empty key not allowed at index " + i + " in " + uri);
+                            throw new IllegalStateException("empty key not allowed at index " + i + " in " + cs);
                         }
                         key = builder.toString();
                         builder.setLength(0);
@@ -442,7 +430,7 @@ public final class ChannelUri
                     {
                         if (c == '|')
                         {
-                            throw new IllegalStateException("invalid end of key at index " + i + " in " + uri);
+                            throw new IllegalStateException("invalid end of key at index " + i + " in " + cs);
                         }
                         builder.append(c);
                     }
@@ -462,7 +450,7 @@ public final class ChannelUri
                     break;
 
                 default:
-                    throw new IllegalStateException("unexpected state=" + state + " in " + uri);
+                    throw new IllegalStateException("unexpected state=" + state + " in " + cs);
             }
         }
 
@@ -478,7 +466,7 @@ public final class ChannelUri
                 break;
 
             default:
-                throw new IllegalStateException("no more input found, state=" + state + " in " + uri);
+                throw new IllegalStateException("no more input found, state=" + state + " in " + cs);
         }
 
         return new ChannelUri(prefix, media, params);

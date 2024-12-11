@@ -15,7 +15,6 @@
  */
 package io.aeron;
 
-import io.aeron.test.Tests;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.Arguments;
@@ -27,7 +26,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.util.List;
 import java.util.function.BiConsumer;
 
-import static io.aeron.ChannelUri.MAX_URI_LENGTH;
 import static java.util.Arrays.asList;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.Arguments.arguments;
@@ -74,17 +72,6 @@ class ChannelUriTest
     void shouldRejectWithInvalidParams()
     {
         assertInvalid("aeron:udp?endpoint=localhost:4652|-~@{]|=??#s!£$%====");
-    }
-
-    @ParameterizedTest
-    @ValueSource(ints = { MAX_URI_LENGTH + 1, 10000 })
-    void shouldRejectUriIfLengthExceedsMaxAllowed(final int length)
-    {
-        final String uri = Tests.generateStringWithSuffix("aeron:ipc?alias=", "x", length);
-        final IllegalArgumentException exception =
-            assertThrows(IllegalArgumentException.class, () -> ChannelUri.parse(uri));
-        assertEquals("URI length (" + uri.length() + ") exceeds max supported length (" + MAX_URI_LENGTH +
-            "): " + uri.substring(0, MAX_URI_LENGTH), exception.getMessage());
     }
 
     @Test

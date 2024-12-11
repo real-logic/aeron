@@ -26,6 +26,12 @@
 #define AERON_FORMAT_NUMBER_TO_LOCALE_STR_LEN (32)
 #define AERON_FORMAT_HEX_LENGTH(b) ((2 * (b)) + 1)
 
+#if defined(AERON_DLL_EXPORTS)
+#define AERON_EXPORT __declspec(dllexport)
+#else
+#define AERON_EXPORT __declspec(dllimport)
+#endif
+
 #if defined(AERON_COMPILER_GCC)
 
 #define aeron_strndup strndup
@@ -81,12 +87,6 @@ inline uint64_t aeron_fnv_64a_buf(uint8_t *buf, size_t len)
  * ERANGE: number of tokens is greater than max_tokens.
  */
 int aeron_tokenise(char *input, char delimiter, int max_tokens, char **tokens);
-
-#if defined(AERON_DLL_EXPORTS)
-#define AERON_EXPORT __declspec(dllexport)
-#else
-#define AERON_EXPORT __declspec(dllimport)
-#endif
 
 /**
  * Checks that the string length is strictly less than the specified bound.

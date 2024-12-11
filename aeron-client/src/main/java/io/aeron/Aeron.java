@@ -1044,7 +1044,8 @@ public class Aeron implements AutoCloseable
             if (null == toClientBuffer)
             {
                 toClientBuffer = new CopyBroadcastReceiver(new BroadcastReceiver(
-                    CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)));
+                    CncFileDescriptor.createToClientsBuffer(cncByteBuffer, cncMetaDataBuffer)),
+                    new ExpandableArrayBuffer(CopyBroadcastReceiver.SCRATCH_BUFFER_LENGTH));
             }
 
             if (countersMetaDataBuffer() == null)

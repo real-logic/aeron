@@ -597,7 +597,15 @@ public:
         std::generate(std::begin(vec), std::end(vec), [&] () { return static_cast<uint8_t>(m_generator()); } );
 
         AtomicBuffer buffer(vec.data(), messageSize);
-        ASSERT_GT(m_publication->offer(buffer), 0);
+        int64_t result;
+        while((result = m_publication->offer(buffer)) < 0)
+        {
+            if (AERON_PUBLICATION_BACK_PRESSURED != result && AERON_PUBLICATION_ADMIN_ACTION != result)
+            {
+                FAIL() << "offer failed: " << result;
+            }
+            std::this_thread::yield();
+        }
 
         int count = 0;
         m_innerHandler = [&](AtomicBuffer &buffer, index_t offset, index_t length, Header &header)

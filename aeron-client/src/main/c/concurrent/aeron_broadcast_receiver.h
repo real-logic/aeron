@@ -21,15 +21,16 @@
 #include "aeron_atomic.h"
 #include "aeron_broadcast_descriptor.h"
 
-#define AERON_BROADCAST_SCRATCH_BUFFER_LENGTH (4096u)
+#define AERON_BROADCAST_SCRATCH_BUFFER_LENGTH_DEFAULT (4096u)
 
 typedef struct aeron_broadcast_receiver_stct
 {
-    uint8_t scratch_buffer[AERON_BROADCAST_SCRATCH_BUFFER_LENGTH];
+    uint8_t *scratch_buffer;
     uint8_t *buffer;
     aeron_broadcast_descriptor_t *descriptor;
     size_t capacity;
     size_t mask;
+    size_t scratch_buffer_capacity;
 
     size_t record_offset;
     int64_t cursor;
@@ -41,6 +42,7 @@ aeron_broadcast_receiver_t;
 typedef void (*aeron_broadcast_receiver_handler_t)(int32_t type_id, uint8_t *buffer, size_t length, void *clientd);
 
 int aeron_broadcast_receiver_init(aeron_broadcast_receiver_t *receiver, void *buffer, size_t length);
+int aeron_broadcast_receiver_close(aeron_broadcast_receiver_t *receiver);
 
 inline bool aeron_broadcast_receiver_validate_at(aeron_broadcast_receiver_t *receiver, int64_t cursor)
 {

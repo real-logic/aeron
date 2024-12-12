@@ -709,6 +709,8 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
         aeron_client_conductor_delete_lingering_resource(&conductor->lingering_resources.array[i]);
     }
 
+    aeron_broadcast_receiver_close(&conductor->to_client_buffer);
+
     aeron_int64_to_ptr_hash_map_delete(&conductor->log_buffer_by_id_map);
     aeron_int64_to_ptr_hash_map_delete(&conductor->resource_by_id_map);
     aeron_array_to_ptr_hash_map_delete(&conductor->image_by_key_map);

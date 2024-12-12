@@ -655,7 +655,7 @@ public:
     }
 
 protected:
-    uint8_t m_command_buffer[AERON_MAX_PATH] = {};
+    uint8_t m_command_buffer[128 * 1024] = {};
     TestDriverContext m_context = {};
     TestDriverConductor m_conductor;
     aeron_broadcast_receiver_t m_broadcast_receiver = {};

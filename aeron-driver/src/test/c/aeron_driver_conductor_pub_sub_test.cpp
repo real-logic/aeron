@@ -210,6 +210,22 @@ INSTANTIATE_TEST_SUITE_P(
         return std::string(info.param->m_name);
     });
 
+TEST_P(DriverConductorPubSubTest, shouldRejectAddPublicationIfChannelIsTooLong)
+{
+    const auto channel = std::string(GetParam()->m_channel).append("|alias=").append(AERON_URI_MAX_LENGTH, 'x');
+    int64_t client_id = nextCorrelationId();
+    int64_t pub_id = nextCorrelationId();
+
+    ASSERT_EQ(addPublication(client_id, pub_id, channel.c_str(), STREAM_ID_1, false), 0);
+
+    doWorkUntilDone();
+
+    EXPECT_CALL(m_mockCallbacks, broadcastToClient(AERON_RESPONSE_ON_ERROR, _, _))
+        .With(IsError(pub_id));
+
+    readAllBroadcastsFromConductor(mock_broadcast_handler);
+}
+
 TEST_P(DriverConductorPubSubTest, shouldBeAbleToAddAndRemoveSingleNetworkPublication)
 {
     const char *channel = GetParam()->m_channel;

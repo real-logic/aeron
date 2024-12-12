@@ -36,27 +36,78 @@ public:
         aeron_uri_close(&m_uri);
     }
 
+    static void assertUriWasRejected(aeron_uri_t *uri)
+    {
+        EXPECT_EQ(uri->type, AERON_URI_UNKNOWN);
+
+        EXPECT_EQ(uri->params.udp.additional_params.length, 0);
+        EXPECT_EQ(uri->params.udp.additional_params.array, nullptr);
+        EXPECT_EQ(uri->params.udp.endpoint, nullptr);
+        EXPECT_EQ(uri->params.udp.bind_interface, nullptr);
+        EXPECT_EQ(uri->params.udp.ttl, nullptr);
+        EXPECT_EQ(uri->params.udp.control, nullptr);
+        EXPECT_EQ(uri->params.udp.control_mode, nullptr);
+        EXPECT_EQ(uri->params.udp.channel_tag, nullptr);
+        EXPECT_EQ(uri->params.udp.entity_tag, nullptr);
+
+        EXPECT_EQ(uri->params.ipc.additional_params.length, 0);
+        EXPECT_EQ(uri->params.ipc.additional_params.array, nullptr);
+        EXPECT_EQ(uri->params.ipc.channel_tag, nullptr);
+        EXPECT_EQ(uri->params.ipc.entity_tag, nullptr);
+    }
+
 protected:
     aeron_uri_t m_uri = {};
 };
 
 #define AERON_URI_PARSE(uri_str, uri) aeron_uri_parse(strlen(uri_str), uri_str, uri)
 
+TEST_F(UriTest, shouldRejectNullParams)
+{
+    EXPECT_EQ(aeron_uri_parse(9, "aeron:ipc", nullptr), -1);
+    EXPECT_EQ(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("params is NULL"));
+}
+
+TEST_F(UriTest, shouldRejectNullUri)
+{
+    EXPECT_EQ(aeron_uri_parse(5, nullptr, &m_uri), -1);
+    EXPECT_EQ(-AERON_ERROR_CODE_INVALID_CHANNEL, aeron_errcode());
+    EXPECT_NE(std::string::npos, std::string(aeron_errmsg()).find("channel URI is NULL"));
+    assertUriWasRejected(&m_uri);
+}
+
 TEST_F(UriTest, shouldNotParseInvalidUriScheme)
 {
     EXPECT_EQ(AERON_URI_PARSE("aaron", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aeron:", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aron:", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE(":aeron", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp:", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
 }
 
 TEST_F(UriTest, shouldNotParseUnknownUriTransport)
 {
     EXPECT_EQ(AERON_URI_PARSE("aeron:tcp", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aeron:sctp", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aeron:udp", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
+
     EXPECT_EQ(AERON_URI_PARSE("aeron:ipcsdfgfdhfgf", &m_uri), -1);
+    assertUriWasRejected(&m_uri);
 }
 
 TEST_F(UriTest, shouldRejectWithMissingQuerySeparatorWhenFollowedWithParams)
@@ -125,6 +176,7 @@ TEST_F(UriTest, shouldRejectsUriIfLengthExceedsMaxUriLength)
     EXPECT_NE(
         std::string::npos,
         std::string(aeron_errmsg()).find("URI length (1000000) exceeds max supported length (4095): aeron:ipc"));
+    assertUriWasRejected(&m_uri);
 }
 
 TEST_F(UriTest, shouldRejectsUriIfLengthMatchesMaxUriLength)
@@ -134,6 +186,7 @@ TEST_F(UriTest, shouldRejectsUriIfLengthMatchesMaxUriLength)
     EXPECT_NE(
         std::string::npos,
         std::string(aeron_errmsg()).find("URI length (4096) exceeds max supported length (4095): aeron:ipc"));
+    assertUriWasRejected(&m_uri);
 }
 
 TEST_F(UriTest, shouldCanParseUriOfMaxAllowedLength)

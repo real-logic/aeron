@@ -21,6 +21,10 @@
 #include "util/aeron_arrayutil.h"
 #include "util/aeron_parse_util.h"
 
+#define AERON_URI_SCHEME "aeron:"
+#define AERON_URI_UDP_TRANSPORT "udp"
+#define AERON_URI_IPC_TRANSPORT "ipc"
+
 typedef enum aeron_uri_parser_state_enum
 {
     PARAM_KEY, PARAM_VALUE
@@ -188,21 +192,6 @@ static int aeron_udp_uri_params_func(void *clientd, const char *key, const char 
     return 0;
 }
 
-int aeron_udp_uri_parse(char *uri, aeron_udp_channel_params_t *params)
-{
-    params->additional_params.length = 0;
-    params->additional_params.array = NULL;
-    params->endpoint = NULL;
-    params->bind_interface = NULL;
-    params->ttl = NULL;
-    params->control = NULL;
-    params->control_mode = NULL;
-    params->channel_tag = NULL;
-    params->entity_tag = NULL;
-
-    return aeron_uri_parse_params(uri, aeron_udp_uri_params_func, params);
-}
-
 static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char *value)
 {
     aeron_ipc_channel_params_t *params = (aeron_ipc_channel_params_t *)clientd;
@@ -236,22 +225,43 @@ static int aeron_ipc_uri_params_func(void *clientd, const char *key, const char 
     return 0;
 }
 
-int aeron_ipc_uri_parse(char *uri, aeron_ipc_channel_params_t *params)
+static void aeron_uri_reset(aeron_uri_t *params)
 {
-    params->additional_params.length = 0;
-    params->additional_params.array = NULL;
-    params->channel_tag = NULL;
-    params->entity_tag = NULL;
+    params->mutable_uri[0] = '\0';
+    params->type = AERON_URI_UNKNOWN;
 
-    return aeron_uri_parse_params(uri, aeron_ipc_uri_params_func, params);
+    params->params.udp.additional_params.length = 0;
+    params->params.udp.additional_params.array = NULL;
+    params->params.udp.endpoint = NULL;
+    params->params.udp.bind_interface = NULL;
+    params->params.udp.ttl = NULL;
+    params->params.udp.control = NULL;
+    params->params.udp.control_mode = NULL;
+    params->params.udp.channel_tag = NULL;
+    params->params.udp.entity_tag = NULL;
+
+    params->params.ipc.additional_params.length = 0;
+    params->params.ipc.additional_params.array = NULL;
+    params->params.ipc.channel_tag = NULL;
+    params->params.ipc.entity_tag = NULL;
 }
-
-#define AERON_URI_SCHEME "aeron:"
-#define AERON_URI_UDP_TRANSPORT "udp"
-#define AERON_URI_IPC_TRANSPORT "ipc"
 
 int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
 {
+    if (NULL == params)
+    {
+        AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "params is NULL");
+        return -1;
+    }
+
+    aeron_uri_reset(params);
+
+    if (NULL == uri)
+    {
+        AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL, "%s", "channel URI is NULL");
+        return -1;
+    }
+
     if (uri_length >= AERON_URI_MAX_LENGTH)
     {
         AERON_SET_ERR(-AERON_ERROR_CODE_INVALID_CHANNEL,
@@ -264,7 +274,6 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
     params->mutable_uri[uri_length] = '\0';
 
     char *ptr = params->mutable_uri;
-    params->type = AERON_URI_UNKNOWN;
 
     if (strncmp(ptr, AERON_URI_SCHEME, strlen(AERON_URI_SCHEME)) == 0)
     {
@@ -277,7 +286,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
             if (*ptr++ == '?')
             {
                 params->type = AERON_URI_UDP;
-                int result = aeron_udp_uri_parse(ptr, &params->params.udp);
+                int result = aeron_uri_parse_params(ptr, aeron_udp_uri_params_func, &params->params.udp);
                 if (result < 0)
                 {
                     AERON_APPEND_ERR("%.*s", (int)uri_length, uri);
@@ -292,7 +301,7 @@ int aeron_uri_parse(size_t uri_length, const char *uri, aeron_uri_t *params)
             if (*ptr == '\0' || *ptr++ == '?')
             {
                 params->type = AERON_URI_IPC;
-                int result = aeron_ipc_uri_parse(ptr, &params->params.ipc);
+                int result = aeron_uri_parse_params(ptr, aeron_ipc_uri_params_func, &params->params.ipc);
                 if (result < 0)
                 {
                     AERON_APPEND_ERR("%.*s", (int)uri_length, uri);

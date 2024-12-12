@@ -876,7 +876,7 @@ public final class DriverConductor implements Agent
         final boolean isExclusive)
     {
         IpcPublication publication = null;
-        final ChannelUri channelUri = ChannelUri.parse(channel);
+        final ChannelUri channelUri = parseUri(channel);
         final PublicationParams params = getPublicationParams(channelUri, ctx, this, true);
 
         if (!isExclusive)
@@ -953,7 +953,7 @@ public final class DriverConductor implements Agent
 
     void onAddSendDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
-        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
+        final ChannelUri channelUri = parseUri(destinationChannel);
         validateDestinationUri(channelUri, destinationChannel);
         validateSendDestinationUri(channelUri, destinationChannel);
 
@@ -1004,7 +1004,7 @@ public final class DriverConductor implements Agent
 
         sendChannelEndpoint.validateAllowsManualControl();
 
-        final ChannelUri channelUri = ChannelUri.parse(destinationChannel);
+        final ChannelUri channelUri = parseUri(destinationChannel);
         final InetSocketAddress dstAddress = UdpChannel.destinationAddress(channelUri, nameResolver);
         senderProxy.removeDestination(sendChannelEndpoint, channelUri, dstAddress);
         clientProxy.operationSucceeded(correlationId);
@@ -1101,7 +1101,7 @@ public final class DriverConductor implements Agent
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(ChannelUri.parse(channel), ctx);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(parseUri(channel), ctx);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
 
@@ -1305,7 +1305,7 @@ public final class DriverConductor implements Agent
     void onAddRcvIpcDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         final SubscriptionParams params =
-            SubscriptionParams.getSubscriptionParams(ChannelUri.parse(destinationChannel), ctx);
+            SubscriptionParams.getSubscriptionParams(parseUri(destinationChannel), ctx);
         final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
 
         if (null == mdsSubscriptionLink)
@@ -1549,6 +1549,18 @@ public final class DriverConductor implements Agent
         {
             timeOfLastToDriverPositionChangeNs = nowNs;
             lastCommandConsumerPosition = consumerPosition;
+        }
+    }
+
+    private static ChannelUri parseUri(final String channel)
+    {
+        try
+        {
+            return ChannelUri.parse(channel);
+        }
+        catch (final Exception ex)
+        {
+            throw new InvalidChannelException(ex);
         }
     }
 

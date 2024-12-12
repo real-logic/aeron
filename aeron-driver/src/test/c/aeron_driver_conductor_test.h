@@ -344,6 +344,7 @@ public:
 
     ~DriverConductorTest()
     {
+        aeron_broadcast_receiver_close(&m_broadcast_receiver);
         aeron_system_counters_close(&m_context.m_system_counters);
         aeron_counters_manager_close(&m_context.m_counters_manager);
         aeron_distinct_error_log_close(&m_context.m_error_log);

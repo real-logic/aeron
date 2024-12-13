@@ -26,8 +26,7 @@ public class InvalidChannelException extends ControlProtocolException
     private static final long serialVersionUID = 8395688431913848255L;
 
     /**
-     * Exception with provided message and {@link io.aeron.exceptions.AeronException.Category#ERROR} and
-     * {@link ErrorCode#INVALID_CHANNEL}.
+     * Exception with provided message and {@link ErrorCode#INVALID_CHANNEL}.
      *
      * @param message to detail the exception.
      */
@@ -37,13 +36,23 @@ public class InvalidChannelException extends ControlProtocolException
     }
 
     /**
-     * Exception with provided cause and {@link io.aeron.exceptions.AeronException.Category#ERROR}
-     * and {@link ErrorCode#INVALID_CHANNEL}.
+     * Exception with provided cause and {@link ErrorCode#INVALID_CHANNEL}.
      *
      * @param cause of the exception.
      */
     public InvalidChannelException(final Exception cause)
     {
         super(ErrorCode.INVALID_CHANNEL, cause);
+    }
+
+    /**
+     * Exception with provided message, cause and {@link ErrorCode#INVALID_CHANNEL}.
+     *
+     * @param message to detail the exception.
+     * @param cause of the exception.
+     */
+    public InvalidChannelException(final String message, final Exception cause)
+    {
+        super(ErrorCode.INVALID_CHANNEL, message, cause);
     }
 }

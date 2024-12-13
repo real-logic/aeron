@@ -58,6 +58,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     private final int startingTermOffset;
     private final int positionBitsToShift;
     private final int termBufferLength;
+    private final int mtuLength;
     private final int termWindowLength;
     private final int initialTermId;
     private final int tripGain;
@@ -90,7 +91,6 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         final Position publisherPos,
         final Position publisherLimit,
         final RawLog rawLog,
-        final int termWindowLength,
         final boolean isExclusive,
         final PublicationParams params)
     {
@@ -102,14 +102,15 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         this.isExclusive = isExclusive;
         this.termBuffers = rawLog.termBuffers();
         this.initialTermId = LogBufferDescriptor.initialTermId(rawLog.metaData());
-        this.startingTermId = params.hasPosition ? params.termId : initialTermId;
-        this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
+        this.startingTermId = params.termId;
+        this.startingTermOffset = params.termOffset;
         this.errorHandler = ctx.errorHandler();
 
-        final int termLength = rawLog.termLength();
+        final int termLength = params.termLength;
         this.termBufferLength = termLength;
+        this.mtuLength = params.mtuLength;
         this.positionBitsToShift = LogBufferDescriptor.positionBitsToShift(termLength);
-        this.termWindowLength = termWindowLength;
+        this.termWindowLength = params.publicationWindowLength;
         this.tripGain = termWindowLength >> 3;
         this.publisherPos = publisherPos;
         this.publisherLimit = publisherLimit;
@@ -202,6 +203,16 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
     int publisherLimitId()
     {
         return publisherLimit.id();
+    }
+
+    int termBufferLength()
+    {
+        return termBufferLength;
+    }
+
+    int mtuLength()
+    {
+        return mtuLength;
     }
 
     /**

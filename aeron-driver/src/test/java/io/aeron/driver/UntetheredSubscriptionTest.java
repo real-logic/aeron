@@ -36,12 +36,12 @@ class UntetheredSubscriptionTest
     private static final int TAG_ID = 0;
     private static final int SESSION_ID = 777;
     private static final int STREAM_ID = 1003;
-    private static final String CHANNEL = CommonContext.IPC_CHANNEL;
     private static final int TERM_BUFFER_LENGTH = LogBufferDescriptor.TERM_MIN_LENGTH;
     private static final int TERM_WINDOW_LENGTH = TERM_BUFFER_LENGTH / 2;
     private static final long TIME_NS = 1000;
     private static final long UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS = Configuration.untetheredWindowLimitTimeoutNs();
     private static final long UNTETHERED_RESTING_TIMEOUT_NS = Configuration.untetheredRestingTimeoutNs();
+    private static final String CHANNEL = CommonContext.IPC_CHANNEL + "?term-length=" + TERM_BUFFER_LENGTH;
 
     private final RawLog rawLog = TestLogFactory.newLogBuffers(TERM_BUFFER_LENGTH);
     private final AtomicLongPosition publisherLimit = new AtomicLongPosition();
@@ -57,7 +57,7 @@ class UntetheredSubscriptionTest
     {
         ctx.cachedNanoClock().update(TIME_NS);
         final PublicationParams params = PublicationParams.getPublicationParams(
-            ChannelUri.parse("aeron:udp?endpoint=localhost:1010"), ctx, conductor, false);
+            ChannelUri.parse(CHANNEL), ctx, conductor, STREAM_ID, "ipc");
 
         ipcPublication = new IpcPublication(
             REGISTRATION_ID,
@@ -69,7 +69,6 @@ class UntetheredSubscriptionTest
             mock(Position.class),
             publisherLimit,
             rawLog,
-            TERM_WINDOW_LENGTH,
             true,
             params);
     }

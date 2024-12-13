@@ -213,8 +213,8 @@ public final class NetworkPublication
         this.spiesSimulateConnection = params.spiesSimulateConnection;
         this.signalEos = params.signalEos;
         this.isExclusive = isExclusive;
-        this.startingTermId = params.hasPosition ? params.termId : initialTermId;
-        this.startingTermOffset = params.hasPosition ? params.termOffset : 0;
+        this.startingTermId = params.termId;
+        this.startingTermOffset = params.termOffset;
         this.isResponse = params.isResponse;
         this.responseCorrelationId = params.responseCorrelationId;
 

@@ -528,11 +528,11 @@ public final class DriverConductor implements Agent
             {
                 final UdpChannel udpChannel = asyncResult.get();
                 final ChannelUri channelUri = udpChannel.channelUri();
-                final PublicationParams params = getPublicationParams(channelUri, ctx, this, false);
+                final PublicationParams params =
+                    getPublicationParams(channelUri, ctx, this, streamId, udpChannel.canonicalForm());
                 validateExperimentalFeatures(ctx.enableExperimentalFeatures(), udpChannel);
                 validateEndpointForPublication(udpChannel);
                 validateControlForPublication(udpChannel);
-                validateMtuForMaxMessage(params, channel);
                 validateResponseSubscription(params);
 
                 final SendChannelEndpoint channelEndpoint =
@@ -550,14 +550,9 @@ public final class DriverConductor implements Agent
                 boolean isNewPublication = false;
                 if (null == publication)
                 {
-                    if (params.hasSessionId)
-                    {
-                        checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm(), channel);
-                    }
-
+                    checkForSessionClash(params.sessionId, streamId, udpChannel.canonicalForm(), channel);
                     publication = newNetworkPublication(
                         correlationId, clientId, streamId, channel, udpChannel, channelEndpoint, params, isExclusive);
-
                     isNewPublication = true;
                 }
                 else
@@ -877,7 +872,7 @@ public final class DriverConductor implements Agent
     {
         IpcPublication publication = null;
         final ChannelUri channelUri = parseUri(channel);
-        final PublicationParams params = getPublicationParams(channelUri, ctx, this, true);
+        final PublicationParams params = getPublicationParams(channelUri, ctx, this, streamId, IPC_MEDIA);
 
         if (!isExclusive)
         {
@@ -887,12 +882,7 @@ public final class DriverConductor implements Agent
         boolean isNewPublication = false;
         if (null == publication)
         {
-            if (params.hasSessionId)
-            {
-                checkForSessionClash(params.sessionId, streamId, IPC_MEDIA, channel);
-            }
-
-            validateMtuForMaxMessage(params, channel);
+            checkForSessionClash(params.sessionId, streamId, IPC_MEDIA, channel);
             publication = addIpcPublication(correlationId, clientId, streamId, channel, isExclusive, params);
             isNewPublication = true;
         }
@@ -1517,6 +1507,29 @@ public final class DriverConductor implements Agent
         clientProxy.operationSucceeded(correlationId);
     }
 
+    int nextAvailableSessionId(final int streamId, final String channel)
+    {
+        final SessionKey sessionKey = new SessionKey(streamId, channel);
+
+        while (true)
+        {
+            int sessionId = nextSessionId++;
+
+            if (ctx.publicationReservedSessionIdLow() <= sessionId &&
+                sessionId <= ctx.publicationReservedSessionIdHigh())
+            {
+                nextSessionId = ctx.publicationReservedSessionIdHigh() + 1;
+                sessionId = nextSessionId++;
+            }
+
+            sessionKey.sessionId = sessionId;
+            if (!activeSessionSet.contains(sessionKey))
+            {
+                return sessionId;
+            }
+        }
+    }
+
     private void heartbeatAndCheckTimers(final long nowNs)
     {
         final long nowMs = cachedEpochClock.time();
@@ -1685,8 +1698,6 @@ public final class DriverConductor implements Agent
         final boolean isExclusive)
     {
         final String canonicalForm = udpChannel.canonicalForm();
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, canonicalForm);
-        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
 
         final FlowControl flowControl = udpChannel.isMulticast() || udpChannel.isMultiDestination() ?
             ctx.multicastFlowControlSupplier().newInstance(udpChannel, streamId, registrationId) :
@@ -1696,12 +1707,13 @@ public final class DriverConductor implements Agent
             countersManager,
             udpChannel,
             streamId,
-            sessionId,
+            params.sessionId,
             registrationId,
-            initialTermId,
+            params.initialTermId,
             params.termLength);
 
-        final RawLog rawLog = newNetworkPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+        final RawLog rawLog =
+            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1710,15 +1722,15 @@ public final class DriverConductor implements Agent
         try
         {
             publisherPos = PublisherPos.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
             publisherLmt = PublisherLimit.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
             senderPos = SenderPos.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
             senderLmt = SenderLimit.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
             senderBpe = SenderBpe.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
 
             countersManager.setCounterOwnerId(publisherLmt.id(), clientId);
             final AtomicCounter retransmitOverflowCounter = ctx.systemCounters().get(RETRANSMIT_OVERFLOW);
@@ -1726,7 +1738,7 @@ public final class DriverConductor implements Agent
             if (params.hasPosition)
             {
                 final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
-                final long position = computePosition(params.termId, params.termOffset, bits, initialTermId);
+                final long position = computePosition(params.termId, params.termOffset, bits, params.initialTermId);
                 publisherPos.setOrdered(position);
                 publisherLmt.setOrdered(position);
                 senderPos.setOrdered(position);
@@ -1739,7 +1751,7 @@ public final class DriverConductor implements Agent
                 ctx.retransmitUnicastDelayGenerator(),
                 ctx.retransmitUnicastLingerGenerator(),
                 udpChannel.hasGroupSemantics(),
-                params.hasMaxResend ? params.maxResend : ctx.maxResend(),
+                params.maxResend,
                 retransmitOverflowCounter);
 
             final NetworkPublication publication = new NetworkPublication(
@@ -1748,15 +1760,15 @@ public final class DriverConductor implements Agent
                 params,
                 channelEndpoint,
                 rawLog,
-                Configuration.producerWindowLength(params.termLength, ctx.publicationTermWindowLength()),
+                params.publicationWindowLength,
                 publisherPos,
                 publisherLmt,
                 senderPos,
                 senderLmt,
                 senderBpe,
-                sessionId,
+                params.sessionId,
                 streamId,
-                initialTermId,
+                params.initialTermId,
                 flowControl,
                 retransmitHandler,
                 networkPublicationThreadLocals,
@@ -1765,7 +1777,7 @@ public final class DriverConductor implements Agent
             channelEndpoint.incRef();
             networkPublications.add(publication);
             senderProxy.newNetworkPublication(publication);
-            activeSessionSet.add(new SessionKey(sessionId, streamId, canonicalForm));
+            activeSessionSet.add(new SessionKey(params.sessionId, streamId, canonicalForm));
 
             return publication;
         }
@@ -2249,18 +2261,17 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final int sessionId = params.hasSessionId ? params.sessionId : nextAvailableSessionId(streamId, IPC_MEDIA);
-        final int initialTermId = params.hasPosition ? params.initialTermId : BitUtil.generateRandomisedId();
-        final RawLog rawLog = newIpcPublicationLog(sessionId, streamId, initialTermId, registrationId, params);
+        final RawLog rawLog =
+            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
 
         UnsafeBufferPosition publisherPosition = null;
         UnsafeBufferPosition publisherLimit = null;
         try
         {
             publisherPosition = PublisherPos.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
             publisherLimit = PublisherLimit.allocate(
-                tempBuffer, countersManager, registrationId, sessionId, streamId, channel);
+                tempBuffer, countersManager, registrationId, params.sessionId, streamId, channel);
 
             countersManager.setCounterOwnerId(publisherLimit.id(), clientId);
 
@@ -2268,7 +2279,7 @@ public final class DriverConductor implements Agent
             {
                 final int positionBitsToShift = positionBitsToShift(params.termLength);
                 final long position = computePosition(
-                    params.termId, params.termOffset, positionBitsToShift, initialTermId);
+                    params.termId, params.termOffset, positionBitsToShift, params.initialTermId);
                 publisherPosition.setOrdered(position);
                 publisherLimit.setOrdered(position);
             }
@@ -2278,17 +2289,16 @@ public final class DriverConductor implements Agent
                 channel,
                 ctx,
                 params.entityTag,
-                sessionId,
+                params.sessionId,
                 streamId,
                 publisherPosition,
                 publisherLimit,
                 rawLog,
-                Configuration.producerWindowLength(params.termLength, ctx.ipcPublicationTermWindowLength()),
                 isExclusive,
                 params);
 
             ipcPublications.add(publication);
-            activeSessionSet.add(new SessionKey(sessionId, streamId, IPC_MEDIA));
+            activeSessionSet.add(new SessionKey(params.sessionId, streamId, IPC_MEDIA));
 
             return publication;
         }
@@ -2380,29 +2390,6 @@ public final class DriverConductor implements Agent
         {
             throw new InvalidChannelException("existing publication has clashing sessionId=" + sessionId +
                 " for streamId=" + streamId + " channel=" + originalChannel);
-        }
-    }
-
-    private int nextAvailableSessionId(final int streamId, final String channel)
-    {
-        final SessionKey sessionKey = new SessionKey(streamId, channel);
-
-        while (true)
-        {
-            int sessionId = nextSessionId++;
-
-            if (ctx.publicationReservedSessionIdLow() <= sessionId &&
-                sessionId <= ctx.publicationReservedSessionIdHigh())
-            {
-                nextSessionId = ctx.publicationReservedSessionIdHigh() + 1;
-                sessionId = nextSessionId++;
-            }
-
-            sessionKey.sessionId = sessionId;
-            if (!activeSessionSet.contains(sessionKey))
-            {
-                return sessionId;
-            }
         }
     }
 

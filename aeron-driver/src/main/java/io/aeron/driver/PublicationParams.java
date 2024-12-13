@@ -18,8 +18,10 @@ package io.aeron.driver;
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
 import io.aeron.driver.buffer.RawLog;
+import io.aeron.driver.exceptions.InvalidChannelException;
 import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
+import org.agrona.BitUtil;
 import org.agrona.SystemUtil;
 
 import static io.aeron.ChannelUri.INVALID_TAG;
@@ -31,46 +33,48 @@ final class PublicationParams
     long entityTag = ChannelUri.INVALID_TAG;
     long untetheredWindowLimitTimeoutNs;
     long untetheredRestingTimeoutNs;
+    long responseCorrelationId = Aeron.NULL_VALUE;
     int termLength;
     int mtuLength;
-    int initialTermId = 0;
-    int termId = 0;
-    int termOffset = 0;
-    int sessionId = 0;
-    boolean hasPosition = false;
-    boolean hasSessionId = false;
-    boolean isSessionIdTagged = false;
-    boolean signalEos = true;
+    int publicationWindowLength;
+    int initialTermId;
+    int termId;
+    int termOffset;
+    int sessionId;
+    int streamId;
+    int maxResend;
+    boolean hasPosition;
+    boolean isSessionIdTagged;
+    boolean signalEos;
     boolean isSparse;
     boolean spiesSimulateConnection;
-    boolean isResponse = false;
-    long responseCorrelationId = Aeron.NULL_VALUE;
-    boolean hasMaxResend = false;
-    int maxResend = Aeron.NULL_VALUE;
-
-    PublicationParams()
-    {
-    }
+    boolean isResponse;
 
     static PublicationParams getPublicationParams(
         final ChannelUri channelUri,
         final MediaDriver.Context ctx,
         final DriverConductor driverConductor,
-        final boolean isIpc)
+        final int streamId,
+        final String canonicalForm)
     {
-        final PublicationParams params = new PublicationParams(ctx, isIpc);
+        final PublicationParams params = new PublicationParams();
 
+        params.termLength = channelUri.isIpc() ? ctx.ipcTermBufferLength() : ctx.publicationTermBufferLength();
+        params.mtuLength = channelUri.isIpc() ? ctx.ipcMtuLength() : ctx.mtuLength();
+
+        params.getStreamId(channelUri, streamId);
         params.getEntityTag(channelUri, driverConductor);
-        params.getSessionId(channelUri, driverConductor);
+        params.getSessionId(channelUri, driverConductor, streamId, canonicalForm);
         params.getTermBufferLength(channelUri);
         params.getMtuLength(channelUri);
-        params.getLingerTimeoutNs(channelUri);
+        params.getPublicationWindowLength(channelUri, ctx);
+        params.getLingerTimeoutNs(channelUri, ctx);
         params.getEos(channelUri);
         params.getSparse(channelUri, ctx);
         params.getSpiesSimulateConnection(channelUri, ctx);
         params.getUntetheredWindowLimitTimeout(channelUri, ctx);
         params.getUntetheredRestingTimeout(channelUri, ctx);
-        params.getMaxResend(channelUri);
+        params.getMaxResend(channelUri, ctx);
 
         int count = 0;
 
@@ -87,7 +91,7 @@ final class PublicationParams
         {
             if (count < 3)
             {
-                throw new IllegalArgumentException("params must be used as a complete set: " +
+                throw new InvalidChannelException("params must be used as a complete set: " +
                     INITIAL_TERM_ID_PARAM_NAME + " " + TERM_ID_PARAM_NAME + " " + TERM_OFFSET_PARAM_NAME + " channel=" +
                     channelUri);
             }
@@ -98,33 +102,39 @@ final class PublicationParams
 
             if (params.termOffset > params.termLength)
             {
-                throw new IllegalArgumentException(
+                throw new InvalidChannelException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " > " +
                     TERM_LENGTH_PARAM_NAME + "=" + params.termLength + ": channel=" + channelUri);
             }
 
             if (params.termOffset < 0 || params.termOffset > LogBufferDescriptor.TERM_MAX_LENGTH)
             {
-                throw new IllegalArgumentException(
+                throw new InvalidChannelException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset + " out of range: channel=" + channelUri);
             }
 
             if ((params.termOffset & (FrameDescriptor.FRAME_ALIGNMENT - 1)) != 0)
             {
-                throw new IllegalArgumentException(
+                throw new InvalidChannelException(
                     TERM_OFFSET_PARAM_NAME + "=" + params.termOffset +
                     " must be a multiple of FRAME_ALIGNMENT: channel=" + channelUri);
             }
 
             if (params.termId - params.initialTermId < 0)
             {
-                throw new IllegalStateException(
+                throw new InvalidChannelException(
                     "difference greater than 2^31 - 1: " + INITIAL_TERM_ID_PARAM_NAME + "=" +
                     params.initialTermId + " when " + TERM_ID_PARAM_NAME + "=" + params.termId + " channel=" +
                     channelUri);
             }
 
             params.hasPosition = true;
+        }
+        else
+        {
+            params.initialTermId = BitUtil.generateRandomisedId();
+            params.termId = params.initialTermId;
+            params.termOffset = 0;
         }
 
         params.isResponse = CONTROL_MODE_RESPONSE.equals(channelUri.get(MDC_CONTROL_MODE_PARAM_NAME));
@@ -133,12 +143,57 @@ final class PublicationParams
         return params;
     }
 
-    private PublicationParams(final MediaDriver.Context context, final boolean isIpc)
+    private void getPublicationWindowLength(final ChannelUri channelUri, final MediaDriver.Context ctx)
     {
-        termLength = isIpc ? context.ipcTermBufferLength() : context.publicationTermBufferLength();
-        mtuLength = isIpc ? context.ipcMtuLength() : context.mtuLength();
-        lingerTimeoutNs = context.publicationLingerTimeoutNs();
-        isSparse = context.termBufferSparseFile();
+        final String pubWindowParam = channelUri.get(PUBLICATION_WINDOW_LENGTH_PARAM_NAME);
+        if (null != pubWindowParam)
+        {
+            final long pubWindow = SystemUtil.parseSize(PUBLICATION_WINDOW_LENGTH_PARAM_NAME, pubWindowParam);
+            if (pubWindow < mtuLength)
+            {
+                throw new InvalidChannelException(
+                    PUBLICATION_WINDOW_LENGTH_PARAM_NAME + "=" + pubWindow + " cannot be less than the " +
+                    MTU_LENGTH_PARAM_NAME + "=" + mtuLength);
+            }
+
+            if (pubWindow > (termLength >> 1))
+            {
+                throw new InvalidChannelException(
+                    PUBLICATION_WINDOW_LENGTH_PARAM_NAME + "=" + pubWindow + " must not exceed half the " +
+                    TERM_LENGTH_PARAM_NAME + "=" + termLength);
+            }
+            publicationWindowLength = (int)pubWindow;
+        }
+        else
+        {
+            publicationWindowLength = Configuration.producerWindowLength(
+                termLength,
+                channelUri.isIpc() ? ctx.ipcPublicationTermWindowLength() : ctx.publicationTermWindowLength());
+        }
+    }
+
+    private void getStreamId(final ChannelUri channelUri, final int streamId)
+    {
+        final String streamIdParam = channelUri.get(STREAM_ID_PARAM_NAME);
+        if (null != streamIdParam)
+        {
+            final int configuredStreamId;
+            try
+            {
+                configuredStreamId = Integer.parseInt(streamIdParam);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new InvalidChannelException("invalid " + STREAM_ID_PARAM_NAME + ", must be a number", ex);
+            }
+
+            if (streamId != configuredStreamId)
+            {
+                throw new InvalidChannelException(
+                    STREAM_ID_PARAM_NAME + "=" + configuredStreamId + " does not match provided streamId=" + streamId);
+            }
+        }
+        this.streamId = streamId;
     }
 
     private void getEntityTag(final ChannelUri channelUri, final DriverConductor driverConductor)
@@ -172,18 +227,13 @@ final class PublicationParams
             validateMtuLength(this, mtuLength, channelUri);
             this.mtuLength = mtuLength;
         }
-    }
 
-    static void validateMtuForMaxMessage(final PublicationParams params, final String channel)
-    {
-        final int termLength = params.termLength;
         final int maxMessageLength = FrameDescriptor.computeMaxMessageLength(termLength);
-
-        if (params.mtuLength > maxMessageLength)
+        if (mtuLength > maxMessageLength)
         {
-            throw new IllegalStateException("MTU greater than max message length for term length: mtu=" +
-                params.mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength + " channel=" +
-                channel);
+            throw new InvalidChannelException("MTU greater than max message length for term length: mtu=" +
+                mtuLength + " maxMessageLength=" + maxMessageLength + " termLength=" + termLength + " channel=" +
+                channelUri);
         }
     }
 
@@ -192,7 +242,7 @@ final class PublicationParams
     {
         if (params.isSessionIdTagged && explicitTermLength != params.termLength)
         {
-            throw new IllegalArgumentException(
+            throw new InvalidChannelException(
                 TERM_LENGTH_PARAM_NAME + "=" + explicitTermLength + " does not match session-id tag value: channel=" +
                 channelUri);
         }
@@ -203,9 +253,9 @@ final class PublicationParams
     {
         if (params.isSessionIdTagged && explicitMtuLength != params.mtuLength)
         {
-            throw new IllegalArgumentException(
+            throw new InvalidChannelException(
                 MTU_LENGTH_PARAM_NAME + "=" + explicitMtuLength + " does not match session-id tag value: channel=" +
-                    channelUri);
+                channelUri);
         }
     }
 
@@ -332,16 +382,24 @@ final class PublicationParams
         }
     }
 
-    private void getLingerTimeoutNs(final ChannelUri channelUri)
+    private void getLingerTimeoutNs(final ChannelUri channelUri, final MediaDriver.Context ctx)
     {
         final String lingerParam = channelUri.get(LINGER_PARAM_NAME);
         if (null != lingerParam)
         {
             lingerTimeoutNs = SystemUtil.parseDuration(LINGER_PARAM_NAME, lingerParam);
         }
+        else
+        {
+            lingerTimeoutNs = ctx.publicationLingerTimeoutNs();
+        }
     }
 
-    private void getSessionId(final ChannelUri channelUri, final DriverConductor driverConductor)
+    private void getSessionId(
+        final ChannelUri channelUri,
+        final DriverConductor driverConductor,
+        final int streamId,
+        final String canonicalForm)
     {
         final String sessionIdStr = channelUri.get(SESSION_ID_PARAM_NAME);
         if (null != sessionIdStr)
@@ -349,36 +407,61 @@ final class PublicationParams
             isSessionIdTagged = ChannelUri.isTagged(sessionIdStr);
             if (isSessionIdTagged)
             {
-                final NetworkPublication publication = driverConductor.findNetworkPublicationByTag(
-                    ChannelUri.getTag(sessionIdStr));
-
-                if (null == publication)
+                final long tag;
+                try
                 {
-                    throw new IllegalArgumentException(
-                        SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " must reference a network publication: channel=" +
-                        channelUri);
+                    tag = ChannelUri.getTag(sessionIdStr);
+                }
+                catch (final RuntimeException ex)
+                {
+                    throw new InvalidChannelException(
+                        SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " has an invalid tag: channel=" + channelUri, ex);
                 }
 
-                sessionId = publication.sessionId();
-                mtuLength = publication.mtuLength();
-                termLength = publication.termBufferLength();
+                if (channelUri.isIpc())
+                {
+                    final IpcPublication publication = driverConductor.findIpcPublicationByTag(tag);
+                    if (null == publication)
+                    {
+                        throw new InvalidChannelException(
+                            SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " must reference an IPC publication: " +
+                            "channel=" + channelUri);
+                    }
+
+                    sessionId = publication.sessionId();
+                    mtuLength = publication.mtuLength();
+                    termLength = publication.termBufferLength();
+                }
+                else
+                {
+                    final NetworkPublication publication = driverConductor.findNetworkPublicationByTag(tag);
+                    if (null == publication)
+                    {
+                        throw new InvalidChannelException(
+                            SESSION_ID_PARAM_NAME + "=" + sessionIdStr + " must reference a network publication: " +
+                            "channel=" + channelUri);
+                    }
+
+                    sessionId = publication.sessionId();
+                    mtuLength = publication.mtuLength();
+                    termLength = publication.termBufferLength();
+                }
             }
             else
             {
                 sessionId = Integer.parseInt(sessionIdStr);
             }
-
-            hasSessionId = true;
+        }
+        else
+        {
+            sessionId = driverConductor.nextAvailableSessionId(streamId, canonicalForm);
         }
     }
 
     private void getEos(final ChannelUri channelUri)
     {
         final String eosStr = channelUri.get(EOS_PARAM_NAME);
-        if (null != eosStr)
-        {
-            signalEos = "true".equals(eosStr);
-        }
+        signalEos = null == eosStr || "true".equals(eosStr);
     }
 
     private void getSparse(final ChannelUri channelUri, final MediaDriver.Context ctx)
@@ -411,35 +494,33 @@ final class PublicationParams
             channelUri, UNTETHERED_RESTING_TIMEOUT_PARAM_NAME, ctx.untetheredRestingTimeoutNs());
     }
 
-    private void getMaxResend(final ChannelUri channelUri)
+    private void getMaxResend(final ChannelUri channelUri, final MediaDriver.Context ctx)
     {
         final String maxRetransmtsString = channelUri.get(MAX_RESEND_PARAM_NAME);
 
         if (maxRetransmtsString == null)
         {
-            this.hasMaxResend = false;
-
-            return;
+            maxResend = ctx.maxResend();
         }
+        else
+        {
+            try
+            {
+                maxResend = Integer.parseInt(maxRetransmtsString);
+            }
+            catch (final NumberFormatException ex)
+            {
+                throw new InvalidChannelException(
+                    "invalid " + MAX_RESEND_PARAM_NAME + ", must be a number", ex);
+            }
 
-        try
-        {
-            maxResend = Integer.parseInt(maxRetransmtsString);
-        }
-        catch (final NumberFormatException ex)
-        {
-            throw new IllegalArgumentException(
-                "invalid " + MAX_RESEND_PARAM_NAME + ", must be a number", ex);
-        }
-
-        if (maxResend < 1 || maxResend > Configuration.MAX_RESEND_MAX)
-        {
-            throw new IllegalArgumentException(
-                "invalid " + MAX_RESEND_PARAM_NAME + "=" + maxResend +
+            if (maxResend <= 0 || maxResend > Configuration.MAX_RESEND_MAX)
+            {
+                throw new InvalidChannelException(
+                    "invalid " + MAX_RESEND_PARAM_NAME + "=" + maxResend +
                     ", must be > 0 and <= " + Configuration.MAX_RESEND_MAX);
+            }
         }
-
-        this.hasMaxResend = true;
     }
 
     private static long parseEntityTag(
@@ -452,24 +533,24 @@ final class PublicationParams
         }
         catch (final NumberFormatException ex)
         {
-            throw new IllegalArgumentException("invalid entity tag, must be a number", ex);
+            throw new InvalidChannelException("invalid entity tag, must be a number", ex);
         }
 
         if (INVALID_TAG == entityTag)
         {
-            throw new IllegalArgumentException(INVALID_TAG + " tag is reserved: channel=" + channelUri);
+            throw new InvalidChannelException(INVALID_TAG + " tag is reserved: channel=" + channelUri);
         }
 
         final NetworkPublication networkPublication = driverConductor.findNetworkPublicationByTag(entityTag);
         if (null != networkPublication)
         {
-            throw new IllegalArgumentException(entityTag + " entityTag already in use: existingChannel=" +
+            throw new InvalidChannelException(entityTag + " entityTag already in use: existingChannel=" +
                 networkPublication.channel() + " channel=" + channelUri);
         }
         final IpcPublication ipcPublication = driverConductor.findIpcPublicationByTag(entityTag);
         if (null != ipcPublication)
         {
-            throw new IllegalArgumentException(entityTag + " entityTag already in use: existingChannel=" +
+            throw new InvalidChannelException(entityTag + " entityTag already in use: existingChannel=" +
                 ipcPublication.channel() + " channel=" + channelUri);
         }
 
@@ -486,15 +567,15 @@ final class PublicationParams
             ", initialTermId=" + initialTermId +
             ", termId=" + termId +
             ", termOffset=" + termOffset +
+            ", streamId=" + streamId +
             ", sessionId=" + sessionId +
             ", hasPosition=" + hasPosition +
-            ", hasSessionId=" + hasSessionId +
             ", isSessionIdTagged=" + isSessionIdTagged +
             ", isSparse=" + isSparse +
             ", signalEos=" + signalEos +
             ", spiesSimulateConnection=" + spiesSimulateConnection +
-            ", hasMaxResend=" + hasMaxResend +
             ", maxResend=" + maxResend +
+            ", publicationWindowLength=" + publicationWindowLength +
             '}';
     }
 }

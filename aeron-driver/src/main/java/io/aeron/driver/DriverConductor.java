@@ -17,7 +17,6 @@ package io.aeron.driver;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
-import io.aeron.CommonContext;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
@@ -282,8 +281,11 @@ public final class DriverConductor implements Agent
         Configuration.validateMtuLength(senderMtuLength);
 
         final UdpChannel subscriptionChannel = channelEndpoint.subscriptionUdpChannel();
-        Configuration.validateInitialWindowLength(
-            subscriptionChannel.receiverWindowLengthOrDefault(ctx.initialWindowLength()), senderMtuLength);
+
+        final SubscriptionParams subscriptionParams =
+            SubscriptionParams.getSubscriptionParams(subscriptionChannel.channelUri(), ctx, termBufferLength);
+
+        Configuration.validateInitialWindowLength(subscriptionParams.receiverWindowLength, senderMtuLength);
 
         final long joinPosition = computePosition(
             activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
@@ -1044,7 +1046,7 @@ public final class DriverConductor implements Agent
                 validateTimestampConfiguration(udpChannel);
 
                 final SubscriptionParams params =
-                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx, 0);
                 checkForClashingSubscription(params, udpChannel, streamId);
 
                 final ReceiveChannelEndpoint channelEndpoint = getOrCreateReceiveChannelEndpoint(
@@ -1091,7 +1093,7 @@ public final class DriverConductor implements Agent
 
     void onAddIpcSubscription(final String channel, final int streamId, final long registrationId, final long clientId)
     {
-        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(parseUri(channel), ctx);
+        final SubscriptionParams params = SubscriptionParams.getSubscriptionParams(parseUri(channel), ctx, 0);
         final IpcSubscriptionLink subscriptionLink = new IpcSubscriptionLink(
             registrationId, streamId, channel, getOrAddClient(clientId), params);
 
@@ -1110,7 +1112,7 @@ public final class DriverConductor implements Agent
                     registrationId,
                     linkIpcSubscription(publication, subscriptionLink).id(),
                     publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
+                    IPC_CHANNEL);
             }
         }
     }
@@ -1124,7 +1126,7 @@ public final class DriverConductor implements Agent
             {
                 final UdpChannel udpChannel = asyncResult.get();
                 final SubscriptionParams params =
-                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx, 0);
                 final SpySubscriptionLink subscriptionLink = new SpySubscriptionLink(
                     registrationId, udpChannel, streamId, getOrAddClient(clientId), params);
 
@@ -1143,7 +1145,7 @@ public final class DriverConductor implements Agent
                             registrationId,
                             linkSpy(publication, subscriptionLink).id(),
                             publication.rawLog().fileName(),
-                            CommonContext.IPC_CHANNEL);
+                            IPC_CHANNEL);
                     }
                 }
             });
@@ -1295,7 +1297,7 @@ public final class DriverConductor implements Agent
     void onAddRcvIpcDestination(final long registrationId, final String destinationChannel, final long correlationId)
     {
         final SubscriptionParams params =
-            SubscriptionParams.getSubscriptionParams(parseUri(destinationChannel), ctx);
+            SubscriptionParams.getSubscriptionParams(parseUri(destinationChannel), ctx, 0);
         final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
 
         if (null == mdsSubscriptionLink)
@@ -1325,7 +1327,7 @@ public final class DriverConductor implements Agent
                     registrationId,
                     linkIpcSubscription(publication, subscriptionLink).id(),
                     publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
+                    IPC_CHANNEL);
             }
         }
     }
@@ -1339,7 +1341,7 @@ public final class DriverConductor implements Agent
             {
                 final UdpChannel udpChannel = asyncResult.get();
                 final SubscriptionParams params =
-                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx);
+                    SubscriptionParams.getSubscriptionParams(udpChannel.channelUri(), ctx, 0);
                 final SubscriptionLink mdsSubscriptionLink = findMdsSubscriptionLink(subscriptionLinks, registrationId);
 
                 if (null == mdsSubscriptionLink)
@@ -1370,7 +1372,7 @@ public final class DriverConductor implements Agent
                             registrationId,
                             linkSpy(publication, subscriptionLink).id(),
                             publication.rawLog().fileName(),
-                            CommonContext.IPC_CHANNEL);
+                            IPC_CHANNEL);
                     }
                 }
             });
@@ -1983,7 +1985,7 @@ public final class DriverConductor implements Agent
             }
 
             if (!udpChannel.hasExplicitControl() && !udpChannel.isManualControlMode() &&
-                !udpChannel.channelUri().containsKey(CommonContext.ENDPOINT_PARAM_NAME))
+                !udpChannel.channelUri().containsKey(ENDPOINT_PARAM_NAME))
             {
                 throw new InvalidChannelException(
                     "URI must have explicit control, endpoint, or be manual control-mode when original: channel=" +
@@ -2097,7 +2099,7 @@ public final class DriverConductor implements Agent
                     subscription.registrationId,
                     linkIpcSubscription(publication, subscription).id(),
                     publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
+                    IPC_CHANNEL);
             }
         }
     }
@@ -2451,7 +2453,7 @@ public final class DriverConductor implements Agent
                     subscription.registrationId(),
                     linkSpy(publication, subscription).id(),
                     publication.rawLog().fileName(),
-                    CommonContext.IPC_CHANNEL);
+                    IPC_CHANNEL);
             }
         }
     }

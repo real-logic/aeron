@@ -16,8 +16,8 @@
 package io.aeron.status;
 
 import io.aeron.Aeron;
-import org.agrona.UnsafeAccess;
 import org.agrona.concurrent.AtomicBuffer;
+import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
 
 import static org.agrona.BitUtil.SIZE_OF_LONG;
@@ -27,15 +27,14 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
  * <p>
  * <b>Note:</b>The user should call {@link #isClosed()} and ensure the result is false to avoid a race on reading a
  * closed {@link io.aeron.Counter}.
- * */
+ */
 public final class ReadableCounter implements AutoCloseable
 {
-    private final long addressOffset;
+    private final CountersReader countersReader;
+    private final UnsafeBuffer valueBuffer;
     private final long registrationId;
     private final int counterId;
     private volatile boolean isClosed = false;
-    private final byte[] buffer;
-    private final CountersReader countersReader;
 
     /**
      * Construct a view of an existing counter.
@@ -61,8 +60,7 @@ public final class ReadableCounter implements AutoCloseable
         final int counterOffset = CountersReader.counterOffset(counterId);
         valuesBuffer.boundsCheck(counterOffset, SIZE_OF_LONG);
 
-        this.buffer = valuesBuffer.byteArray();
-        this.addressOffset = valuesBuffer.addressOffset() + counterOffset;
+        valueBuffer = new UnsafeBuffer(valuesBuffer, counterOffset, SIZE_OF_LONG);
     }
 
     /**
@@ -100,11 +98,10 @@ public final class ReadableCounter implements AutoCloseable
     /**
      * Return the state of the counter.
      *
+     * @return state for the counter.
      * @see CountersReader#RECORD_ALLOCATED
      * @see CountersReader#RECORD_RECLAIMED
      * @see CountersReader#RECORD_UNUSED
-     *
-     * @return state for the counter.
      */
     public int state()
     {
@@ -131,7 +128,7 @@ public final class ReadableCounter implements AutoCloseable
      */
     public long get()
     {
-        return UnsafeAccess.UNSAFE.getLongVolatile(buffer, addressOffset);
+        return valueBuffer.getLongVolatile(0);
     }
 
     /**
@@ -141,7 +138,7 @@ public final class ReadableCounter implements AutoCloseable
      */
     public long getWeak()
     {
-        return UnsafeAccess.UNSAFE.getLong(buffer, addressOffset);
+        return valueBuffer.getLong(0);
     }
 
     /**

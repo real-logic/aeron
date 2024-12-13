@@ -427,6 +427,20 @@ public class CommonContext implements Cloneable
     public static final String MAX_RESEND_PARAM_NAME = "max-resend";
 
     /**
+     * Parameter name to set the stream id for the channel.
+     *
+     * @since 1.47.0
+     */
+    public static final String STREAM_ID_PARAM_NAME = "stream-id";
+
+    /**
+     *  Parameter name for the publication window length, i.e. how far ahead can publication accept offers.
+     *
+     * @since 1.47.0
+     */
+    public static final String PUBLICATION_WINDOW_LENGTH_PARAM_NAME = "pub-wnd";
+
+    /**
      * Property name to use to set the secure random algorithm to be used by the Aeron component.
      */
     public static final String SECURE_RANDOM_ALGORITHM_PROP_NAME = "aeron.secure.random.algorithm";

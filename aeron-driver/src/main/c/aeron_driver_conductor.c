@@ -2750,10 +2750,29 @@ void on_error(
 
 void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
 {
-    uint8_t buffer[sizeof(aeron_publication_error_t) + (AERON_ERROR_MAX_TEXT_LENGTH - 1)];
+    uint8_t buffer[sizeof(aeron_publication_error_t) + AERON_ERROR_MAX_TEXT_LENGTH];
     aeron_driver_conductor_t *conductor = clientd;
     aeron_command_publication_error_t *error = item;
-    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)error->error_text);
+
+    char log_str[AERON_ERROR_MAX_TEXT_LENGTH * 2];
+    snprintf(log_str, sizeof(log_str), "onPublicationError: registrationId=%" PRIi64
+        ", destinationRegistrationId=%" PRIi64
+        ", sessionId=%" PRIi32
+        ", streamId=%" PRIi32
+        ", receiverId=%" PRIi64
+        ", groupId=%" PRIi64
+        ", errorCode=%" PRIi32
+        ", errorMessage=%*.s",
+        error->registration_id,
+        error->destination_registration_id,
+        error->session_id,
+        error->stream_id,
+        error->receiver_id,
+        error->group_tag,
+        error->error_code,
+        error->error_length,
+        error->error_text);
+    aeron_driver_conductor_log_explicit_error(conductor, error->error_code, (const char *)log_str);
 
     aeron_publication_error_t *response = (aeron_publication_error_t *)buffer;
     response->error_code = error->error_code;

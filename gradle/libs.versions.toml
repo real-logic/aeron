@@ -1,6 +1,6 @@
 [versions]
 agrona = "1.23.1"
-byteBuddy = "1.15.10"
+byteBuddy = "1.15.11"
 checkstyle = "10.21.0"
 junit = "5.11.3"
 gradle = "8.11.1"

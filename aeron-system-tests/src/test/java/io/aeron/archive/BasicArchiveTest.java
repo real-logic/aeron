@@ -19,6 +19,7 @@ import io.aeron.*;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.ReplayParams;
+import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
@@ -76,6 +77,7 @@ class BasicArchiveTest
     final SystemTestWatcher systemTestWatcher = new SystemTestWatcher();
 
     private File archiveDir;
+    private TestRecordingSignalConsumer recordingSignalConsumer;
 
     @BeforeEach
     public void before()
@@ -111,6 +113,8 @@ class BasicArchiveTest
         aeronArchive = AeronArchive.connect(
             TestContexts.localhostAeronArchive()
                 .aeron(aeron));
+
+        recordingSignalConsumer = injectRecordingSignalConsumer(aeronArchive);
     }
 
     @AfterEach
@@ -650,19 +654,21 @@ class BasicArchiveTest
             assertEquals(stopPosition, aeronArchive.getMaxRecordedPosition(recordingIdFromCounter));
         }
 
+        recordingSignalConsumer.reset();
         aeronArchive.stopRecording(subscriptionId);
+        awaitSignal(aeronArchive, recordingSignalConsumer, recordingIdFromCounter, RecordingSignal.STOP);
 
         final long recordingId = aeronArchive.findLastMatchingRecording(
             0, "alias=" + RECORDED_CHANNEL_ALIAS, RECORDED_STREAM_ID, sessionId);
+        assertEquals(recordingIdFromCounter, recordingId);
 
-        final Counter boundingCounter = aeron.addCounter(
-            AeronCounters.CLUSTER_COMMIT_POSITION_TYPE_ID, "bounding counter");
+        final Counter boundingCounter = aeron.addCounter(10000, "bounding counter");
 
         final RecordingDescriptorCollector recordingDescriptorCollector = new RecordingDescriptorCollector(1);
         assertEquals(1, aeronArchive.listRecording(recordingId, recordingDescriptorCollector.reset()));
         final RecordingDescriptor recordingDescriptor = recordingDescriptorCollector.descriptors().get(0);
 
-        assertNotEquals(-1, recordingDescriptor.stopPosition());
+        assertNotEquals(NULL_VALUE, recordingDescriptor.stopPosition());
         final long halfLength = (recordingDescriptor.stopPosition() - recordingDescriptor.startPosition()) / 2;
         final long halfPosition = recordingDescriptor.startPosition() + halfLength;
         final long tqPosition = recordingDescriptor.startPosition() + halfLength + (halfLength / 2);

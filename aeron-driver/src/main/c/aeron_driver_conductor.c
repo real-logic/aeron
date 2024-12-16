@@ -2762,7 +2762,7 @@ void aeron_driver_conductor_on_publication_error(void *clientd, void *item)
         ", receiverId=%" PRIi64
         ", groupId=%" PRIi64
         ", errorCode=%" PRIi32
-        ", errorMessage=%*.s",
+        ", errorMessage=%.*s",
         error->registration_id,
         error->destination_registration_id,
         error->session_id,

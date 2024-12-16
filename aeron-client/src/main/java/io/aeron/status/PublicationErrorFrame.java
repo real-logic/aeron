@@ -29,7 +29,7 @@ public class PublicationErrorFrame implements Cloneable
     private int streamId;
     private long receiverId;
     private long destinationRegistrationId;
-    private Long groupTag;
+    private long groupTag;
     private int errorCode;
     private String errorMessage;
     private InetSocketAddress sourceAddress;
@@ -77,10 +77,10 @@ public class PublicationErrorFrame implements Cloneable
     /**
      * Group tag of the source that sent the error frame.
      *
-     * @return group tag of the source that sent the error frame, <code>null</code> if the source did not have a group
+     * @return group tag of the source that sent the error frame or {@link io.aeron.Aeron#NULL_VALUE} if the source did not have a group
      * tag set.
      */
-    public Long groupTag()
+    public long groupTag()
     {
         return groupTag;
     }

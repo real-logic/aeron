@@ -394,12 +394,22 @@ public final class DriverConductor implements Agent
         final int sessionId,
         final int streamId,
         final long receiverId,
-        final Long groupId,
+        final long groupId,
         final InetSocketAddress srcAddress,
         final int errorCode,
         final String errorMessage)
     {
-        recordError(new AeronException(errorMessage, AeronException.Category.WARN));
+        recordError(new AeronEvent(
+            "onPublicationError: " +
+            "registrationId=" + registrationId +
+            ", destinationRegistrationId=" + destinationRegistrationId +
+            ", sessionId=" + sessionId +
+            ", streamId=" + streamId +
+            ", receiverId=" + receiverId +
+            ", groupId=" + groupId +
+            ", errorCode=" + errorCode +
+            ", errorMessage=" + errorMessage,
+            AeronException.Category.WARN));
         clientProxy.onPublicationErrorFrame(
             registrationId,
             destinationRegistrationId,

@@ -250,10 +250,15 @@ public class RejectImageTest
             final String reason = "Needs to be closed";
             image.reject(reason);
 
-            while (null == errorFrameHandler1.poll())
+            PublicationErrorFrame errorFrame;
+            while (null == (errorFrame = errorFrameHandler1.poll()))
             {
                 Tests.yield();
             }
+
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
+            assertEquals(ErrorCode.IMAGE_REJECTED, ErrorCode.get(errorFrame.errorCode()));
+            assertEquals(reason, errorFrame.errorMessage());
 
             final long deadlineMs = System.currentTimeMillis() + 1_000;
             while (System.currentTimeMillis() < deadlineMs)
@@ -308,15 +313,24 @@ public class RejectImageTest
             final String reason = "Needs to be closed";
             image.reject(reason);
 
-            while (null == errorFrameHandler1.poll())
+            PublicationErrorFrame errorFrame;
+            while (null == (errorFrame = errorFrameHandler1.poll()))
             {
                 Tests.yield();
             }
 
-            while (null == errorFrameHandler2.poll())
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
+            assertEquals(ErrorCode.IMAGE_REJECTED, ErrorCode.get(errorFrame.errorCode()));
+            assertEquals(reason, errorFrame.errorMessage());
+
+            while (null == (errorFrame = errorFrameHandler2.poll()))
             {
                 Tests.yield();
             }
+
+            assertEquals(pub.registrationId(), errorFrame.registrationId());
+            assertEquals(ErrorCode.IMAGE_REJECTED, ErrorCode.get(errorFrame.errorCode()));
+            assertEquals(reason, errorFrame.errorMessage());
         }
     }
 

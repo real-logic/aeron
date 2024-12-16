@@ -41,6 +41,7 @@ import java.nio.channels.FileChannel;
 import java.nio.file.AccessDeniedException;
 import java.nio.file.FileSystemException;
 import java.nio.file.NoSuchFileException;
+import java.util.Objects;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.locks.Lock;
@@ -1750,7 +1751,7 @@ public class Aeron implements AutoCloseable
         public Context publicationErrorFrameHandler(
             final PublicationErrorFrameHandler publicationErrorFrameHandler)
         {
-            this.publicationErrorFrameHandler = publicationErrorFrameHandler;
+            this.publicationErrorFrameHandler = Objects.requireNonNull(publicationErrorFrameHandler);
             return this;
         }
 

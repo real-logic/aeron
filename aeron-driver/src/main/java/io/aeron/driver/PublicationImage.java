@@ -46,7 +46,7 @@ import java.util.ArrayList;
 
 import static io.aeron.CommonContext.UNTETHERED_RESTING_TIMEOUT_PARAM_NAME;
 import static io.aeron.CommonContext.UNTETHERED_WINDOW_LIMIT_TIMEOUT_PARAM_NAME;
-import static io.aeron.ErrorCode.GENERIC_ERROR;
+import static io.aeron.ErrorCode.IMAGE_REJECT;
 import static io.aeron.driver.LossDetector.lossFound;
 import static io.aeron.driver.LossDetector.rebuildOffset;
 import static io.aeron.driver.status.SystemCounterDescriptor.*;
@@ -729,7 +729,7 @@ public final class PublicationImage
             if (hasSmTimedOut)
             {
                 channelEndpoint.sendErrorFrame(
-                    imageConnections, sessionId, streamId, GENERIC_ERROR.value(), rejectionReason);
+                    imageConnections, sessionId, streamId, IMAGE_REJECT.value(), rejectionReason);
 
                 nextSmDeadlineNs = nowNs + smTimeoutNs;
                 workCount++;

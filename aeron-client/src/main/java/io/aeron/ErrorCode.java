@@ -87,6 +87,16 @@ public enum ErrorCode
      */
     STORAGE_SPACE(12),
 
+    /**
+     * An image was rejected.
+     */
+    IMAGE_REJECT(13),
+
+    /**
+     * A publication was revoked.
+     */
+    PUBLICATION_REVOKE(14),
+
     // *** Insert new codes above here.
 
     /**

@@ -700,7 +700,7 @@ class DriverConductorTest
         final InetSocketAddress sourceAddress = new InetSocketAddress("localhost", 4400);
         final int initialTermId = 1;
         final int activeTermId = 2;
-        final int termOffset = 100;
+        final int termOffset = 160;
 
         driverProxy.addSubscription(CHANNEL_4000, STREAM_ID_1);
 

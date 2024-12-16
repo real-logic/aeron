@@ -205,7 +205,7 @@ public final class PublicationImage
         final int streamId,
         final int initialTermId,
         final int activeTermId,
-        final int initialTermOffset,
+        final int termOffset,
         final short flags,
         final RawLog rawLog,
         final FeedbackDelayGenerator lossFeedbackDelayGenerator,
@@ -266,7 +266,7 @@ public final class PublicationImage
 
         nextSmReceiverWindowLength = congestionControl.initialWindowLength();
         maxReceiverWindowLength = congestionControl.maxWindowLength();
-        final long position = computePosition(activeTermId, initialTermOffset, positionBitsToShift, initialTermId);
+        final long position = computePosition(activeTermId, termOffset, positionBitsToShift, initialTermId);
         nextSmPosition = position;
         lastSmPosition = position;
         lastOverrunThreshold = position + (termLength >> 1);

@@ -269,7 +269,7 @@ public final class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final int activeTermId,
-        final int initialTermOffset,
+        final int termOffset,
         final int termBufferLength,
         final int senderMtuLength,
         final int transportIndex,
@@ -288,7 +288,7 @@ public final class DriverConductor implements Agent
         Configuration.validateInitialWindowLength(subscriptionParams.receiverWindowLength, senderMtuLength);
 
         final long joinPosition = computePosition(
-            activeTermId, initialTermOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
+            activeTermId, termOffset, LogBufferDescriptor.positionBitsToShift(termBufferLength), initialTermId);
         final ArrayList<SubscriberPosition> subscriberPositions = createSubscriberPositions(
             sessionId, streamId, channelEndpoint, joinPosition);
 
@@ -341,7 +341,7 @@ public final class DriverConductor implements Agent
                     streamId,
                     initialTermId,
                     activeTermId,
-                    initialTermOffset,
+                    termOffset,
                     flags,
                     rawLog,
                     resolveDelayGenerator(ctx, channelEndpoint.udpChannel(), subscription.group(), flags),

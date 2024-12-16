@@ -16,10 +16,13 @@
 package io.aeron;
 
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.Collections;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.CommonContext.*;
 import static org.junit.jupiter.api.Assertions.*;
 
 class ChannelUriStringBuilderTest
@@ -27,21 +30,21 @@ class ChannelUriStringBuilderTest
     @Test
     void shouldValidateMedia()
     {
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> new ChannelUriStringBuilder().validate());
     }
 
     @Test
     void shouldValidateEndpointOrControl()
     {
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> new ChannelUriStringBuilder().media("udp").validate());
     }
 
     @Test
     void shouldValidateInitialPosition()
     {
-        assertThrows(IllegalStateException.class,
+        assertThrows(IllegalArgumentException.class,
             () -> new ChannelUriStringBuilder().media("udp").endpoint("address:port").termId(999).validate());
     }
 
@@ -287,9 +290,52 @@ class ChannelUriStringBuilderTest
             .maxResend(20)
             .maxResend());
         assertTrue(new ChannelUriStringBuilder().maxResend(20).build()
-            .contains(CommonContext.MAX_RESEND_PARAM_NAME + "=20"));
+            .contains(MAX_RESEND_PARAM_NAME + "=20"));
         assertEquals(30, new ChannelUriStringBuilder()
             .maxResend(ChannelUri.parse(new ChannelUriStringBuilder().maxResend(30).build()))
             .maxResend());
+    }
+
+    @Test
+    void shouldHandleStreamId()
+    {
+        assertNull(new ChannelUriStringBuilder().streamId());
+
+        final int streamId = 1234;
+        assertEquals(streamId, new ChannelUriStringBuilder().streamId(streamId).streamId());
+
+        final String uri = new ChannelUriStringBuilder().streamId(streamId).build();
+        assertEquals(Integer.toString(streamId), ChannelUri.parse(uri).get(STREAM_ID_PARAM_NAME));
+    }
+
+    @Test
+    void shouldRejectInvalidStreamId()
+    {
+        final ChannelUri uri = ChannelUri.parse("aeron:ipc?stream-id=abc");
+        assertThrows(IllegalArgumentException.class, () -> new ChannelUriStringBuilder().streamId(uri));
+    }
+
+    @Test
+    void shouldHandlePublicationWindowLength()
+    {
+        assertNull(new ChannelUriStringBuilder().publicationWindowLength());
+
+        final int pubWindowLength = 7777;
+        assertEquals(pubWindowLength,
+            new ChannelUriStringBuilder().publicationWindowLength(pubWindowLength).publicationWindowLength());
+
+        final String uri = new ChannelUriStringBuilder().publicationWindowLength(pubWindowLength).build();
+        assertEquals(
+            Integer.toString(pubWindowLength),
+            ChannelUri.parse(uri).get(PUBLICATION_WINDOW_LENGTH_PARAM_NAME));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = { "abc", "1000000000000" })
+    void shouldRejectInvalidPublicationWindowLength(final String pubWnd)
+    {
+        final ChannelUri uri = ChannelUri.parse("aeron:ipc");
+        uri.put(PUBLICATION_WINDOW_LENGTH_PARAM_NAME, pubWnd);
+        assertThrows(IllegalArgumentException.class, () -> new ChannelUriStringBuilder().publicationWindowLength(uri));
     }
 }

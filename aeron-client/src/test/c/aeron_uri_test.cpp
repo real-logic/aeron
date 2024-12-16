@@ -682,4 +682,7 @@ TEST_F(UriStringBuilderTest, allParameters)
     EXPECT_STREQ(original_uri.params.udp.entity_tag, builder_uri.params.udp.entity_tag);
     EXPECT_STREQ(original_uri.params.udp.ttl, builder_uri.params.udp.ttl);
     assertParamsAreEqual(&original_uri.params.udp.additional_params, &builder_uri.params.udp.additional_params);
+
+    aeron_uri_close(&original_uri);
+    aeron_uri_close(&builder_uri);
 }

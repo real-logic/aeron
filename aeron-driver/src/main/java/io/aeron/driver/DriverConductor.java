@@ -303,21 +303,9 @@ public final class DriverConductor implements Agent
 
             boolean oldestSubscriptionSparse = isOldestSubscriptionSparse(subscriberPositions);
 
-            final String enrichedChannelUri = enrichImagePublicationChannelUri(channelEndpoint, streamId, initialTermId, 
-                termBufferLength, initialTermOffset, senderMtuLength, sessionId, oldestSubscriptionSparse, subscriptionParams);
-
             try
             {
                 final long registrationId = toDriverCommands.nextCorrelationId();
-                rawLog = newPublicationImageLog(
-                    sessionId,
-                    streamId,
-                    initialTermId,
-                    termBufferLength,
-                    oldestSubscriptionSparse,
-                    senderMtuLength,
-                    registrationId,
-                    enrichedChannelUri);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -331,6 +319,19 @@ public final class DriverConductor implements Agent
                     ctx.receiverCachedNanoClock(),
                     ctx,
                     countersManager);
+
+                final String enrichedChannelUri = enrichImagePublicationChannelUri(channelEndpoint, streamId,
+                    termBufferLength, senderMtuLength, oldestSubscriptionSparse, subscriptionParams, congestionControl);
+
+                rawLog = newPublicationImageLog(
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    termBufferLength,
+                    oldestSubscriptionSparse,
+                    senderMtuLength,
+                    registrationId,
+                    enrichedChannelUri);
 
                 final SubscriptionLink subscription = subscriberPositions.get(0).subscription();
                 final String uri = subscription.channel();
@@ -393,23 +394,17 @@ public final class DriverConductor implements Agent
     private static String enrichImagePublicationChannelUri(
         final ReceiveChannelEndpoint receiveChannelEndpoint,
         final int streamId,
-        final int initialTermId,
         final int termBufferLength,
-        final int termOffset,
         final int senderMtuLength,
-        final int sessionId,
         final boolean isSparse,
-        final SubscriptionParams subscriptionParams)
+        final SubscriptionParams subscriptionParams, CongestionControl congestionControl)
     {
         final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder(receiveChannelEndpoint.udpChannel().channelUri());
 
-        channelUriStringBuilder.sessionId(sessionId);
         channelUriStringBuilder.streamId(streamId);
+
         channelUriStringBuilder.termLength(termBufferLength);
         channelUriStringBuilder.mtu(senderMtuLength);
-        channelUriStringBuilder.initialTermId(initialTermId);
-        //channelUriStringBuilder.termId(activeTermId);
-        channelUriStringBuilder.termOffset(termOffset);
 
         channelUriStringBuilder.tether(subscriptionParams.isTether);
         channelUriStringBuilder.rejoin(subscriptionParams.isRejoin);
@@ -420,40 +415,27 @@ public final class DriverConductor implements Agent
         }
         channelUriStringBuilder.sparse(isSparse);
 
-        //enrichedUri.congestionControl(congestionControlName(congestionControl));
+        channelUriStringBuilder.congestionControl(congestionControlName(congestionControl));
 
-//          uriStringBuilder.mtu(senderMtuLength);
-//        uriStringBuilder.streamId(streamId);
-//        uriStringBuilder.termOffset(termOffset);
-//        uriStringBuilder.initialTermId(initialTermId);
-//        uriStringBuilder.termLength(termBufferLength);
-//        uriStringBuilder.sessionId(sessionId);
-//
-////        uriStringBuilder.reliable()
-////
-//        uriStringBuilder.socketRcvbufLength(receiveChannelEndpoint.socketRcvbufLength());
-//        uriStringBuilder.socketSndbufLength(receiveChannelEndpoint.socketSndbufLength());
-////        // todo:
-////        uriStringBuilder.flowControl("stuff");
-////        // todo:
-////        uriStringBuilder.congestionControl("stuff");
-////        uriStringBuilder.linger(params.lingerTimeoutNs);
-////        uriStringBuilder.untetheredRestingTimeoutNs(params.untetheredWindowLimitTimeoutNs);
-////        uriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
-////        uriStringBuilder.sparse(params.isSparse);
-////        uriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
-//
-//        //uriStringBuilder.tether(params.is)
-//        //uriStringBuilder.rejoin(params.re)
-//        //uriStringBuilder.reliable(channelUri.get(RELIABLE_STREAM_PARAM_NAME))
-//
-//
-////        rcv-wnd
-////        reliable
-////                sparse
-////        rejoin
-////        tether
+        channelUriStringBuilder.initialTermId(subscriptionParams.initialTermId);
+        channelUriStringBuilder.termId(subscriptionParams.termId);
+        channelUriStringBuilder.termOffset(subscriptionParams.termOffset);
 
+        if(subscriptionParams.hasSessionId)
+        {
+            channelUriStringBuilder.sessionId(subscriptionParams.sessionId);
+        }
+
+        channelUriStringBuilder.sparse(isSparse);
+        channelUriStringBuilder.tether(subscriptionParams.isTether);
+        channelUriStringBuilder.rejoin(subscriptionParams.isRejoin);
+        channelUriStringBuilder.reliable(subscriptionParams.isReliable);
+        channelUriStringBuilder.receiverWindowLength(subscriptionParams.receiverWindowLength);
+
+//        boolean hasJoinPosition = false;
+//        boolean isResponse = false;
+//        InferableBoolean group = InferableBoolean.INFER;
+//
         return channelUriStringBuilder.toString();
     }
 

@@ -90,12 +90,12 @@ public enum ErrorCode
     /**
      * An image was rejected.
      */
-    IMAGE_REJECT(13),
+    IMAGE_REJECTED(13),
 
     /**
      * A publication was revoked.
      */
-    PUBLICATION_REVOKE(14),
+    PUBLICATION_REVOKED(14),
 
     // *** Insert new codes above here.
 

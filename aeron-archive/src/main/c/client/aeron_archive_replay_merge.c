@@ -105,11 +105,10 @@ int aeron_archive_replay_merge_init(
         aeron_subscription_constants_t constants;
         aeron_subscription_constants(subscription, &constants);
 
-        size_t len = sizeof(AERON_IPC_CHANNEL) - 1;
-        if (strncmp(constants.channel, AERON_IPC_CHANNEL, len) == 0 ||
-            strncmp(replay_channel, AERON_IPC_CHANNEL, len) == 0 ||
-            strncmp(replay_destination, AERON_IPC_CHANNEL, len) == 0 ||
-            strncmp(live_destination, AERON_IPC_CHANNEL, len) == 0)
+        if (strncmp(constants.channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0 ||
+            strncmp(replay_channel, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0 ||
+            strncmp(replay_destination, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0 ||
+            strncmp(live_destination, AERON_IPC_CHANNEL, AERON_IPC_CHANNEL_LEN) == 0)
         {
             AERON_SET_ERR(EINVAL, "%s", "IPC merging is not supported");
             return -1;

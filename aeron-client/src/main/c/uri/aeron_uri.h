@@ -33,7 +33,11 @@ typedef struct aeron_uri_params_stct
 }
 aeron_uri_params_t;
 
+#define AERON_SPY_PREFIX "aeron-spy:"
+#define AERON_SPY_PREFIX_LEN strlen(AERON_SPY_PREFIX)
+
 #define AERON_IPC_CHANNEL "aeron:ipc"
+#define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
 
 #define AERON_UDP_CHANNEL_RELIABLE_KEY "reliable"
 #define AERON_UDP_CHANNEL_TTL_KEY "ttl"
@@ -78,6 +82,8 @@ aeron_uri_params_t;
 #define AERON_URI_UNTETHERED_WINDOW_LIMIT_TIMEOUT_KEY "untethered-window-limit-timeout"
 #define AERON_URI_UNTETHERED_RESTING_TIMEOUT_KEY "untethered-resting-timeout"
 #define AERON_URI_MAX_RESEND_KEY "max-resend"
+#define AERON_URI_STREAM_ID_KEY "stream-id"
+#define AERON_URI_PUBLICATION_WINDOW_KEY "pub-wnd"
 #define AERON_URI_INVALID_TAG (-1)
 
 #define AERON_URI_MAX_LENGTH (4096) // max channel uri length including NUL character

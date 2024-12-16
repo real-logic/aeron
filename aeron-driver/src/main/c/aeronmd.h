@@ -691,11 +691,6 @@ bool aeron_driver_context_get_rejoin_stream(aeron_driver_context_t *context);
 int aeron_driver_context_set_connect_enabled(aeron_driver_context_t *context, bool value);
 int aeron_driver_context_get_connect_enabled(aeron_driver_context_t *context);
 
-#define AERON_IPC_CHANNEL "aeron:ipc"
-#define AERON_IPC_CHANNEL_LEN strlen(AERON_IPC_CHANNEL)
-#define AERON_SPY_PREFIX "aeron-spy:"
-#define AERON_SPY_PREFIX_LEN strlen(AERON_SPY_PREFIX)
-
 /**
  * Bindings for UDP Channel Transports.
  */

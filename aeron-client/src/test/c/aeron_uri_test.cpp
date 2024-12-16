@@ -27,6 +27,16 @@ extern "C"
 #include "util/aeron_netutil.h"
 }
 
+static void assertParamsAreEqual(aeron_uri_params_t *params1, aeron_uri_params_t *params2)
+{
+    EXPECT_EQ(params1->length, params2->length);
+    for (size_t i = 0; i < params1->length; i++)
+    {
+        const auto param = params1->array[i];
+        EXPECT_STREQ(param.value, aeron_uri_find_param_value(params2, param.key));
+    }
+}
+
 class UriTest : public testing::Test
 {
 public:
@@ -196,6 +206,18 @@ TEST_F(UriTest, shouldCanParseUriOfMaxAllowedLength)
     ASSERT_EQ(AERON_URI_MAX_LENGTH - 1, uri.length());
 
     EXPECT_EQ(aeron_uri_parse(uri.length(), uri.c_str(), &m_uri), 0);
+}
+
+TEST_F(UriTest, shouldParseStreamId)
+{
+    EXPECT_EQ(0, AERON_URI_PARSE("aeron:ipc?stream-id=42", &m_uri));
+    EXPECT_STREQ("42", aeron_uri_find_param_value(&m_uri.params.ipc.additional_params, AERON_URI_STREAM_ID_KEY));
+}
+
+TEST_F(UriTest, shouldParsePublicationWindow)
+{
+    EXPECT_EQ(0, AERON_URI_PARSE("aeron:udp?pub-wnd=128k", &m_uri));
+    EXPECT_STREQ("128k", aeron_uri_find_param_value(&m_uri.params.udp.additional_params, AERON_URI_PUBLICATION_WINDOW_KEY));
 }
 
 /*
@@ -631,4 +653,33 @@ TEST_F(UriStringBuilderTest, initialPosition)
     EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_URI_MAX_LENGTH));
 
     EXPECT_STREQ("aeron:udp?term-id=780|term-length=131072|init-term-id=777|term-offset=64", out_buff);
+}
+
+TEST_F(UriStringBuilderTest, allParameters)
+{
+    std::string uri = "aeron:udp?endpoint=127.0.0.1:0|interface=127.0.0.1|control=127.0.0.2:0|"
+                      "control-mode=manual|tags=2,4|alias=foo|cc=cubic|fc=min|reliable=false|ttl=16|mtu=8992|"
+                      "term-length=1048576|init-term-id=5|term-offset=64|term-id=4353|session-id=2314234|gtag=3|"
+                      "linger=100000055000001|sparse=true|eos=true|tether=false|group=false|ssc=true|so-sndbuf=8388608|"
+                      "so-rcvbuf=2097152|rcv-wnd=1048576|media-rcv-ts-offset=reserved|channel-rcv-ts-offset=0|"
+                      "channel-snd-ts-offset=8|response-endpoint=127.0.0.3:0|response-correlation-id=12345|"
+                      "nak-delay=100000|untethered-window-limit-timeout=1000|untethered-resting-timeout=5000|"
+                      "stream-id=87|pub-wnd=10224";
+    ASSERT_EQ(0, aeron_uri_string_builder_init_on_string(&m_builder, uri.c_str()));
+    EXPECT_EQ(0, aeron_uri_string_builder_sprint(&m_builder, out_buff, AERON_URI_MAX_LENGTH));
+
+    aeron_uri_t original_uri;
+    EXPECT_EQ(0, aeron_uri_parse(uri.length(), uri.c_str(), &original_uri));
+    aeron_uri_t builder_uri;
+    EXPECT_EQ(0, aeron_uri_parse(uri.length(), out_buff, &builder_uri));
+
+    EXPECT_EQ(original_uri.type, builder_uri.type);
+    EXPECT_STREQ(original_uri.params.udp.endpoint, builder_uri.params.udp.endpoint);
+    EXPECT_STREQ(original_uri.params.udp.bind_interface, builder_uri.params.udp.bind_interface);
+    EXPECT_STREQ(original_uri.params.udp.control, builder_uri.params.udp.control);
+    EXPECT_STREQ(original_uri.params.udp.control_mode, builder_uri.params.udp.control_mode);
+    EXPECT_STREQ(original_uri.params.udp.channel_tag, builder_uri.params.udp.channel_tag);
+    EXPECT_STREQ(original_uri.params.udp.entity_tag, builder_uri.params.udp.entity_tag);
+    EXPECT_STREQ(original_uri.params.udp.ttl, builder_uri.params.udp.ttl);
+    assertParamsAreEqual(&original_uri.params.udp.additional_params, &builder_uri.params.udp.additional_params);
 }

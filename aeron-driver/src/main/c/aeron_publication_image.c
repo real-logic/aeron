@@ -726,7 +726,7 @@ int aeron_publication_image_send_pending_status_message(aeron_publication_image_
                     connection->control_addr,
                     image->session_id,
                     image->stream_id,
-                    AERON_ERROR_CODE_GENERIC_ERROR,
+                    AERON_ERROR_CODE_IMAGE_REJECTED,
                     image->invalidation_reason);
             }
 

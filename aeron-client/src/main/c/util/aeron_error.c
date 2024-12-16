@@ -226,6 +226,12 @@ const char *aeron_error_code_str(int errcode)
         case AERON_ERROR_CODE_STORAGE_SPACE:
             return "insufficient storage space";
 
+        case AERON_ERROR_CODE_IMAGE_REJECTED:
+            return "image rejected";
+
+        case AERON_ERROR_CODE_PUBLICATION_REVOKED:
+            return "publication revoked";
+
         default:
             return "unknown error code";
     }

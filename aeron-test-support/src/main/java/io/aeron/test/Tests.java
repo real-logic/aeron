@@ -17,6 +17,7 @@
 package io.aeron.test;
 
 import io.aeron.Aeron;
+import io.aeron.Counter;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.status.RecordingPos;
@@ -25,6 +26,7 @@ import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
 
+import org.agrona.DirectBuffer;
 import org.agrona.LangUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.SleepingMillisIdleStrategy;
@@ -35,6 +37,7 @@ import org.agrona.concurrent.status.CountersManager;
 import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.extension.ExtensionContext;
 import org.junit.jupiter.api.extension.TestWatcher;
+import org.mockito.stubbing.Answer;
 
 import javax.management.InstanceNotFoundException;
 import javax.management.MBeanServer;
@@ -830,6 +833,27 @@ public class Tests
         return new CountersManager(
             new UnsafeBuffer(ByteBuffer.allocateDirect(Configuration.countersMetadataBufferLength(dataLength))),
             new UnsafeBuffer(ByteBuffer.allocateDirect(dataLength)));
+    }
+
+    public static Answer<Counter> addCounterAnswer(
+        final CountersManager countersManager,
+        final LongSupplier registrationId)
+    {
+        return invocation ->
+        {
+            final int counterType = invocation.getArgument(0, Integer.class);
+            final DirectBuffer keyBuffer = invocation.getArgument(1, DirectBuffer.class);
+            final int keyOffset = invocation.getArgument(2, Integer.class);
+            final int keyLength = invocation.getArgument(3, Integer.class);
+            final DirectBuffer labelBuffer = invocation.getArgument(4, DirectBuffer.class);
+            final int labelOffset = invocation.getArgument(5, Integer.class);
+            final int labelLength = invocation.getArgument(6, Integer.class);
+
+            final int allocate = countersManager.allocate(
+                counterType, keyBuffer, keyOffset, keyLength, labelBuffer, labelOffset, labelLength);
+
+            return new Counter(countersManager, registrationId.getAsLong(), allocate);
+        };
     }
 
     public static Throwable setOrUpdateError(final Throwable existingError, final Throwable newError)

@@ -91,18 +91,7 @@ class ConsensusModuleContextTest
         final Aeron aeron = mock(Aeron.class);
         when(aeron.addCounter(
             anyInt(), any(DirectBuffer.class), anyInt(), anyInt(), any(DirectBuffer.class), anyInt(), anyInt()))
-            .thenAnswer(invocation ->
-            {
-                final int counterId = countersManager.allocate(
-                    invocation.getArgument(0),
-                    invocation.getArgument(1),
-                    invocation.getArgument(2),
-                    invocation.getArgument(3),
-                    invocation.getArgument(4),
-                    invocation.getArgument(5),
-                    invocation.getArgument(6));
-                return new Counter(countersManager, registrationId++, counterId);
-            });
+            .thenAnswer(Tests.addCounterAnswer(countersManager, () -> registrationId++));
         when(aeron.context()).thenReturn(aeronContext);
         when(aeron.conductorAgentInvoker()).thenReturn(conductorInvoker);
         when(aeron.countersReader()).thenReturn(countersManager);

@@ -1966,8 +1966,11 @@ public final class DriverConductor implements Agent
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
-        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
         channelUri(logMetaData, channelUri);
+
+        // Acts as a release fence. It will ensure that if a non-zero eos value is read,
+        // all the preceding changes are be visible.
+        endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
 
     private static void initialisePositionCounters(

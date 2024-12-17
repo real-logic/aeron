@@ -834,6 +834,7 @@ public final class Image
      * Force the driver to disconnect this image from the remote publication.
      *
      * @param reason an error message to be forwarded back to the publication.
+     * @since 1.47.0
      */
     public void reject(final String reason)
     {

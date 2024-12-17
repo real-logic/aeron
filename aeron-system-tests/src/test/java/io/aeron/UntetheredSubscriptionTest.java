@@ -184,7 +184,7 @@ class UntetheredSubscriptionTest
         srcBuffer.setMemory(0, MESSAGE_LENGTH, (byte)-1);
         final String untetheredChannel = channel + "|tether=false";
         final String publicationChannel = channel.startsWith("aeron-spy") ? channel.substring(10) : channel;
-        int untetheredPollLimit = 3;
+        boolean pollingUntethered = true;
 
         try (Subscription tetheredSub = aeron.addSubscription(channel, STREAM_ID);
             Subscription untetheredSub = aeron.addSubscription(
@@ -205,9 +205,9 @@ class UntetheredSubscriptionTest
                     aeron.conductorAgentInvoker().invoke();
                 }
 
-                if (untetheredPollLimit > 0 && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
+                if (pollingUntethered && untetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT) > 0)
                 {
-                    untetheredPollLimit--;
+                    pollingUntethered = false;
                 }
 
                 tetheredSub.poll(fragmentHandler, FRAGMENT_COUNT_LIMIT);

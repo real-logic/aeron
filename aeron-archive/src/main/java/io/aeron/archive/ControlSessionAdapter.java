@@ -960,8 +960,7 @@ class ControlSessionAdapter implements FragmentHandler
                         liveDestination,
                         replicationChannel,
                         encodedCredentials,
-                        srcResponseChannel
-                    );
+                        srcResponseChannel);
                 }
                 break;
             }

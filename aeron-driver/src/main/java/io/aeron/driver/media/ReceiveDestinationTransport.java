@@ -247,4 +247,15 @@ public final class ReceiveDestinationTransport extends ReceiveDestinationTranspo
     {
         return currentControlAddress;
     }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "ReceiveDestinationTransport{" +
+            "currentControlAddress=" + currentControlAddress +
+            ", localSocketAddressIndicator=" + localSocketAddressIndicator +
+            '}';
+    }
 }

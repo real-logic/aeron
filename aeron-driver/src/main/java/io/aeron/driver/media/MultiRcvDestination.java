@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.net.PortUnreachableException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import static io.aeron.driver.media.ReceiveChannelEndpoint.DESTINATION_ADDRESS_TIMEOUT;
 import static io.aeron.driver.media.UdpChannelTransport.onSendError;
@@ -191,5 +192,15 @@ final class MultiRcvDestination
         }
 
         return bytesSent;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public String toString()
+    {
+        return "MultiRcvDestination{" +
+            "transports=" + Arrays.toString(transports) +
+            '}';
     }
 }

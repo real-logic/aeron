@@ -1969,7 +1969,7 @@ public final class DriverConductor implements Agent
         channelUri(logMetaData, channelUri);
 
         // Acts as a release fence. It will ensure that if a non-zero eos value is read,
-        // all the preceding changes are be visible.
+        // all the preceding writes are be visible.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
 

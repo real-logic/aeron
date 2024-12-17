@@ -99,7 +99,7 @@ public class DriverSpaceTest
             assertNotNull(files);
             assertEquals(1, files.length);
             final File file = files[0];
-            assertEquals(3221229568L, file.length());
+            assertEquals(3221233664L, file.length());
         }
     }
 

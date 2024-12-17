@@ -633,6 +633,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
         return "Subscription{" +
             "registrationId=" + registrationId +
             ", isClosed=" + isClosed +
+            ", isConnected=" + isConnected() +
             ", streamId=" + streamId +
             ", channel='" + channel + '\'' +
             ", localSocketAddresses=" + localSocketAddresses() +

@@ -2335,7 +2335,11 @@ public final class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("response channel from archive is not connected");
+                throw new ArchiveException(
+                    "response channel from archive is not connected, " +
+                    "channel=" + poller.subscription().channel() +
+                    ", streamId=" + poller.subscription().streamId() +
+                    ", imageCount=" + poller.subscription().imageCount());
             }
 
             checkDeadline(deadlineNs, "awaiting response", correlationId);
@@ -2473,7 +2477,11 @@ public final class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("response channel from archive is not connected");
+                throw new ArchiveException(
+                    "response channel from archive is not connected, " +
+                    "channel=" + poller.subscription().channel() +
+                    ", streamId=" + poller.subscription().streamId() +
+                    ", imageCount=" + poller.subscription().imageCount());
             }
 
             checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
@@ -2515,7 +2523,11 @@ public final class AeronArchive implements AutoCloseable
 
             if (!poller.subscription().isConnected())
             {
-                throw new ArchiveException("response channel from archive is not connected");
+                throw new ArchiveException(
+                    "response channel from archive is not connected, " +
+                    "channel=" + poller.subscription().channel() +
+                    ", streamId=" + poller.subscription().streamId() +
+                    ", imageCount=" + poller.subscription().imageCount());
             }
 
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);

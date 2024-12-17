@@ -226,20 +226,10 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-
-        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
-
         LOG_CHANNEL_URI_OFFSET = 1024;
 
         LOG_META_DATA_LENGTH = 2 * PAGE_MIN_SIZE;
         LOG_CHANNEL_URI_MAX_LENGTH = LOG_META_DATA_LENGTH - (LOG_CHANNEL_URI_OFFSET + SIZE_OF_INT + 1);
-
-        System.out.println("offset:" + offset);
-        System.out.println("LOG_DEFAULT_FRAME_HEADER_OFFSET:" + LOG_DEFAULT_FRAME_HEADER_OFFSET);
-        System.out.println("LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH:" + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH);
-        System.out.println("LOG_CHANNEL_URI_OFFSET:" + LOG_CHANNEL_URI_OFFSET);
-        System.out.println("LOG_META_DATA_LENGTH:" + LOG_META_DATA_LENGTH);
-        System.out.println("LOG_CHANNEL_URI_MAX_LENGTH:" + LOG_CHANNEL_URI_MAX_LENGTH);
     }
 
     /**

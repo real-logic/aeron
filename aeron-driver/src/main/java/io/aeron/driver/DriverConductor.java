@@ -22,7 +22,6 @@ import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
 import io.aeron.driver.exceptions.InvalidChannelException;
-import io.aeron.driver.ext.CubicCongestionControl;
 import io.aeron.driver.media.ControlMode;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
@@ -320,8 +319,8 @@ public final class DriverConductor implements Agent
                     countersManager);
 
                 final String enrichedChannelUri = enrichImagePublicationChannelUri(channelEndpoint, streamId,
-                    initialTermId, activeTermId, termBufferLength, initialTermOffset, senderMtuLength,
-                    sessionId, isSparse, subscriptionParams, congestionControl);
+                    initialTermId, activeTermId, termBufferLength, termOffset, senderMtuLength, sessionId, isSparse,
+                    subscriptionParams, congestionControl);
 
                 rawLog = newPublicationImageLog(
                     sessionId,
@@ -428,12 +427,15 @@ public final class DriverConductor implements Agent
         }
         channelUriStringBuilder.sparse(isSparse);
 
-        channelUriStringBuilder.congestionControl(congestionControlName(congestionControl));
+        channelUriStringBuilder.congestionControl(congestionControl.getClass().getName());
 
         if (params.hasSessionId)
         {
             channelUriStringBuilder.sessionId(params.sessionId);
         }
+
+        channelUriStringBuilder.socketRcvbufLength(receiveChannelEndpoint.socketRcvbufLength());
+        channelUriStringBuilder.socketSndbufLength(receiveChannelEndpoint.socketSndbufLength());
 
         channelUriStringBuilder.receiverWindowLength(params.receiverWindowLength);
 
@@ -444,22 +446,6 @@ public final class DriverConductor implements Agent
 //        InferableBoolean group = InferableBoolean.INFER;
 //
         return channelUriStringBuilder.toString();
-    }
-
-    private static String congestionControlName(final CongestionControl congestionControl)
-    {
-        if (congestionControl instanceof StaticWindowCongestionControl)
-        {
-            return "static";
-        }
-        else if (congestionControl instanceof CubicCongestionControl)
-        {
-            return "cubic";
-        }
-        else
-        {
-            return congestionControl.getClass().getName();
-        }
     }
 
     void onChannelEndpointError(final long statusIndicatorId, final Exception ex)
@@ -1894,41 +1880,41 @@ public final class DriverConductor implements Agent
     {
         // todo
 
-        final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder(channelUri);
+        final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder(channelUri);
 
-        configureUriStringBuilderWithPublicationParams(params, uriStringBuilder);
+        configureUriStringBuilderWithPublicationParams(params, channelUriStringBuilder);
 
-        uriStringBuilder.flowControl(flowControl.getClass().getName());
+        channelUriStringBuilder.flowControl(flowControl.getClass().getName());
 
-        uriStringBuilder.socketRcvbufLength(channelEndpoint.socketRcvbufLength());
-        uriStringBuilder.socketSndbufLength(channelEndpoint.socketSndbufLength());
+        channelUriStringBuilder.socketRcvbufLength(channelEndpoint.socketRcvbufLength());
+        channelUriStringBuilder.socketSndbufLength(channelEndpoint.socketSndbufLength());
 
         if (udpChannel.isMulticast() && !udpChannel.hasMulticastTtl())
         {
-            uriStringBuilder.ttl(ctx.socketMulticastTtl());
+            channelUriStringBuilder.ttl(ctx.socketMulticastTtl());
         }
 
-        return uriStringBuilder.toString();
+        return channelUriStringBuilder.toString();
     }
 
     private static void configureUriStringBuilderWithPublicationParams(
         final PublicationParams params,
-        final ChannelUriStringBuilder uriStringBuilder)
+        final ChannelUriStringBuilder channelUriStringBuilder)
     {
-        uriStringBuilder.linger(params.lingerTimeoutNs);
-        uriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
-        uriStringBuilder.untetheredRestingTimeoutNs(params.untetheredRestingTimeoutNs);
-        uriStringBuilder.mtu(params.mtuLength);
-        uriStringBuilder.termLength(params.termLength);
-        uriStringBuilder.initialTermId(params.initialTermId);
-        uriStringBuilder.termId(params.termId);
-        uriStringBuilder.termOffset(params.termOffset);
-        uriStringBuilder.publicationWindowLength(params.publicationWindowLength);
-        uriStringBuilder.sessionId(params.sessionId);
-        uriStringBuilder.maxResend(params.maxResend);
-        uriStringBuilder.sparse(params.isSparse);
-        uriStringBuilder.eos(params.signalEos);
-        uriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
+        channelUriStringBuilder.linger(params.lingerTimeoutNs);
+        channelUriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
+        channelUriStringBuilder.untetheredRestingTimeoutNs(params.untetheredRestingTimeoutNs);
+        channelUriStringBuilder.mtu(params.mtuLength);
+        channelUriStringBuilder.termLength(params.termLength);
+        channelUriStringBuilder.initialTermId(params.initialTermId);
+        channelUriStringBuilder.termId(params.termId);
+        channelUriStringBuilder.termOffset(params.termOffset);
+        channelUriStringBuilder.publicationWindowLength(params.publicationWindowLength);
+        channelUriStringBuilder.sessionId(params.sessionId);
+        channelUriStringBuilder.maxResend(params.maxResend);
+        channelUriStringBuilder.sparse(params.isSparse);
+        channelUriStringBuilder.eos(params.signalEos);
+        channelUriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
     }
 
     private RawLog newNetworkPublicationLog(

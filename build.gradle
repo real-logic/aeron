@@ -680,6 +680,7 @@ project(':aeron-archive') {
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     tasks.register('generateCppCodecs', JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedCppDir,
@@ -693,6 +694,7 @@ project(':aeron-archive') {
     def generatedCDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated/c")
     tasks.register('generateCCodecs', JavaExec) {
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedCDir,

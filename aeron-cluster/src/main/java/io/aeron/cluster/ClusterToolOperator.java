@@ -286,16 +286,13 @@ public class ClusterToolOperator
             final int subscriptionSessionId = (int)archive.startReplay(
                 entry.recordingId, 0, AeronArchive.NULL_LENGTH, toolChannel, toolStreamId);
 
-            final String snapshotChannel = "aeron:ipc";
-            final int snapshotStreamId = 1234; // TODO
-
             final String replayChannel = ChannelUri.addSessionId(toolChannel, subscriptionSessionId);
             try (Subscription subscription = aeron.addSubscription(replayChannel, toolStreamId);
-                ExclusivePublication publication = aeron.addExclusivePublication(snapshotChannel, snapshotStreamId))
+                ExclusivePublication publication = aeron.addExclusivePublication(toolChannel, toolStreamId))
             {
                 final int publicationSessionId = publication.sessionId();
-                final String recordingChannel = ChannelUri.addSessionId(snapshotChannel, publicationSessionId);
-                archive.startRecording(recordingChannel, snapshotStreamId, LOCAL, true);
+                final String recordingChannel = ChannelUri.addSessionId(toolChannel, publicationSessionId);
+                archive.startRecording(recordingChannel, toolStreamId, LOCAL, true);
 
                 final CountersReader counters = aeron.countersReader();
                 final long archiveId = archive.archiveId();

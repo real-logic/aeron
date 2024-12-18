@@ -1053,10 +1053,12 @@ class ControlSessionAdapter implements FragmentHandler
         {
             if (info.image == image)
             {
+                final Subscription subscription = image.subscription();
                 info.controlSession.abort("request publication image unavailable:" +
                     " image.correlationId=" + image.correlationId() +
-                    " image.sessionId=" + image.sessionId() +
-                    " channel=" + image.subscription().channel());
+                    " sessionId=" + image.sessionId() +
+                    " streamId=" + subscription.streamId() +
+                    " channel=" + subscription.channel());
                 break;
             }
         }

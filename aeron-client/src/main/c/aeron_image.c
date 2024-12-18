@@ -835,26 +835,6 @@ bool aeron_image_is_closed(aeron_image_t *image)
     return is_closed;
 }
 
-int aeron_image_reject(aeron_image_t *image, const char *reason)
-{
-    if (NULL == image)
-    {
-        AERON_SET_ERR(EINVAL, "%s", "image is null");
-        return -1;
-    }
-
-    int64_t position = 0;
-    AERON_GET_ACQUIRE(position, *image->subscriber_position);
-
-    if (aeron_subscription_reject_image(image->subscription, image->key.correlation_id, position, reason) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
-    }
-
-    return 0;
-}
-
 extern int64_t aeron_image_removal_change_number(aeron_image_t *image);
 
 extern bool aeron_image_is_in_use_by_subscription(aeron_image_t *image, int64_t last_change_number);

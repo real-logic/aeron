@@ -487,16 +487,6 @@ public:
         return numFragments;
     }
 
-    /**
-     * Force the driver to disconnect this image from the remote publication.
-     *
-     * @param reason an error message to be forwarded back to the publication.
-     */
-    void reject(std::string reason)
-    {
-        aeron_image_reject(m_image, reason.c_str());
-    }
-
 private:
     aeron_subscription_t *m_subscription = nullptr;
     aeron_image_t *m_image = nullptr;

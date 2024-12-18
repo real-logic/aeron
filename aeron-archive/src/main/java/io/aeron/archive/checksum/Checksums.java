@@ -16,14 +16,16 @@
 package io.aeron.archive.checksum;
 
 import org.agrona.Strings;
+import org.agrona.checksum.Crc32;
+import org.agrona.checksum.Crc32c;
 
 /**
  * Factory and common methods for working with {@link Checksum} instances.
  */
 public final class Checksums
 {
-    private static final Checksum CRC_32 = Crc32.INSTANCE;
-    private static final Checksum CRC_32C = Crc32c.INSTANCE;
+    private static final Checksum CRC_32 = Crc32.INSTANCE::compute;
+    private static final Checksum CRC_32C = Crc32c.INSTANCE::compute;
 
     /**
      * Returns an instance of {@link Checksum} that computes CRC-32 checksums.

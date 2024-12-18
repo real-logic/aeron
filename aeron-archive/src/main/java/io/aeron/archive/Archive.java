@@ -447,10 +447,10 @@ public final class Archive implements AutoCloseable
         /**
          * Default time interval in nanoseconds for checking session liveness.
          *
-         * @see #CONNECT_TIMEOUT_PROP_NAME
+         * @see #SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
          */
-        @Config(defaultType = DefaultType.LONG, defaultLong = 100 * 1000 * 1000)
-        public static final long SESSION_LIVENESS_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
+        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
+        public static final long SESSION_LIVENESS_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
 
         /**
          * How long a replay publication should linger after all data is sent. Longer linger can help avoid tail loss.

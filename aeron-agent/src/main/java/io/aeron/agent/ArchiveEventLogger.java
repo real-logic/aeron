@@ -259,13 +259,15 @@ public final class ArchiveEventLogger
      * @param oldState         before the change.
      * @param newState         after the change.
      * @param controlSessionId identity for the control session on the Archive.
+     * @param reason           a string indicating the reason for the state change.
      */
     public <E extends Enum<E>> void logControlSessionStateChange(
         final E oldState,
         final E newState,
-        final long controlSessionId)
+        final long controlSessionId,
+        final String reason)
     {
-        final int length = sessionStateChangeLength(oldState, newState);
+        final int length = sessionStateChangeLength(oldState, newState, reason);
         final int captureLength = captureLength(length);
         final int encodedLength = encodedLength(captureLength);
         final ManyToOneRingBuffer ringBuffer = this.ringBuffer;
@@ -275,15 +277,15 @@ public final class ArchiveEventLogger
         {
             try
             {
-                encodeSessionStateChange(
+                encodeControlSessionStateChange(
                     (UnsafeBuffer)ringBuffer.buffer(),
                     index,
                     captureLength,
                     length,
                     oldState,
                     newState,
-                    controlSessionId
-                );
+                    controlSessionId,
+                    reason);
             }
             finally
             {

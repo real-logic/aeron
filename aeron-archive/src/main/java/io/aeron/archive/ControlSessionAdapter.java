@@ -127,7 +127,7 @@ class ControlSessionAdapter implements FragmentHandler
                 final SessionInfo info = controlSessionByIdMap.get(controlSessionId);
                 if (null != info)
                 {
-                    info.controlSession.abort();
+                    info.controlSession.abort(ControlSession.SESSION_CLOSED_MSG);
                 }
                 break;
             }
@@ -1053,7 +1053,10 @@ class ControlSessionAdapter implements FragmentHandler
         {
             if (info.image == image)
             {
-                info.controlSession.abort();
+                info.controlSession.abort("request publication image unavailable:" +
+                    " image.correlationId=" + image.correlationId() +
+                    " image.sessionId=" + image.sessionId() +
+                    " channel=" + image.subscription().channel());
                 break;
             }
         }

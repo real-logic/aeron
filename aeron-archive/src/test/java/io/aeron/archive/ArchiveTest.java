@@ -25,12 +25,14 @@ import io.aeron.Subscription;
 import io.aeron.archive.Archive.Context;
 import io.aeron.archive.checksum.Checksum;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.client.RecordingSubscriptionDescriptorConsumer;
 import io.aeron.archive.codecs.TruncateRecordingRequestDecoder;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
 import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.FrameDescriptor;
@@ -44,6 +46,7 @@ import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
+import org.agrona.ErrorHandler;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.IdleStrategy;
 import org.agrona.concurrent.ManyToOneConcurrentLinkedQueue;
@@ -60,6 +63,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -91,8 +95,7 @@ import static org.hamcrest.MatcherAssert.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.junit.jupiter.params.provider.EnumSource.Mode.EXCLUDE;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(InterruptingTestCallback.class)
 @SuppressWarnings("try")
@@ -867,6 +870,7 @@ class ArchiveTest
     void shouldTimeoutInactiveArchiveClients(final String controlRequestChannel, final String controlResponseChannel)
     {
         final long archiveId = -743746574;
+        final ErrorHandler errorHandler = mock(ErrorHandler.class);
         try (MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
             .statusMessageTimeoutNs(TimeUnit.MILLISECONDS.toNanos(80))
@@ -881,8 +885,9 @@ class ArchiveTest
                 .archiveId(archiveId)
                 .archiveDir(tmpDir.resolve("archive").toFile())
                 .aeronDirectoryName(driver.context().aeronDirectoryName())
-                .connectTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
-                .sessionLivenessCheckIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))))
+                .connectTimeoutNs(TimeUnit.MILLISECONDS.toNanos(678))
+                .sessionLivenessCheckIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))
+                .errorHandler(errorHandler)))
         {
             final AeronArchive.Context ctx = new AeronArchive.Context()
                 .aeronDirectoryName(driver.context().aeronDirectoryName())
@@ -913,6 +918,17 @@ class ArchiveTest
                 assertThat(
                     endNs - startNs,
                     greaterThanOrEqualTo(timeToFillResponseWindowNs + archive.context().connectTimeoutNs()));
+
+                assertEquals(1, archive.context().errorCounter().get());
+                final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
+                verify(errorHandler, timeout(1000)).onError(captor.capture());
+                final ArchiveEvent event = assertInstanceOf(ArchiveEvent.class, captor.getValue());
+                assertEquals(AeronException.Category.WARN, event.category());
+                assertEquals(
+                    "WARN - controlSessionId=" + client2.controlSessionId() + " terminated: " +
+                    "failed to send response for more than connectTimeoutMs=" +
+                    TimeUnit.NANOSECONDS.toMillis(archive.context().connectTimeoutNs()),
+                    event.getMessage());
 
                 while (client2.controlResponsePoller().subscription().isConnected())
                 {

@@ -162,10 +162,7 @@ final class CommonEventEncoder
     }
 
     static <E extends Enum<E>> int encodeStateChange(
-        final UnsafeBuffer encodingBuffer,
-        final int offset,
-        final E from,
-        final E to)
+        final UnsafeBuffer encodingBuffer, final int offset, final E from, final E to)
     {
         int encodedLength = 0;
 

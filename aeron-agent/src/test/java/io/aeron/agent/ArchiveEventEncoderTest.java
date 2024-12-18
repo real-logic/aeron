@@ -42,20 +42,21 @@ class ArchiveEventEncoderTest
     private final UnsafeBuffer buffer = new UnsafeBuffer(new byte[MAX_EVENT_LENGTH]);
 
     @Test
-    void testEncodeSessionStateChange()
+    void testEncodeControlSessionStateChange()
     {
         final int offset = 24;
         final TimeUnit from = DAYS;
         final TimeUnit to = MILLISECONDS;
         final long sessionId = Long.MAX_VALUE;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
-        final int length = payload.length() + SIZE_OF_LONG + SIZE_OF_INT;
+        final String reason = "test reason for now";
+        final int length = payload.length() + SIZE_OF_LONG + SIZE_OF_INT + SIZE_OF_INT + reason.length();
         final int captureLength = captureLength(length);
 
-        final int encodedLength = encodeSessionStateChange(
-            buffer, offset, captureLength, length, from, to, sessionId);
+        final int encodedLength = encodeControlSessionStateChange(
+            buffer, offset, captureLength, length, from, to, sessionId, reason);
 
-        assertEquals(encodedLength(sessionStateChangeLength(from, to)), encodedLength);
+        assertEquals(encodedLength(sessionStateChangeLength(from, to, reason)), encodedLength);
         assertEquals(captureLength, buffer.getInt(offset, LITTLE_ENDIAN));
         assertEquals(length, buffer.getInt(offset + SIZE_OF_INT, LITTLE_ENDIAN));
         assertNotEquals(0, buffer.getLong(offset + SIZE_OF_INT * 2, LITTLE_ENDIAN));
@@ -69,8 +70,11 @@ class ArchiveEventEncoderTest
         final ChronoUnit from = ChronoUnit.ERAS;
         final ChronoUnit to = ChronoUnit.MILLENNIA;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
+        final String reason = "hfskhflkdhfldshlfkhllkshflkhsldfhaslkfhsaklhflksahdflsahlhalks";
 
-        assertEquals(payload.length() + SIZE_OF_LONG + SIZE_OF_INT, sessionStateChangeLength(from, to));
+        assertEquals(
+            payload.length() + SIZE_OF_LONG + SIZE_OF_INT * 2 + reason.length(),
+            sessionStateChangeLength(from, to, reason));
     }
 
     @Test

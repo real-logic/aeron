@@ -606,7 +606,12 @@ final class ArchiveEventDissector
 
         builder.append(": controlSessionId=").append(controlSessionId);
         builder.append(" ");
+        absoluteOffset += buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
+        absoluteOffset += SIZE_OF_INT;
+
+        builder.append(" reason=\"");
         buffer.getStringAscii(absoluteOffset, builder, LITTLE_ENDIAN);
+        builder.append("\"");
     }
 
     static void dissectReplaySessionError(

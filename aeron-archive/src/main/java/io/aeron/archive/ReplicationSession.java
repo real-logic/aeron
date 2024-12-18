@@ -163,7 +163,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
     /**
      * {@inheritDoc}
      */
-    public void abort()
+    public void abort(final String reason)
     {
         this.state(State.DONE, "abort");
     }

@@ -22,7 +22,7 @@ package io.aeron.archive;
  */
 interface Session
 {
-    void abort();
+    void abort(String reason);
 
     boolean isDone();
 

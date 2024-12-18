@@ -215,7 +215,7 @@ class ReplaySession implements Session, AutoCloseable
     /**
      * {@inheritDoc}
      */
-    public void abort()
+    public void abort(final String reason)
     {
         isAborted = true;
     }

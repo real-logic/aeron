@@ -86,7 +86,7 @@ class CreateReplayPublicationSession implements Session
     /**
      * {@inheritDoc}
      */
-    public void abort()
+    public void abort(final String reason)
     {
         isDone = true;
     }

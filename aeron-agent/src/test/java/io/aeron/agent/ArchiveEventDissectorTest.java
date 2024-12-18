@@ -906,13 +906,14 @@ class ArchiveEventDissectorTest
     {
         internalEncodeLogHeader(buffer, 0, 10, 20, () -> 1_500_000_000L);
         buffer.putLong(LOG_HEADER_LENGTH, -10_000_000_000L, LITTLE_ENDIAN);
-        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG, "x -> y");
+        final int length = buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG, "x -> y");
+        buffer.putStringAscii(LOG_HEADER_LENGTH + SIZE_OF_LONG + length, "the very reason to report");
 
         dissectControlSessionStateChange(buffer, 0, builder);
 
         assertEquals("[1.500000000] " + CONTEXT + ": " + CONTROL_SESSION_STATE_CHANGE.name() + " [10/20]:" +
             " controlSessionId=-10000000000" +
-            " x -> y",
+            " x -> y reason=\"the very reason to report\"",
             builder.toString());
     }
 

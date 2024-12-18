@@ -874,7 +874,7 @@ abstract class ArchiveConductor
         final ReplaySession replaySession = replaySessionByIdMap.get(replaySessionId);
         if (null != replaySession)
         {
-            replaySession.abort();
+            replaySession.abort("stop replay");
         }
 
         controlSession.sendOkResponse(correlationId);
@@ -886,7 +886,7 @@ abstract class ArchiveConductor
         {
             if (NULL_VALUE == recordingId || replaySession.recordingId() == recordingId)
             {
-                replaySession.abort();
+                replaySession.abort("stop all replays");
             }
         }
 
@@ -1136,7 +1136,7 @@ abstract class ArchiveConductor
 
             if (null != recordingSession)
             {
-                recordingSession.abort();
+                recordingSession.abort("stop recording by identity");
 
                 final long subscriptionId = recordingSession.subscription().registrationId();
                 final Subscription subscription = removeRecordingSubscription(subscriptionId);
@@ -1187,7 +1187,7 @@ abstract class ArchiveConductor
 
             if (subscriptionRefCountMap.decrementAndGet(subscriptionId) <= 0 || session.isAutoStop())
             {
-                closeAndRemoveRecordingSubscription(subscription);
+                closeAndRemoveRecordingSubscription(subscription, "close recording session");
             }
             closeSession(session);
             ctx.recordingSessionCounter().decrementOrdered();
@@ -1317,7 +1317,7 @@ abstract class ArchiveConductor
         }
         else
         {
-            session.abort();
+            session.abort("stop replication");
             controlSession.sendOkResponse(correlationId);
         }
     }
@@ -1567,7 +1567,7 @@ abstract class ArchiveConductor
         {
             if (subscription == session.subscription())
             {
-                session.abort();
+                session.abort("stop recording");
             }
         }
 
@@ -1922,7 +1922,7 @@ abstract class ArchiveConductor
             errorHandler.onError(ex);
             if (autoStop)
             {
-                closeAndRemoveRecordingSubscription(image.subscription());
+                closeAndRemoveRecordingSubscription(image.subscription(), ex.getMessage());
             }
         }
     }
@@ -2370,7 +2370,7 @@ abstract class ArchiveConductor
         return true;
     }
 
-    private void closeAndRemoveRecordingSubscription(final Subscription subscription)
+    private void closeAndRemoveRecordingSubscription(final Subscription subscription, final String reason)
     {
         final long subscriptionId = subscription.registrationId();
         subscriptionRefCountMap.remove(subscriptionId);
@@ -2379,7 +2379,7 @@ abstract class ArchiveConductor
         {
             if (subscription == session.subscription())
             {
-                session.abort();
+                session.abort(reason);
             }
         }
 

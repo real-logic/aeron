@@ -18,6 +18,7 @@ package io.aeron.archive;
 import io.aeron.Aeron;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
+import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
@@ -39,10 +40,12 @@ import static io.aeron.archive.codecs.ControlResponseCode.*;
  */
 final class ControlSession implements Session
 {
+    static final String SESSION_CLOSED_MSG = "session closed";
     private static final long RESEND_INTERVAL_MS = 200L;
     private static final String SESSION_REJECTED_MSG = "authentication rejected";
     private final Thread conductorThread;
     private long sessionLivenessCheckDeadlineMs;
+    private String abortReason;
 
     enum State
     {
@@ -71,7 +74,6 @@ final class ControlSession implements Session
     private final ControlSessionAdapter controlSessionAdapter;
     private final String invalidVersionMessage;
     private State state = State.INIT;
-    private boolean isInactive = false;
 
     ControlSession(
         final long controlSessionId,
@@ -117,12 +119,13 @@ final class ControlSession implements Session
     /**
      * {@inheritDoc}
      */
-    public void abort()
+    public void abort(final String reason)
     {
-        state(State.DONE);
+        abortReason = reason;
+        state(State.DONE, reason);
         if (null != activeListing)
         {
-            activeListing.abort();
+            activeListing.abort(reason);
         }
     }
 
@@ -133,7 +136,7 @@ final class ControlSession implements Session
     {
         if (null != activeListing)
         {
-            activeListing.abort();
+            activeListing.abort(abortReason);
         }
 
         if (null == controlPublication)
@@ -149,6 +152,12 @@ final class ControlSession implements Session
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
             conductor.context().controlSessionsCounter().decrementOrdered();
+        }
+
+        if (null != abortReason && !SESSION_CLOSED_MSG.equals(abortReason))
+        {
+            conductor.errorHandler.onError(new ArchiveEvent(
+                "controlSessionId=" + controlSessionId + " terminated: " + abortReason));
         }
     }
 
@@ -170,7 +179,10 @@ final class ControlSession implements Session
 
         if (hasNoActivity(nowMs))
         {
-            state(State.INACTIVE);
+            abortReason = State.ACTIVE == state ?
+                "failed to send response for more than connectTimeoutMs=" + connectTimeoutMs :
+                "failed to establish initial connection: state=" + state;
+            state(State.INACTIVE, abortReason);
             workCount++;
         }
 
@@ -214,8 +226,7 @@ final class ControlSession implements Session
                 break;
 
             case INACTIVE:
-                isInactive = true;
-                state(State.DONE);
+                state(State.DONE, "inactive");
                 break;
 
             case DONE:
@@ -223,11 +234,6 @@ final class ControlSession implements Session
         }
 
         return workCount;
-    }
-
-    boolean isInactive()
-    {
-        return isInactive;
     }
 
     byte[] encodedPrincipal()
@@ -776,19 +782,19 @@ final class ControlSession implements Session
 
     void challenged()
     {
-        state(State.CHALLENGED);
+        state(State.CHALLENGED, "challenged");
     }
 
     void authenticate(final byte[] encodedPrincipal)
     {
         this.encodedPrincipal = encodedPrincipal;
         activityDeadlineMs = Aeron.NULL_VALUE;
-        state(State.AUTHENTICATED);
+        state(State.AUTHENTICATED, "authenticated");
     }
 
     void reject()
     {
-        state(State.REJECTED);
+        state(State.REJECTED, SESSION_REJECTED_MSG);
     }
 
     private void assertCalledOnConductorThread()
@@ -821,7 +827,7 @@ final class ControlSession implements Session
         {
             controlPublication = publication;
             activityDeadlineMs = nowMs + connectTimeoutMs;
-            state(State.CONNECTING);
+            state(State.CONNECTING, "connecting");
             workCount += 1;
         }
 
@@ -834,7 +840,7 @@ final class ControlSession implements Session
 
         if (controlPublication.isConnected())
         {
-            state(State.CONNECTED);
+            state(State.CONNECTED, "connected");
             workCount += 1;
         }
 
@@ -904,7 +910,8 @@ final class ControlSession implements Session
 
         if (!controlPublication.isConnected())
         {
-            state(State.INACTIVE);
+            abortReason = "control publication not connected";
+            state(State.INACTIVE, abortReason);
             workCount++;
         }
         else
@@ -946,12 +953,7 @@ final class ControlSession implements Session
         {
             resendDeadlineMs = nowMs + RESEND_INTERVAL_MS;
             controlResponseProxy.sendResponse(
-                controlSessionId,
-                correlationId,
-                AUTHENTICATION_REJECTED,
-                ERROR,
-                SESSION_REJECTED_MSG,
-                this);
+                controlSessionId, correlationId, AUTHENTICATION_REJECTED, ERROR, SESSION_REJECTED_MSG, this);
 
             workCount += 1;
         }
@@ -976,19 +978,20 @@ final class ControlSession implements Session
     {
         if (State.AUTHENTICATED == state && null == invalidVersionMessage)
         {
-            state(State.ACTIVE);
+            state(State.ACTIVE, "active");
         }
     }
 
-    private void state(final State state)
+    private void state(final State state, final String reason)
     {
-        logStateChange(this.state, state, controlSessionId);
+        logStateChange(this.state, state, controlSessionId, reason);
         this.state = state;
     }
 
-    private void logStateChange(final State oldState, final State newState, final long controlSessionId)
+    private void logStateChange(
+        final State oldState, final State newState, final long controlSessionId, final String reason)
     {
-//        System.out.println(controlSessionId + ": " + oldState + " -> " + newState);
+//        System.out.println(controlSessionId + ": " + oldState + " -> " + newState + ", reason=\"" + reason + "\"");
     }
 
     public String toString()

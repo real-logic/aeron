@@ -18,7 +18,7 @@ package io.aeron.archive;
 import io.aeron.Publication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.AeronArchive;
-import io.aeron.archive.client.ArchiveException;
+import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.codecs.*;
 import io.aeron.exceptions.AeronException;
 import io.aeron.logbuffer.BufferClaim;
@@ -218,21 +218,20 @@ class ControlResponseProxy
     {
         if (result == Publication.NOT_CONNECTED)
         {
-            session.abort();
-            throw new ArchiveException(
-                "response publication is not connected: " + session, AeronException.Category.WARN);
+            session.abort("response publication is not connected");
+            throw new ArchiveEvent("response publication is not connected: " + session);
         }
 
         if (result == Publication.CLOSED)
         {
-            session.abort();
-            throw new ArchiveException("response publication is closed: " + session);
+            session.abort("response publication is closed");
+            throw new ArchiveEvent("response publication is closed: " + session, AeronException.Category.ERROR);
         }
 
         if (result == Publication.MAX_POSITION_EXCEEDED)
         {
-            session.abort();
-            throw new ArchiveException("response publication at max position: " + session);
+            session.abort("response publication at max position");
+            throw new ArchiveEvent("response publication at max position: " + session, AeronException.Category.ERROR);
         }
     }
 

@@ -131,26 +131,32 @@ final class ArchiveEventEncoder
         return stateTransitionStringLength(from, to) + (4 * SIZE_OF_LONG) + (SIZE_OF_INT + reason.length());
     }
 
-    static <E extends Enum<E>> int encodeSessionStateChange(
+    static <E extends Enum<E>> int encodeControlSessionStateChange(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int captureLength,
         final int length,
         final E from,
         final E to,
-        final long id)
+        final long id,
+        final String reason)
     {
         int encodedLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
 
         encodingBuffer.putLong(offset + encodedLength, id, LITTLE_ENDIAN);
         encodedLength += SIZE_OF_LONG;
 
-        return encodeTrailingStateChange(encodingBuffer, offset, encodedLength, captureLength, from, to);
+        encodedLength += encodeStateChange(encodingBuffer, offset + encodedLength, from, to);
+
+        encodedLength += encodeTrailingString(encodingBuffer, offset + encodedLength,
+            captureLength + LOG_HEADER_LENGTH - encodedLength, reason);
+
+        return encodedLength;
     }
 
-    static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to)
+    static <E extends Enum<E>> int sessionStateChangeLength(final E from, final E to, final String reason)
     {
-        return stateTransitionStringLength(from, to) + SIZE_OF_LONG;
+        return stateTransitionStringLength(from, to) + SIZE_OF_LONG + (SIZE_OF_INT + reason.length());
     }
 
     static void encodeReplaySessionError(

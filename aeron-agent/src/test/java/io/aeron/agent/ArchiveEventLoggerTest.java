@@ -184,15 +184,18 @@ class ArchiveEventLoggerTest
         final ChronoUnit to = ChronoUnit.MICROS;
         final long id = 555_000_000_000L;
         final String payload = from.name() + STATE_SEPARATOR + to.name();
-        final int captureLength = SIZE_OF_LONG + SIZE_OF_INT + payload.length();
+        final String reason = "test reason to check";
+        final int captureLength = SIZE_OF_LONG + SIZE_OF_INT + payload.length() + SIZE_OF_INT + reason.length();
 
-        logger.logControlSessionStateChange(from, to, id);
+        logger.logControlSessionStateChange(from, to, id, reason);
 
         verifyLogHeader(
             logBuffer, offset, CONTROL_SESSION_STATE_CHANGE.toEventCodeId(), captureLength, captureLength);
         assertEquals(id, logBuffer.getLong(encodedMsgOffset(offset + LOG_HEADER_LENGTH), LITTLE_ENDIAN));
         assertEquals(
             payload, logBuffer.getStringAscii(encodedMsgOffset(offset + LOG_HEADER_LENGTH + SIZE_OF_LONG)));
+        assertEquals(reason, logBuffer.getStringAscii(encodedMsgOffset(
+            offset + LOG_HEADER_LENGTH + SIZE_OF_LONG + SIZE_OF_INT + payload.length())));
     }
 
     @Test

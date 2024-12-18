@@ -79,7 +79,7 @@ class DeleteSegmentsSession implements Session
     /**
      * {@inheritDoc}
      */
-    public void abort()
+    public void abort(final String reason)
     {
     }
 

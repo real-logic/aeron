@@ -105,9 +105,10 @@ class ArchiveInterceptor
     static class ControlSessionStateChange
     {
         @Advice.OnMethodEnter
-        static <E extends Enum<E>> void logStateChange(final E oldState, final E newState, final long controlSessionId)
+        static <E extends Enum<E>> void logStateChange(
+            final E oldState, final E newState, final long controlSessionId, final String reason)
         {
-            LOGGER.logControlSessionStateChange(oldState, newState, controlSessionId);
+            LOGGER.logControlSessionStateChange(oldState, newState, controlSessionId, reason);
         }
     }
 

@@ -919,7 +919,7 @@ class ArchiveTest
                     endNs - startNs,
                     greaterThanOrEqualTo(timeToFillResponseWindowNs + archive.context().connectTimeoutNs()));
 
-                assertEquals(1, archive.context().errorCounter().get());
+                Tests.await(() -> 1 == archive.context().errorCounter().get());
                 final ArgumentCaptor<Throwable> captor = ArgumentCaptor.forClass(Throwable.class);
                 verify(errorHandler, timeout(1000)).onError(captor.capture());
                 final ArchiveEvent event = assertInstanceOf(ArchiveEvent.class, captor.getValue());

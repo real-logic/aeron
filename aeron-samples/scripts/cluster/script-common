@@ -25,8 +25,4 @@ VERSION=$(cat ../../../version.txt)
 
 JDK_VERSION=$(${JAVA_HOME}/bin/java -version 2>&1 | awk -F '"' '/version/ {print $2}')
 
-if [[ ${JDK_VERSION} == '1.8.'* ]]; then
-  ADD_OPENS=""
-else
-  ADD_OPENS="--add-opens java.base/sun.nio.ch=ALL-UNNAMED"
-fi
+ADD_OPENS="--add-opens java.base/jdk.internal.misc=ALL-UNNAMED --add-opens java.base/java.util.zip=ALL-UNNAMED"

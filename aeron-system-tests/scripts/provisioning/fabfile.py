@@ -54,7 +54,7 @@ def deploy(c, java_home=None, provisioning_host=None):
     ]
 
     if (8 < java_version):
-        command.insert(1, "--add-opens java.base/sun.nio.ch=ALL-UNNAMED")
+        command.insert(1, "--add-opens java.base/jdk.internal.misc=ALL-UNNAMED")
 
     with open('version.txt') as f:
         lines = f.readlines()

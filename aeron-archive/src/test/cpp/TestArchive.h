@@ -168,11 +168,13 @@ public:
             {
                 "java",
                 "--add-opens",
+                "java.base/jdk.internal.misc=ALL-UNNAMED",
+                "--add-opens",
                 "java.base/java.util.zip=ALL-UNNAMED",
 #if ENABLE_AGENT_DEBUG_LOGGING
                 m_aeronAgentJar.c_str(),
-            "-Daeron.event.log=admin",
-            "-Daeron.event.archive.log=all",
+                "-Daeron.event.log=admin",
+                "-Daeron.event.archive.log=all",
 #endif
                 "-Daeron.dir.delete.on.start=true",
                 "-Daeron.dir.delete.on.shutdown=true",

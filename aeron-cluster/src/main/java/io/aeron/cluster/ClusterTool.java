@@ -160,6 +160,10 @@ public class ClusterTool
             action(operator::seedRecordingLogFromSnapshot),
             "creates a new recording log based on the latest valid snapshot."));
 
+        COMMANDS.put("create-empty-service-snapshot", new ClusterToolCommand(
+            action(operator::createEmptyServiceSnapshot),
+            "creates an empty service snapshot based on the latest consensus module snapshot."));
+
         COMMANDS.put("errors", new ClusterToolCommand(
             action(operator::errors),
             "prints Aeron and cluster component error logs."));
@@ -319,6 +323,18 @@ public class ClusterTool
     public static void seedRecordingLogFromSnapshot(final File clusterDir)
     {
         BACKWARD_COMPATIBLE_OPERATIONS.seedRecordingLogFromSnapshot(clusterDir);
+    }
+
+    /**
+     * Create a new/empty service snapshot recording based on the most recent snapshot.
+     *
+     * @param clusterDir where the cluster is running.
+     * @param out        to print the output to.
+     * @return {@code true} if snapshot is created or {@code false} if it is not.
+     */
+    public static boolean createEmptyServiceSnapshot(final File clusterDir, final PrintStream out)
+    {
+        return BACKWARD_COMPATIBLE_OPERATIONS.createEmptyServiceSnapshot(clusterDir, out) == SUCCESS;
     }
 
     /**

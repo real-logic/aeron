@@ -870,7 +870,7 @@ class ArchiveTest
         try (MediaDriver driver = MediaDriver.launch(new MediaDriver.Context()
             .aeronDirectoryName(CommonContext.generateRandomDirName())
             .statusMessageTimeoutNs(TimeUnit.MILLISECONDS.toNanos(80))
-            .imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(2000))
+            .imageLivenessTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
             .timerIntervalNs(TimeUnit.MILLISECONDS.toNanos(100))
             .enableExperimentalFeatures(true));
             Archive archive = Archive.launch(TestContexts.localhostArchive()
@@ -881,7 +881,7 @@ class ArchiveTest
                 .archiveId(archiveId)
                 .archiveDir(tmpDir.resolve("archive").toFile())
                 .aeronDirectoryName(driver.context().aeronDirectoryName())
-                .connectTimeoutNs(TimeUnit.MILLISECONDS.toNanos(1000))
+                .connectTimeoutNs(TimeUnit.MILLISECONDS.toNanos(500))
                 .sessionLivenessCheckIntervalNs(TimeUnit.MILLISECONDS.toNanos(1))))
         {
             final AeronArchive.Context ctx = new AeronArchive.Context()
@@ -927,9 +927,7 @@ class ArchiveTest
 
                 assertTrue(client1.archiveProxy().publication().isConnected());
                 assertTrue(client1.controlResponsePoller().subscription().isConnected());
-                assertEquals(
-                    controlRequestChannel.startsWith(CommonContext.IPC_CHANNEL),
-                    client2.archiveProxy().publication().isConnected());
+                assertTrue(client2.archiveProxy().publication().isConnected());
                 assertFalse(client2.controlResponsePoller().subscription().isConnected());
             }
         }

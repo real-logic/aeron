@@ -1061,22 +1061,8 @@ class ControlSessionAdapter implements FragmentHandler
 
     void removeControlSession(final long controlSessionId)
     {
-        final SessionInfo info = controlSessionByIdMap.remove(controlSessionId);
+        controlSessionByIdMap.remove(controlSessionId);
         conductor.removeReplayTokensForSession(controlSessionId);
-        if (null != info)
-        {
-            if (info.controlSession.isInactive() && info.image.activeTransportCount() > 0)
-            {
-                final ExclusivePublication controlPublication = info.controlSession.controlPublication();
-                final int publicationSessionId = controlPublication.sessionId();
-                if (info.image.sessionId() == publicationSessionId ||
-                    info.image.correlationId() == Long.parseLong(
-                    ChannelUri.parse(controlPublication.channel()).get(RESPONSE_CORRELATION_ID_PARAM_NAME, "-1")))
-                {
-                    info.image.reject("stale ControlSession: sessionId=" + info.controlSession.sessionId());
-                }
-            }
-        }
     }
 
     private ControlSession setupSessionAndChannelForReplay(

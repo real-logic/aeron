@@ -17,6 +17,7 @@ package io.aeron.driver;
 
 import io.aeron.Aeron;
 import io.aeron.ChannelUri;
+import io.aeron.ChannelUriStringBuilder;
 import io.aeron.driver.MediaDriver.Context;
 import io.aeron.driver.buffer.LogFactory;
 import io.aeron.driver.buffer.RawLog;
@@ -302,14 +303,7 @@ public final class DriverConductor implements Agent
             try
             {
                 final long registrationId = toDriverCommands.nextCorrelationId();
-                rawLog = newPublicationImageLog(
-                    sessionId,
-                    streamId,
-                    initialTermId,
-                    termBufferLength,
-                    isOldestSubscriptionSparse(subscriberPositions),
-                    senderMtuLength,
-                    registrationId);
+                final boolean isSparse = isOldestSubscriptionSparse(subscriberPositions);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -323,6 +317,20 @@ public final class DriverConductor implements Agent
                     ctx.receiverCachedNanoClock(),
                     ctx,
                     countersManager);
+
+                final String enrichedChannelUri = enrichImagePublicationChannelUri(channelEndpoint, streamId,
+                    initialTermId, activeTermId, termBufferLength, termOffset, senderMtuLength, sessionId, isSparse,
+                    subscriptionParams, congestionControl);
+
+                rawLog = newPublicationImageLog(
+                    sessionId,
+                    streamId,
+                    initialTermId,
+                    termBufferLength,
+                    isSparse,
+                    senderMtuLength,
+                    registrationId,
+                    enrichedChannelUri);
 
                 final SubscriptionLink subscription = subscriberPositions.get(0).subscription();
                 final String uri = subscription.channel();
@@ -380,6 +388,64 @@ public final class DriverConductor implements Agent
                 throw ex;
             }
         }
+    }
+
+    private static String enrichImagePublicationChannelUri(
+        final ReceiveChannelEndpoint receiveChannelEndpoint,
+        final int streamId,
+        final int initialTermId,
+        final int activeTermId,
+        final int termBufferLength,
+        final int termOffset,
+        final int senderMtuLength,
+        final int sessionId,
+        final boolean isSparse,
+        final SubscriptionParams params,
+        final CongestionControl congestionControl)
+    {
+        final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder(
+            receiveChannelEndpoint.udpChannel().channelUri());
+
+        channelUriStringBuilder.sessionId(sessionId);
+
+        channelUriStringBuilder.streamId(streamId);
+
+        channelUriStringBuilder.termLength(termBufferLength);
+        channelUriStringBuilder.mtu(senderMtuLength);
+
+        channelUriStringBuilder.initialTermId(initialTermId);
+        channelUriStringBuilder.termId(activeTermId);
+
+        channelUriStringBuilder.termOffset(termOffset);
+
+        channelUriStringBuilder.tether(params.isTether);
+        channelUriStringBuilder.rejoin(params.isRejoin);
+        channelUriStringBuilder.reliable(params.isReliable);
+        if (INFER != params.group)
+        {
+            channelUriStringBuilder.group(FORCE_TRUE == params.group);
+        }
+        channelUriStringBuilder.sparse(isSparse);
+
+        channelUriStringBuilder.congestionControl(congestionControl.getClass().getName());
+
+        if (params.hasSessionId)
+        {
+            channelUriStringBuilder.sessionId(params.sessionId);
+        }
+
+        channelUriStringBuilder.socketRcvbufLength(receiveChannelEndpoint.socketRcvbufLength());
+        channelUriStringBuilder.socketSndbufLength(receiveChannelEndpoint.socketSndbufLength());
+
+        channelUriStringBuilder.receiverWindowLength(params.receiverWindowLength);
+
+      //  channelUriStringBuilder.group(params.group);
+
+//        boolean hasJoinPosition = false;
+//        boolean isResponse = false;
+//        InferableBoolean group = InferableBoolean.INFER;
+//
+        return channelUriStringBuilder.toString();
     }
 
     void onChannelEndpointError(final long statusIndicatorId, final Exception ex)
@@ -1724,8 +1790,13 @@ public final class DriverConductor implements Agent
             params.initialTermId,
             params.termLength);
 
+        final String enrichedChannelUri = enrichNetworkPublicationChannelUri(udpChannel.channelUri(), udpChannel,
+            channelEndpoint, flowControl, params);
+
         final RawLog rawLog =
-            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
+            enrichedChannelUri, params);
+
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1800,15 +1871,62 @@ public final class DriverConductor implements Agent
         }
     }
 
+    private String enrichNetworkPublicationChannelUri(
+        final ChannelUri channelUri,
+        final UdpChannel udpChannel,
+        final SendChannelEndpoint channelEndpoint,
+        final FlowControl flowControl,
+        final PublicationParams params)
+    {
+        // todo
+
+        final ChannelUriStringBuilder channelUriStringBuilder = new ChannelUriStringBuilder(channelUri);
+
+        configureUriStringBuilderWithPublicationParams(params, channelUriStringBuilder);
+
+        channelUriStringBuilder.flowControl(flowControl.getClass().getName());
+
+        channelUriStringBuilder.socketRcvbufLength(channelEndpoint.socketRcvbufLength());
+        channelUriStringBuilder.socketSndbufLength(channelEndpoint.socketSndbufLength());
+
+        if (udpChannel.isMulticast() && !udpChannel.hasMulticastTtl())
+        {
+            channelUriStringBuilder.ttl(ctx.socketMulticastTtl());
+        }
+
+        return channelUriStringBuilder.toString();
+    }
+
+    private static void configureUriStringBuilderWithPublicationParams(
+        final PublicationParams params,
+        final ChannelUriStringBuilder channelUriStringBuilder)
+    {
+        channelUriStringBuilder.linger(params.lingerTimeoutNs);
+        channelUriStringBuilder.untetheredWindowLimitTimeoutNs(params.untetheredWindowLimitTimeoutNs);
+        channelUriStringBuilder.untetheredRestingTimeoutNs(params.untetheredRestingTimeoutNs);
+        channelUriStringBuilder.mtu(params.mtuLength);
+        channelUriStringBuilder.termLength(params.termLength);
+        channelUriStringBuilder.initialTermId(params.initialTermId);
+        channelUriStringBuilder.termId(params.termId);
+        channelUriStringBuilder.termOffset(params.termOffset);
+        channelUriStringBuilder.publicationWindowLength(params.publicationWindowLength);
+        channelUriStringBuilder.sessionId(params.sessionId);
+        channelUriStringBuilder.maxResend(params.maxResend);
+        channelUriStringBuilder.sparse(params.isSparse);
+        channelUriStringBuilder.eos(params.signalEos);
+        channelUriStringBuilder.spiesSimulateConnection(params.spiesSimulateConnection);
+    }
+
     private RawLog newNetworkPublicationLog(
         final int sessionId,
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final String channelUri,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, channelUri, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1819,10 +1937,11 @@ public final class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final String channelUri,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, channelUri, rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1834,6 +1953,7 @@ public final class DriverConductor implements Agent
         final int initialTermId,
         final int mtuLength,
         final long registrationId,
+        final String channelUri,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1846,6 +1966,10 @@ public final class DriverConductor implements Agent
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
+        channelUri(logMetaData, channelUri);
+
+        // Acts as a release fence. It will ensure that if a non-zero eos value is read,
+        // all the preceding writes are be visible.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
 
@@ -1886,10 +2010,11 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final boolean isSparse,
         final int senderMtuLength,
-        final long correlationId)
+        final long correlationId,
+        final String channelUri)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rawLog);
+        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, channelUri, rawLog);
 
         return rawLog;
     }
@@ -2273,8 +2398,10 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        final RawLog rawLog =
-            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+        final String enrichedChannelUri = enrichIpcPublicationChannelUri(channel, params);
+
+        final RawLog rawLog = newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
+            enrichedChannelUri, params);
 
         UnsafeBufferPosition publisherPosition = null;
         UnsafeBufferPosition publisherLimit = null;
@@ -2319,6 +2446,17 @@ public final class DriverConductor implements Agent
             CloseHelper.quietCloseAll(rawLog, publisherPosition, publisherLimit);
             throw ex;
         }
+    }
+
+    private static String enrichIpcPublicationChannelUri(
+        final String channel,
+        final PublicationParams params)
+    {
+        final ChannelUriStringBuilder uriStringBuilder = new ChannelUriStringBuilder(channel);
+
+        configureUriStringBuilderWithPublicationParams(params, uriStringBuilder);
+
+        return uriStringBuilder.toString();
     }
 
     private static AeronClient findClient(final ArrayList<AeronClient> clients, final long clientId)

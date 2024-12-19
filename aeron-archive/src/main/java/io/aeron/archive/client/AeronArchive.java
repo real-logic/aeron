@@ -231,46 +231,25 @@ public final class AeronArchive implements AutoCloseable
      */
     public static AeronArchive connect(final Context ctx)
     {
-        Subscription subscription = null;
-        ExclusivePublication publication = null;
-        AsyncConnect asyncConnect = null;
+        final AsyncConnect asyncConnect = asyncConnect(ctx);
         try
         {
-            ctx.conclude();
-
-            final Aeron aeron = ctx.aeron();
-            subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
-
-            checkAndSetupResponseChannel(ctx, subscription);
-
-            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
-
-            final ArchiveProxy archiveProxy = new ArchiveProxy(
-                publication,
-                ctx.idleStrategy(),
-                aeron.context().nanoClock(),
-                ctx.messageTimeoutNs(),
-                DEFAULT_RETRY_ATTEMPTS,
-                ctx.credentialsSupplier());
-
-            asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
-            final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker aeronClientInvoker = ctx.aeron().conductorAgentInvoker();
             final AgentInvoker delegatingInvoker = ctx.agentInvoker();
-            int previousStep = asyncConnect.step();
+            AsyncConnect.State previousState = asyncConnect.state();
 
             AeronArchive aeronArchive;
             while (null == (aeronArchive = asyncConnect.poll()))
             {
-                if (asyncConnect.step() == previousStep)
+                if (asyncConnect.state() == previousState)
                 {
                     idleStrategy.idle();
                 }
                 else
                 {
                     idleStrategy.reset();
-                    previousStep = asyncConnect.step();
+                    previousState = asyncConnect.state();
                 }
 
                 if (null != aeronClientInvoker)
@@ -286,21 +265,11 @@ public final class AeronArchive implements AutoCloseable
 
             return aeronArchive;
         }
-        catch (final ConcurrentConcludeException ex)
-        {
-            throw ex;
-        }
         catch (final Exception ex)
         {
-            if (!ctx.ownsAeronClient())
-            {
-                CloseHelper.quietClose(subscription);
-                CloseHelper.quietClose(publication);
-            }
-
-            CloseHelper.quietCloseAll(asyncConnect, ctx::close);
-
-            throw ex;
+            final Exception error = quietClose(ex, asyncConnect);
+            LangUtil.rethrowUnchecked(error);
+            return null;
         }
     }
 
@@ -324,21 +293,8 @@ public final class AeronArchive implements AutoCloseable
      */
     public static AsyncConnect asyncConnect(final Context ctx)
     {
-        try
-        {
-            ctx.conclude();
-
-            return new AsyncConnect(ctx);
-        }
-        catch (final ConcurrentConcludeException ex)
-        {
-            throw ex;
-        }
-        catch (final Exception ex)
-        {
-            ctx.close();
-            throw ex;
-        }
+        ctx.conclude();
+        return new AsyncConnect(ctx);
     }
 
     /**
@@ -3636,28 +3592,36 @@ public final class AeronArchive implements AutoCloseable
         static final int PROTOCOL_VERSION_WITH_ARCHIVE_ID = SemanticVersion.compose(1, 11, 0);
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
-        private ArchiveProxy archiveProxy;
         private final long deadlineNs;
         private long publicationRegistrationId = Aeron.NULL_VALUE;
         private long correlationId = Aeron.NULL_VALUE;
         private long controlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
         private State state = State.ADD_PUBLICATION;
+        private ArchiveProxy archiveProxy;
 
         AsyncConnect(final Context ctx)
         {
-            this.ctx = ctx;
+            try
+            {
+                this.ctx = ctx;
 
-            final Aeron aeron = ctx.aeron();
+                final Aeron aeron = ctx.aeron();
 
-            controlResponsePoller = new ControlResponsePoller(
-                aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
+                controlResponsePoller = new ControlResponsePoller(
+                    aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
 
-            checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
+                checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
 
-            publicationRegistrationId = aeron.asyncAddExclusivePublication(
-                ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+                publicationRegistrationId = aeron.asyncAddExclusivePublication(
+                    ctx.controlRequestChannel(), ctx.controlRequestStreamId());
+                deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+            }
+            catch (final Exception ex)
+            {
+                close();
+                throw ex;
+            }
         }
 
         AsyncConnect(
@@ -3678,12 +3642,14 @@ public final class AeronArchive implements AutoCloseable
         {
             if (State.DONE != state)
             {
-                final ErrorHandler errorHandler = ctx.errorHandler();
-                CloseHelper.close(errorHandler, controlResponsePoller.subscription());
+                if (null != controlResponsePoller)
+                {
+                    CloseHelper.close(ctx.errorHandler(), controlResponsePoller.subscription());
+                }
 
                 if (null != archiveProxy)
                 {
-                    CloseHelper.close(errorHandler, archiveProxy.publication());
+                    CloseHelper.close(ctx.errorHandler(), archiveProxy.publication());
                 }
                 else if (Aeron.NULL_VALUE != publicationRegistrationId)
                 {

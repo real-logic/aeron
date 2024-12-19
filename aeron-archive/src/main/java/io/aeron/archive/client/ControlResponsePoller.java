@@ -24,6 +24,8 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
 
+import java.util.Objects;
+
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
  */
@@ -76,7 +78,7 @@ public final class ControlResponsePoller
      */
     public ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
     {
-        this.subscription = subscription;
+        this.subscription = Objects.requireNonNull(subscription);
         this.fragmentLimit = fragmentLimit;
     }
 

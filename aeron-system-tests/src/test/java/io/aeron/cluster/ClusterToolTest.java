@@ -36,6 +36,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.function.Consumer;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
@@ -110,6 +111,76 @@ class ClusterToolTest
         assertThat(
             capturingPrintStream.flushAndGetContent(),
             containsString("Snapshot: appVersion=1 timeUnit=MILLISECONDS"));
+    }
+
+    @Test
+    @InterruptAfter(5)
+    void shouldAddNewServiceAfterSnapshot()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode initialLeader = cluster.awaitLeader();
+        assertNotNull(cluster.asyncConnectClient());
+        cluster.sendAndAwaitMessages(10);
+
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        assertTrue(ClusterTool.snapshot(
+            initialLeader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
+        cluster.awaitSnapshotCount(1);
+
+        final Pattern pattern = Pattern.compile("New snapshot recording id: (\\d+)");
+
+        for (int i = 0; i <= 2; i++)
+        {
+            final TestNode node = cluster.node(i);
+
+            assertTrue(ClusterTool.createEmptyServiceSnapshot(
+                node.consensusModule().context().clusterDir(),
+                capturingPrintStream.resetAndGetPrintStream()));
+
+            final Matcher matcher = pattern.matcher(capturingPrintStream.flushAndGetContent());
+            assertTrue(matcher.find());
+            final int recordingId = Integer.parseInt(matcher.group(1));
+
+            try (RecordingLog recordingLog = node.consensusModule().context().recordingLog())
+            {
+                final RecordingLog.Entry snapshotEntry =
+                    recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID);
+                assertNotNull(snapshotEntry);
+
+                recordingLog.appendSnapshot(
+                    recordingId,
+                    snapshotEntry.leadershipTermId,
+                    snapshotEntry.termBaseLogPosition,
+                    snapshotEntry.logPosition,
+                    snapshotEntry.timestamp,
+                    1);
+            }
+        }
+
+        cluster.stopAllNodes();
+
+        for (int i = 0; i <= 2; i++)
+        {
+            cluster.startStaticNode(
+                i,
+                false,
+                (x) -> new TestNode.TestService[]{
+                    new TestNode.TestService().index(x),
+                    new TestNode.TestService().index(x + 3).requireFullSnapshot(false)
+                });
+        }
+
+        cluster.awaitLeader();
+
+        assertNotNull(cluster.asyncConnectClient());
+
+        cluster.sendMessages(10);
+        cluster.awaitResponseMessageCount(20); // two services, so twice the messages pinged back
+        cluster.awaitServicesMessageCount(10); // each service gets 10 messages
     }
 
     @Test

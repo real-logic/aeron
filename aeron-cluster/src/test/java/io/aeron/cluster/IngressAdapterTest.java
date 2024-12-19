@@ -62,7 +62,7 @@ class IngressAdapterTest
 
         final int length = MessageHeaderDecoder.ENCODED_LENGTH + blockLength;
 
-        adapter.onFragment(buffer, 0, length, null);
+        adapter.onMessage(buffer, 0, length, null);
 
         expectation.expect(verify(consensusModuleAgent), buffer);
     }

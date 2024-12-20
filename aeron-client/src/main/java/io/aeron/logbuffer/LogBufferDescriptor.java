@@ -135,10 +135,33 @@ public class LogBufferDescriptor
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
+
+
     /**
      * Maximum length of a frame header.
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
+
+
+    // todo: Add documentation
+    public static final int LOG_ACTIVE_TERM_ID_OFFSET;
+    public static final int LOG_TERM_OFFSET_OFFSET;
+    public static final int LOG_SENDER_MTU_LENGTH_OFFSET;
+    public static final int LOG_IS_SPARSE_OFFSET;
+    public static final int LOG_IS_TETHER_OFFSET;
+    public static final int LOG_IS_REJOIN_OFFSET;
+    public static final int LOG_IS_RELIABLE_OFFSET;
+    public static final int LOG_SOCKET_RCVBUF_LENGTH_OFFSET;
+    public static final int LOG_SOCKET_SNDBUF_LENGTH_OFFSET;
+    public static final int LOG_RECEIVER_WINDOW_LENGTH_OFFSET;
+    public static final int LOG_PUBLICATION_WINDOW_LENGTH_OFFSET;
+    public static final int LOG_GROUP_OFFSET;
+    public static final int LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET;
+    public static final int LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET;
+    public static final int LOG_MAX_RESEND_OFFSET;
+    public static final int LOG_LINGER_TIMEOUT_NS_OFFSET;
+    public static final int LOG_SIGNAL_EOS_OFFSET;
+    public static final int LOG_SPIES_SIMULATE_CONNECTION_OFFSET;
 
     /**
      * Total length of the log metadata buffer in bytes.
@@ -217,7 +240,68 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        LOG_META_DATA_LENGTH = align(offset + LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH, PAGE_MIN_SIZE);
+        // the new fields will be added with 1 cacheline of padding after the frame header.
+        offset+= LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH+CACHE_LINE_LENGTH;
+
+        LOG_ACTIVE_TERM_ID_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_TERM_OFFSET_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_SENDER_MTU_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_IS_SPARSE_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_IS_TETHER_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_IS_REJOIN_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_IS_RELIABLE_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+
+        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_RECEIVER_WINDOW_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_GROUP_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
+        LOG_MAX_RESEND_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_SIGNAL_EOS_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+
+        LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
+        System.out.println("Offset:"+offset);
+        System.out.println("LOG_META_DATA_LENGTH:"+LOG_META_DATA_LENGTH);
     }
 
     /**
@@ -877,5 +961,161 @@ public class LogBufferDescriptor
         final int remainingPayload = length % maxPayloadSize;
 
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
+    }
+
+    // Active Term ID
+    public static int activeTermId(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_ACTIVE_TERM_ID_OFFSET);
+    }
+
+    public static void activeTermId(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_ACTIVE_TERM_ID_OFFSET, value);
+    }
+
+    // Term Offset
+    public static int termOffset(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_TERM_OFFSET_OFFSET);
+    }
+
+    public static void termOffset(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_TERM_OFFSET_OFFSET, value);
+    }
+
+    // Sender MTU Length
+    public static int senderMtuLength(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_SENDER_MTU_LENGTH_OFFSET);
+    }
+
+    public static void senderMtuLength(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_SENDER_MTU_LENGTH_OFFSET, value);
+    }
+
+    // Is Sparse
+    public static boolean isSparse(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_IS_SPARSE_OFFSET) == 1;
+    }
+
+    public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_IS_SPARSE_OFFSET, value ? 1 : 0);
+    }
+
+    // Is Tether
+    public static boolean isTether(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_IS_TETHER_OFFSET) == 1;
+    }
+
+    public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_IS_TETHER_OFFSET, value ? 1 : 0);
+    }
+
+    // Is Rejoin
+    public static boolean isRejoin(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_IS_REJOIN_OFFSET) == 1;
+    }
+
+    public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_IS_REJOIN_OFFSET, value ? 1 : 0);
+    }
+
+    // Is Reliable
+    public static boolean isReliable(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_IS_RELIABLE_OFFSET) == 1;
+    }
+
+    public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_IS_RELIABLE_OFFSET, value ? 1 : 0);
+    }
+
+    // Socket Rcvbuf Length
+    public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET);
+    }
+
+    public static void socketRcvbufLength(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET, value);
+    }
+
+    // Socket Sndbuf Length
+    public static int socketSndbufLength(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET);
+    }
+
+    public static void socketSndbufLength(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET, value);
+    }
+
+    // Receiver Window Length
+    public static int receiverWindowLength(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET);
+    }
+
+    public static void receiverWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET, value);
+    }
+
+    public static int publicationWindowLength(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET);
+    }
+
+    public static void publicationWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET, value);
+    }
+
+    public static long untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET);
+    }
+
+    public static void untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+        metadataBuffer.putLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET, value);
+    }
+
+    // Untethered Resting Timeout (in nanoseconds)
+    public static long untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET);
+    }
+
+    public static void untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+        metadataBuffer.putLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET, value);
+    }
+
+    // Group
+    public static boolean group(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_GROUP_OFFSET) == 1;
+    }
+
+    public static void group(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_GROUP_OFFSET, value ? 1 : 0);
+    }
+
+    public static int maxResend(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_MAX_RESEND_OFFSET);
+    }
+
+    public static void maxResend(final UnsafeBuffer metadataBuffer, final int value) {
+        metadataBuffer.putInt(LOG_MAX_RESEND_OFFSET, value);
+    }
+
+    public static long lingerTimeoutNs(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getLong(LOG_LINGER_TIMEOUT_NS_OFFSET);
+    }
+
+    public static void lingerTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+        metadataBuffer.putLong(LOG_LINGER_TIMEOUT_NS_OFFSET, value);
+    }
+
+    public static boolean signalEos(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_SIGNAL_EOS_OFFSET) == 1;
+    }
+
+    public static void signalEos(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_SIGNAL_EOS_OFFSET,value ? 1 : 0);
+    }
+
+    public static boolean spiesSimulateConnection(final UnsafeBuffer metadataBuffer) {
+        return metadataBuffer.getInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET) == 1;
+    }
+
+    public static void spiesSimulateConnection(final UnsafeBuffer metadataBuffer, final boolean value) {
+        metadataBuffer.putInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET, value ? 1 : 0);
     }
 }

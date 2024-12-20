@@ -309,6 +309,13 @@ public final class DriverConductor implements Agent
                     termBufferLength,
                     isOldestSubscriptionSparse(subscriberPositions),
                     senderMtuLength,
+                    subscriptionChannel.socketRcvbufLength(),
+                    subscriptionChannel.socketSndbufLength(),
+                    termOffset,
+                    subscriptionParams.receiverWindowLength,
+                    subscriptionParams.isTether,
+                    subscriptionParams.isRejoin,
+                    subscriptionParams.isReliable,
                     registrationId);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
@@ -1724,8 +1731,10 @@ public final class DriverConductor implements Agent
             params.initialTermId,
             params.termLength);
 
-        final RawLog rawLog =
-            newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+        // todo:
+        final int termOffset = 0;
+        final RawLog rawLog = newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
+            udpChannel.socketRcvbufLength(), udpChannel.socketSndbufLength(), termOffset, params);
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1805,10 +1814,38 @@ public final class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final int socketRcvBufLength,
+        final int socketSndBufLength,
+        final int termOffset,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        final int receiverWindowLength = 0;
+        final boolean tether = false;
+        final boolean rejoin = false;
+        final boolean reliable = false;
+        initLogMetadata(
+            sessionId,
+            streamId,
+            initialTermId,
+            params.mtuLength,
+            registrationId,
+            socketRcvBufLength,
+            socketSndBufLength,
+            termOffset,
+            receiverWindowLength,
+            tether,
+            rejoin,
+            reliable,
+            params.isSparse,
+            params.publicationWindowLength,
+            params.untetheredWindowLimitTimeoutNs,
+            params.untetheredRestingTimeoutNs,
+            params.maxResend,
+            params.lingerTimeoutNs,
+            params.signalEos,
+            params.spiesSimulateConnection,
+            rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1819,10 +1856,38 @@ public final class DriverConductor implements Agent
         final int streamId,
         final int initialTermId,
         final long registrationId,
+        final int termOffset,
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, params.mtuLength, registrationId, rawLog);
+        final int socketRcvBufLength = 0;
+        final int socketSndBufLength = 0;
+        final int receiverWindowLength = 0;
+        final boolean tether = false;
+        final boolean rejoin = false;
+        final boolean reliable = false;
+        initLogMetadata(
+            sessionId,
+            streamId,
+            initialTermId,
+            params.mtuLength,
+            registrationId,
+            socketRcvBufLength,
+            socketSndBufLength,
+            termOffset,
+            receiverWindowLength,
+            tether,
+            rejoin,
+            reliable,
+            params.isSparse,
+            params.publicationWindowLength,
+            params.untetheredWindowLimitTimeoutNs,
+            params.untetheredRestingTimeoutNs,
+            params.maxResend,
+            params.lingerTimeoutNs,
+            params.signalEos,
+            params.spiesSimulateConnection,
+            rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
         return rawLog;
@@ -1834,8 +1899,25 @@ public final class DriverConductor implements Agent
         final int initialTermId,
         final int mtuLength,
         final long registrationId,
+        final int socketRcvBufLength,
+        final int socketSndbufLength,
+        final int termOffset,
+        final int receiverWindowLength,
+        final boolean tether,
+        final boolean rejoin,
+        final boolean reliable,
+        final boolean sparse,
+        final int publicationWindowLength,
+        final long untetheredWindowLimitTimeoutNs,
+        final long untetheredRestingTimeoutNs,
+        final int maxResend,
+        final long lingerTimeoutNs,
+        final boolean signalEos,
+        final boolean spiesSimulateConnection,
         final RawLog rawLog)
     {
+        // peter
+
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
         defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
@@ -1846,8 +1928,31 @@ public final class DriverConductor implements Agent
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
+
+        // new
+        termOffset(logMetaData, termOffset);
+        socketRcvbufLength(logMetaData, socketRcvBufLength);
+        socketSndbufLength(logMetaData, socketSndbufLength);
+        receiverWindowLength(logMetaData, receiverWindowLength);
+        isTether(logMetaData, tether);
+        isRejoin(logMetaData, rejoin);
+        isReliable(logMetaData, reliable);
+        isSparse(logMetaData, sparse);
+        publicationWindowLength(logMetaData, publicationWindowLength);
+        untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
+        untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);
+        maxResend(logMetaData, maxResend);
+        lingerTimeoutNs(logMetaData, lingerTimeoutNs);
+        signalEos(logMetaData, signalEos);
+        spiesSimulateConnection(logMetaData, spiesSimulateConnection);
+
+//        channelUriStringBuilder.termId(params.termId);
+//        channelUriStringBuilder.sessionId(params.sessionId);
+
+        // Acts like a release fence; so this should be the last statement here.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
+
 
     private static void initialisePositionCounters(
         final int initialTermId, final PublicationParams params, final UnsafeBuffer logMetaData)
@@ -1886,10 +1991,45 @@ public final class DriverConductor implements Agent
         final int termBufferLength,
         final boolean isSparse,
         final int senderMtuLength,
+        final int socketRcvBufLength,
+        final int socketSndBufLength,
+        final int termOffset,
+        final int receiverWindowLength,
+        final boolean tether,
+        final boolean rejoin,
+        final boolean reliable,
         final long correlationId)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        initLogMetadata(sessionId, streamId, initialTermId, senderMtuLength, correlationId, rawLog);
+        int publicationWindowLength = 0;
+        long untetheredWindowLimitTimeoutNs = 0;
+        long untetheredRestingTimeoutNs = 0;
+        int maxResend = 0;
+        long lingerTimeoutNs = 0;
+        boolean signalEos = false;
+        boolean spiesSimulateConnection = false;
+        initLogMetadata(
+            sessionId,
+            streamId,
+            initialTermId,
+            senderMtuLength,
+            correlationId,
+            socketRcvBufLength,
+            socketSndBufLength,
+            termOffset,
+            receiverWindowLength,
+            tether,
+            rejoin,
+            reliable,
+            isSparse,
+            publicationWindowLength,
+            untetheredWindowLimitTimeoutNs,
+            untetheredRestingTimeoutNs,
+            maxResend,
+            lingerTimeoutNs,
+            signalEos,
+            spiesSimulateConnection,
+            rawLog);
 
         return rawLog;
     }
@@ -2273,8 +2413,11 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
+        // todo:
+        final int termOffset = 0;
+
         final RawLog rawLog =
-            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, params);
+            newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, termOffset, params);
 
         UnsafeBufferPosition publisherPosition = null;
         UnsafeBufferPosition publisherLimit = null;

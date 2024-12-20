@@ -300,8 +300,7 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        // the new fields will be added with 1 cacheline of padding after the frame header.
-        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH + CACHE_LINE_LENGTH;
+        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH ;
 
         LOG_TERM_OFFSET_OFFSET = offset;
         offset += SIZE_OF_INT;

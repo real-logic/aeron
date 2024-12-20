@@ -135,7 +135,6 @@ public class LogBufferDescriptor
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_OFFSET;
 
-
     /**
      * Maximum length of a frame header.
      */
@@ -186,11 +185,6 @@ public class LogBufferDescriptor
      * Offset within the log metadata where the publication window length is stored.
      */
     public static final int LOG_PUBLICATION_WINDOW_LENGTH_OFFSET;
-
-    /**
-     * Offset within the log metadata where the group offset is stored.
-     */
-    public static final int LOG_GROUP_OFFSET;
 
     /**
      * Offset within the log metadata where the window limit timeout ns is stored.
@@ -300,7 +294,7 @@ public class LogBufferDescriptor
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
-        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH ;
+        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
         LOG_TERM_OFFSET_OFFSET = offset;
         offset += SIZE_OF_INT;
@@ -364,14 +358,7 @@ public class LogBufferDescriptor
         LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-        LOG_GROUP_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
-
-        // todo: will be removed before finalizing
-        System.out.println("Offset:" + offset);
-        System.out.println("LOG_META_DATA_LENGTH:" + LOG_META_DATA_LENGTH);
     }
 
     /**
@@ -573,7 +560,7 @@ public class LogBufferDescriptor
     /**
      * Set the number of active transports for the Image.
      *
-     * @param metadataBuffer           containing the meta data.
+     * @param metadataBuffer containing the meta data.
      * @param numberOfActiveTransports value to be set.
      */
     public static void activeTransportCount(final UnsafeBuffer metadataBuffer, final int numberOfActiveTransports)
@@ -682,7 +669,7 @@ public class LogBufferDescriptor
      */
     public static int indexByTermCount(final long termCount)
     {
-        return (int) (termCount % PARTITION_COUNT);
+        return (int)(termCount % PARTITION_COUNT);
     }
 
     /**
@@ -694,7 +681,7 @@ public class LogBufferDescriptor
      */
     public static int indexByPosition(final long position, final int positionBitsToShift)
     {
-        return (int) ((position >>> positionBitsToShift) % PARTITION_COUNT);
+        return (int)((position >>> positionBitsToShift) % PARTITION_COUNT);
     }
 
     /**
@@ -741,7 +728,7 @@ public class LogBufferDescriptor
     public static int computeTermIdFromPosition(
         final long position, final int positionBitsToShift, final int initialTermId)
     {
-        return (int) (position >>> positionBitsToShift) + initialTermId;
+        return (int)(position >>> positionBitsToShift) + initialTermId;
     }
 
     /**
@@ -755,7 +742,7 @@ public class LogBufferDescriptor
      */
     public static long computeLogLength(final int termLength, final int filePageSize)
     {
-        return align((PARTITION_COUNT * (long) termLength) + LOG_META_DATA_LENGTH, filePageSize);
+        return align((PARTITION_COUNT * (long)termLength) + LOG_META_DATA_LENGTH, filePageSize);
     }
 
     /**
@@ -853,7 +840,7 @@ public class LogBufferDescriptor
      */
     public static int termId(final long rawTail)
     {
-        return (int) (rawTail >> 32);
+        return (int)(rawTail >> 32);
     }
 
     /**
@@ -867,7 +854,7 @@ public class LogBufferDescriptor
     {
         final long tail = rawTail & 0xFFFF_FFFFL;
 
-        return (int) Math.min(tail, termLength);
+        return (int)Math.min(tail, termLength);
     }
 
     /**
@@ -878,7 +865,7 @@ public class LogBufferDescriptor
      */
     public static int termOffset(final long result)
     {
-        return (int) result;
+        return (int)result;
     }
 
     /**
@@ -890,7 +877,7 @@ public class LogBufferDescriptor
      */
     public static long packTail(final int termId, final int termOffset)
     {
-        return ((long) termId << 32) | termOffset;
+        return ((long)termId << 32) | termOffset;
     }
 
     /**
@@ -1004,7 +991,7 @@ public class LogBufferDescriptor
     /**
      * Compute frame length for a message that is fragmented into chunks of {@code maxPayloadSize}.
      *
-     * @param length         of the message.
+     * @param length of the message.
      * @param maxPayloadSize fragment size without the header.
      * @return message length after fragmentation.
      */
@@ -1021,7 +1008,7 @@ public class LogBufferDescriptor
     /**
      * Compute frame length for a message that has been reassembled from chunks of {@code maxPayloadSize}.
      *
-     * @param length         of the message.
+     * @param length of the message.
      * @param maxPayloadSize fragment size without the header.
      * @return message length after fragmentation.
      */
@@ -1074,7 +1061,7 @@ public class LogBufferDescriptor
      */
     public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_SPARSE_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_IS_SPARSE_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1096,7 +1083,7 @@ public class LogBufferDescriptor
      */
     public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_TETHER_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_IS_TETHER_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1118,7 +1105,7 @@ public class LogBufferDescriptor
      */
     public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_REJOIN_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_IS_REJOIN_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1140,7 +1127,7 @@ public class LogBufferDescriptor
      */
     public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_RELIABLE_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_IS_RELIABLE_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1276,28 +1263,6 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Get whether the log group is enabled from the metadata.
-     *
-     * @param metadataBuffer containing the meta data.
-     * @return true if the log group is enabled, otherwise false.
-     */
-    public static boolean group(final UnsafeBuffer metadataBuffer)
-    {
-        return metadataBuffer.getInt(LOG_GROUP_OFFSET) == 1;
-    }
-
-    /**
-     * Set whether the log group is enabled in the metadata.
-     *
-     * @param metadataBuffer containing the meta data.
-     * @param value          true if the log group is enabled, otherwise false.
-     */
-    public static void group(final UnsafeBuffer metadataBuffer, final boolean value)
-    {
-        metadataBuffer.putInt(LOG_GROUP_OFFSET, value ? 1 : 0);
-    }
-
-    /**
      * Get the maximum resend count from the metadata.
      *
      * @param metadataBuffer containing the meta data.
@@ -1360,7 +1325,7 @@ public class LogBufferDescriptor
      */
     public static void signalEos(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_SIGNAL_EOS_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_SIGNAL_EOS_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1382,6 +1347,6 @@ public class LogBufferDescriptor
      */
     public static void spiesSimulateConnection(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_SPIES_SIMULATE_CONNECTION_OFFSET, (byte) (value ? 1 : 0));
+        metadataBuffer.putByte(LOG_SPIES_SIMULATE_CONNECTION_OFFSET, (byte)(value ? 1 : 0));
     }
 }

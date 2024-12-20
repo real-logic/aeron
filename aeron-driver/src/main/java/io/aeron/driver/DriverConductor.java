@@ -1914,8 +1914,6 @@ public final class DriverConductor implements Agent
         final boolean spiesSimulateConnection,
         final RawLog rawLog)
     {
-        // peter
-
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
         defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
@@ -1927,7 +1925,6 @@ public final class DriverConductor implements Agent
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
 
-        // new
         termOffset(logMetaData, termOffset);
         socketRcvbufLength(logMetaData, socketRcvBufLength);
         socketSndbufLength(logMetaData, socketSndbufLength);
@@ -1943,8 +1940,6 @@ public final class DriverConductor implements Agent
         lingerTimeoutNs(logMetaData, lingerTimeoutNs);
         signalEos(logMetaData, signalEos);
         spiesSimulateConnection(logMetaData, spiesSimulateConnection);
-
-//        channelUriStringBuilder.termId(params.termId);
 
         // Acts like a release fence; so this should be the last statement.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);

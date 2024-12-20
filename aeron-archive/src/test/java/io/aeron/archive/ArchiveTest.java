@@ -262,7 +262,7 @@ class ArchiveTest
         {
             final Catalog.CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                    descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
+                descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
 
             assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
         }

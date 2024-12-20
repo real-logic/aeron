@@ -143,22 +143,84 @@ public class LogBufferDescriptor
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
 
-    // todo: Add documentation
+    /**
+     * Offset within the log metadata where the term offset is stored.
+     */
     public static final int LOG_TERM_OFFSET_OFFSET;
+
+    /**
+     * Offset within the log metadata where the sparse property is stored.
+     */
     public static final int LOG_IS_SPARSE_OFFSET;
+
+    /**
+     * Offset within the log metadata where the tether property is stored.
+     */
     public static final int LOG_IS_TETHER_OFFSET;
+
+    /**
+     * Offset within the log metadata where the rejoin property is stored.
+     */
     public static final int LOG_IS_REJOIN_OFFSET;
+
+    /**
+     * Offset within the log metadata where the reliable property is stored.
+     */
     public static final int LOG_IS_RELIABLE_OFFSET;
+
+    /**
+     * Offset within the log metadata where the socket receive buffer length is stored.
+     */
     public static final int LOG_SOCKET_RCVBUF_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the socket send buffer length is stored.
+     */
     public static final int LOG_SOCKET_SNDBUF_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the receiver window length is stored.
+     */
     public static final int LOG_RECEIVER_WINDOW_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the publication window length is stored.
+     */
     public static final int LOG_PUBLICATION_WINDOW_LENGTH_OFFSET;
+
+    /**
+     * Offset within the log metadata where the group offset is stored.
+     */
     public static final int LOG_GROUP_OFFSET;
+
+    /**
+     * Offset within the log metadata where the window limit timeout ns is stored.
+     */
     public static final int LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET;
+
+    /**
+     * Offset within the log metadata where the untether resting timeout ns is stored.
+     */
     public static final int LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET;
+
+    /**
+     * Offset within the log metadata where the max resend is stored.
+     */
     public static final int LOG_MAX_RESEND_OFFSET;
+
+    /**
+     * Offset within the log metadata where the linger timeout ns is stored.
+     */
     public static final int LOG_LINGER_TIMEOUT_NS_OFFSET;
+
+    /**
+     * Offset within the log metadata where the signal eos is stored.
+     */
     public static final int LOG_SIGNAL_EOS_OFFSET;
+
+    /**
+     * Offset within the log metadata where the spies simulate connection is stored.
+     */
     public static final int LOG_SPIES_SIMULATE_CONNECTION_OFFSET;
 
     /**
@@ -210,6 +272,7 @@ public class LogBufferDescriptor
      *  |                     Default Frame Header                     ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
+     *  //todo: Add the missing fields.
      * </pre>
      */
     public static final int LOG_META_DATA_LENGTH;
@@ -239,7 +302,7 @@ public class LogBufferDescriptor
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
         // the new fields will be added with 1 cacheline of padding after the frame header.
-        offset+= LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH + CACHE_LINE_LENGTH;
+        offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH + CACHE_LINE_LENGTH;
 
         LOG_TERM_OFFSET_OFFSET = offset;
         offset += SIZE_OF_INT;
@@ -270,9 +333,6 @@ public class LogBufferDescriptor
         LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-        LOG_GROUP_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         LOG_MAX_RESEND_OFFSET = offset;
         offset += SIZE_OF_INT;
 
@@ -280,18 +340,16 @@ public class LogBufferDescriptor
 
         // todo: This will be removed
         // It is temporary here to ensure that all fields are naturally aligned.
-        if((LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_LONG)!=0){
-            throw new Error();
+        if ((LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_LONG) != 0)
+        {
+            throw new Error("LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET should be 8 bytes aligned, value: " +
+                LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET);
         }
         offset += SIZE_OF_LONG;
 
-        // todo: remove
-        // will be aligned if previous field is aligned.
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
-        // todo: remove
-        // will be aligned if previous field is aligned.
         LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
@@ -301,9 +359,15 @@ public class LogBufferDescriptor
         LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
         offset += SIZE_OF_INT;
 
+        LOG_GROUP_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
+
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
-        System.out.println("Offset:"+offset);
-        System.out.println("LOG_META_DATA_LENGTH:"+LOG_META_DATA_LENGTH);
+
+        // todo: will be removed before finalizing
+        System.out.println("Offset:" + offset);
+        System.out.println("LOG_META_DATA_LENGTH:" + LOG_META_DATA_LENGTH);
     }
 
     /**
@@ -965,163 +1029,355 @@ public class LogBufferDescriptor
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
     }
 
-    // todo: javadoc
-    public static int termOffset(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the term offset from the log metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the term offset.
+     */
+    public static int termOffset(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_TERM_OFFSET_OFFSET);
     }
 
-    // todo: javadoc
-    public static void termOffset(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the term offset in the log metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the term offset to set.
+     */
+    public static void termOffset(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_TERM_OFFSET_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static boolean isSparse(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the log is sparse from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is sparse, otherwise false.
+     */
+    public static boolean isSparse(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_IS_SPARSE_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether the log is sparse in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is sparse, otherwise false.
+     */
+    public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_IS_SPARSE_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static boolean isTether(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the log is tethered from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is tethered, otherwise false.
+     */
+    public static boolean isTether(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_IS_TETHER_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether the log is tethered in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is tethered, otherwise false.
+     */
+    public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_IS_TETHER_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static boolean isRejoin(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the log is rejoining from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is rejoining, otherwise false.
+     */
+    public static boolean isRejoin(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_IS_REJOIN_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether the log is rejoining in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is rejoining, otherwise false.
+     */
+    public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_IS_REJOIN_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static boolean isReliable(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the log is reliable from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is reliable, otherwise false.
+     */
+    public static boolean isReliable(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_IS_RELIABLE_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether the log is reliable in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is reliable, otherwise false.
+     */
+    public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_IS_RELIABLE_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the socket receive buffer length from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the socket receive buffer length.
+     */
+    public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET);
     }
 
-    // todo: javadoc
-    public static void socketRcvbufLength(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the socket receive buffer length in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the socket receive buffer length to set.
+     */
+    public static void socketRcvbufLength(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static int socketSndbufLength(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the socket send buffer length from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the socket send buffer length.
+     */
+    public static int socketSndbufLength(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET);
     }
 
-    // todo: javadoc
-    public static void socketSndbufLength(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the socket send buffer length in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the socket send buffer length to set.
+     */
+    public static void socketSndbufLength(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static int receiverWindowLength(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the receiver window length from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the receiver window length.
+     */
+    public static int receiverWindowLength(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET);
     }
 
-    // todo: javadoc
-    public static void receiverWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the receiver window length in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the receiver window length to set.
+     */
+    public static void receiverWindowLength(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static int publicationWindowLength(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the publication window length from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the publication window length.
+     */
+    public static int publicationWindowLength(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET);
     }
 
-    // todo: javadoc
-    public static void publicationWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the publication window length in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the publication window length to set.
+     */
+    public static void publicationWindowLength(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static long untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the untethered window limit timeout in nanoseconds from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the untethered window limit timeout in nanoseconds.
+     */
+    public static long untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET);
     }
 
-    // todo: javadoc
-    public static void untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+    /**
+     * Set the untethered window limit timeout in nanoseconds in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the untethered window limit timeout to set.
+     */
+    public static void untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer, final long value)
+    {
         metadataBuffer.putLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static long untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the untethered resting timeout in nanoseconds from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the untethered resting timeout in nanoseconds.
+     */
+    public static long untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET);
     }
 
-    // todo: javadoc
-    public static void untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+    /**
+     * Set the untethered resting timeout in nanoseconds in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the untethered resting timeout to set.
+     */
+    public static void untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer, final long value)
+    {
         metadataBuffer.putLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static boolean group(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the log group is enabled from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log group is enabled, otherwise false.
+     */
+    public static boolean group(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_GROUP_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void group(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether the log group is enabled in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log group is enabled, otherwise false.
+     */
+    public static void group(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_GROUP_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static int maxResend(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the maximum resend count from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the maximum resend count.
+     */
+    public static int maxResend(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_MAX_RESEND_OFFSET);
     }
 
-    // todo: javadoc
-    public static void maxResend(final UnsafeBuffer metadataBuffer, final int value) {
+    /**
+     * Set the maximum resend count in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the maximum resend count to set.
+     */
+    public static void maxResend(final UnsafeBuffer metadataBuffer, final int value)
+    {
         metadataBuffer.putInt(LOG_MAX_RESEND_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static long lingerTimeoutNs(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get the linger timeout in nanoseconds from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the linger timeout in nanoseconds.
+     */
+    public static long lingerTimeoutNs(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getLong(LOG_LINGER_TIMEOUT_NS_OFFSET);
     }
 
-    // todo: javadoc
-    public static void lingerTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
+    /**
+     * Set the linger timeout in nanoseconds in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the linger timeout to set.
+     */
+    public static void lingerTimeoutNs(final UnsafeBuffer metadataBuffer, final long value)
+    {
         metadataBuffer.putLong(LOG_LINGER_TIMEOUT_NS_OFFSET, value);
     }
 
-    // todo: javadoc
-    public static boolean signalEos(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether the signal EOS is enabled from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if signal EOS is enabled, otherwise false.
+     */
+    public static boolean signalEos(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_SIGNAL_EOS_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void signalEos(final UnsafeBuffer metadataBuffer, final boolean value) {
-        metadataBuffer.putInt(LOG_SIGNAL_EOS_OFFSET,value ? 1 : 0);
+    /**
+     * Set whether the signal EOS is enabled in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if signal EOS is enabled, otherwise false.
+     */
+    public static void signalEos(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
+        metadataBuffer.putInt(LOG_SIGNAL_EOS_OFFSET, value ? 1 : 0);
     }
 
-    // todo: javadoc
-    public static boolean spiesSimulateConnection(final UnsafeBuffer metadataBuffer) {
+    /**
+     * Get whether spies simulate connection from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if spies simulate connection, otherwise false.
+     */
+    public static boolean spiesSimulateConnection(final UnsafeBuffer metadataBuffer)
+    {
         return metadataBuffer.getInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET) == 1;
     }
 
-    // todo: javadoc
-    public static void spiesSimulateConnection(final UnsafeBuffer metadataBuffer, final boolean value) {
+    /**
+     * Set whether spies simulate connection in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if spies simulate connection, otherwise false.
+     */
+    public static void spiesSimulateConnection(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
         metadataBuffer.putInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET, value ? 1 : 0);
     }
 }

@@ -1861,19 +1861,25 @@ public final class DriverConductor implements Agent
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
 
+        final int socketRcvBufLength = 0;
+        final int socketSndbufLength = 0;
+        final int receiverWindowLength = 0;
+        final boolean tether = false;
+        final boolean rejoin = false;
+        final boolean reliable = false;
         initLogMetadata(
             sessionId,
             streamId,
             initialTermId,
             params.mtuLength,
             registrationId,
-            0,
-            0,
+            socketRcvBufLength,
+            socketSndbufLength,
             termOffset,
-            0,
-            false,
-            false,
-            false,
+            receiverWindowLength,
+            tether,
+            rejoin,
+            reliable,
             params.isSparse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,
@@ -1942,9 +1948,8 @@ public final class DriverConductor implements Agent
         spiesSimulateConnection(logMetaData, spiesSimulateConnection);
 
 //        channelUriStringBuilder.termId(params.termId);
-//        channelUriStringBuilder.sessionId(params.sessionId);
 
-        // Acts like a release fence; so this should be the last statement here.
+        // Acts like a release fence; so this should be the last statement.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
 
@@ -1996,13 +2001,14 @@ public final class DriverConductor implements Agent
         final long correlationId)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
-        int publicationWindowLength = 0;
-        long untetheredWindowLimitTimeoutNs = 0;
-        long untetheredRestingTimeoutNs = 0;
-        int maxResend = 0;
-        long lingerTimeoutNs = 0;
-        boolean signalEos = false;
-        boolean spiesSimulateConnection = false;
+
+        final int publicationWindowLength = 0;
+        final long untetheredWindowLimitTimeoutNs = 0;
+        final long untetheredRestingTimeoutNs = 0;
+        final int maxResend = 0;
+        final long lingerTimeoutNs = 0;
+        final boolean signalEos = false;
+        final boolean spiesSimulateConnection = false;
         initLogMetadata(
             sessionId,
             streamId,

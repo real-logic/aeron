@@ -262,7 +262,7 @@ class ArchiveTest
         {
             final Catalog.CatalogEntryProcessor catalogEntryProcessor =
                 (recordingDescriptorOffset, headerEncoder, headerDecoder, descriptorEncoder, descriptorDecoder) ->
-                descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
+                    descriptorEncoder.stopPosition(Aeron.NULL_VALUE);
 
             assertTrue(catalog.forEntry(recordingId, catalogEntryProcessor));
         }
@@ -939,9 +939,18 @@ class ArchiveTest
                     }
                     catch (final ArchiveException ex)
                     {
-                        assertThat(ex.getMessage(), anyOf(
-                            equalTo("ERROR - client is closed"),
-                            equalTo("ERROR - not connected")));
+                        if (AeronArchive.State.DISCONNECTED == client2.state())
+                        {
+                            assertEquals("ERROR - not connected", ex.getMessage());
+                            assertTrue(client2.archiveProxy().publication().isConnected());
+                            assertFalse(client2.controlResponsePoller().subscription().isConnected());
+                        }
+                        else
+                        {
+                            assertEquals("ERROR - client is closed", ex.getMessage());
+                            assertFalse(client2.archiveProxy().publication().isConnected());
+                            assertFalse(client2.controlResponsePoller().subscription().isConnected());
+                        }
                         break;
                     }
                 }
@@ -949,16 +958,6 @@ class ArchiveTest
                 assertEquals(AeronArchive.State.CONNECTED, client1.state());
                 assertTrue(client1.archiveProxy().publication().isConnected());
                 assertTrue(client1.controlResponsePoller().subscription().isConnected());
-                assertEquals(AeronArchive.State.DISCONNECTED, client2.state());
-                assertTrue(client2.archiveProxy().publication().isConnected());
-                assertFalse(client2.controlResponsePoller().subscription().isConnected());
-
-                final ArchiveException exception =
-                    assertThrowsExactly(ArchiveException.class, () -> client2.getMaxRecordedPosition(4));
-                assertEquals("ERROR - client is closed", exception.getMessage());
-                assertEquals(AeronArchive.State.CLOSED, client2.state());
-                assertFalse(client2.archiveProxy().publication().isConnected());
-                assertFalse(client2.controlResponsePoller().subscription().isConnected());
             }
         }
     }

@@ -16,9 +16,11 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.AvailableImageHandler;
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.UnavailableImageHandler;
 import io.aeron.archive.client.AeronArchive.Context;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.AeronException;
@@ -76,7 +78,11 @@ class AeronArchiveTest
         when(ctx.controlResponseChannel()).thenReturn(responseChannel);
         when(ctx.controlResponseStreamId()).thenReturn(responseStreamId);
         final RuntimeException error = new RuntimeException("subscription");
-        when(aeron.addSubscription(responseChannel, responseStreamId)).thenThrow(error);
+        when(aeron.addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class))).thenThrow(error);
 
         final RuntimeException actualException =
             assertThrowsExactly(RuntimeException.class, () -> AeronArchive.asyncConnect(ctx));
@@ -87,7 +93,11 @@ class AeronArchiveTest
         inOrder.verify(ctx).aeron();
         inOrder.verify(ctx).controlResponseChannel();
         inOrder.verify(ctx).controlResponseStreamId();
-        inOrder.verify(aeron).addSubscription(responseChannel, responseStreamId);
+        inOrder.verify(aeron).addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class));
         inOrder.verify(ctx).close();
         inOrder.verifyNoMoreInteractions();
     }
@@ -108,7 +118,11 @@ class AeronArchiveTest
         when(ctx.controlRequestChannel()).thenReturn(requestChannel);
         when(ctx.controlRequestStreamId()).thenReturn(requestStreamId);
         final Subscription subscription = mock(Subscription.class);
-        when(aeron.addSubscription(responseChannel, responseStreamId)).thenReturn(subscription);
+        when(aeron.addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class))).thenReturn(subscription);
         when(aeron.asyncAddExclusivePublication(requestChannel, requestStreamId)).thenReturn(pubId);
         final IndexOutOfBoundsException error = new IndexOutOfBoundsException("exception");
         when(aeron.context()).thenThrow(error);
@@ -122,7 +136,11 @@ class AeronArchiveTest
         inOrder.verify(ctx).aeron();
         inOrder.verify(ctx).controlResponseChannel();
         inOrder.verify(ctx).controlResponseStreamId();
-        inOrder.verify(aeron).addSubscription(responseChannel, responseStreamId);
+        inOrder.verify(aeron).addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class));
         inOrder.verify(aeron).asyncAddExclusivePublication(requestChannel, requestStreamId);
         inOrder.verify(subscription).close();
         inOrder.verify(aeron).asyncRemovePublication(pubId);

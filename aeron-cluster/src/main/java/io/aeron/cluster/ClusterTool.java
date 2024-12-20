@@ -164,6 +164,16 @@ public class ClusterTool
             action(operator::createEmptyServiceSnapshot),
             "creates an empty service snapshot based on the latest consensus module snapshot."));
 
+        COMMANDS.put("add-service-snapshot", new ClusterToolCommand((clusterDir, out, args) ->
+        {
+            if (args.length < 3)
+            {
+                printHelp(COMMANDS, HELP_PREFIX);
+                return -1;
+            }
+            return operator.addServiceSnapshot(out, clusterDir, Integer.parseInt(args[2]));
+        }, "Adds a new snapshot with the specified recording id and with the next available service id."));
+
         COMMANDS.put("errors", new ClusterToolCommand(
             action(operator::errors),
             "prints Aeron and cluster component error logs."));
@@ -335,6 +345,20 @@ public class ClusterTool
     public static boolean createEmptyServiceSnapshot(final File clusterDir, final PrintStream out)
     {
         return BACKWARD_COMPATIBLE_OPERATIONS.createEmptyServiceSnapshot(clusterDir, out) == SUCCESS;
+    }
+
+    /**
+     * Add a new snapshot entry to the recording log with the specified recording id.
+     * The new snapshot entry will use the next highest service id.
+     *
+     * @param out         to print the output to.
+     * @param clusterDir  where the cluster is running.
+     * @param recordingId the recording id to associate with the new snapshot entry
+     * @return {@code true} if the entry is added or {@code false} if it is not.
+     */
+    public static boolean addServiceSnapshot(final PrintStream out, final File clusterDir, final int recordingId)
+    {
+        return BACKWARD_COMPATIBLE_OPERATIONS.addServiceSnapshot(out, clusterDir, recordingId) == SUCCESS;
     }
 
     /**

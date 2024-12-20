@@ -43,8 +43,7 @@ import static io.aeron.test.cluster.TestCluster.aCluster;
 import static java.nio.file.StandardOpenOption.CREATE_NEW;
 import static java.nio.file.StandardOpenOption.WRITE;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.matchesRegex;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 
@@ -115,8 +114,52 @@ class ClusterToolTest
 
     @Test
     @InterruptAfter(5)
+    void shouldAddServiceSnapshot()
+    {
+        final TestCluster cluster = aCluster().withStaticNodes(3).start();
+        systemTestWatcher.cluster(cluster);
+
+        final TestNode leader = cluster.awaitLeader();
+        assertNotNull(cluster.asyncConnectClient());
+        cluster.sendAndAwaitMessages(10);
+
+        final CapturingPrintStream capturingPrintStream = new CapturingPrintStream();
+
+        assertFalse(ClusterTool.addServiceSnapshot(
+            capturingPrintStream.resetAndGetPrintStream(),
+            leader.consensusModule().context().clusterDir(),
+            5));
+
+        assertTrue(ClusterTool.snapshot(
+            leader.consensusModule().context().clusterDir(),
+            capturingPrintStream.resetAndGetPrintStream()));
+        cluster.awaitSnapshotCount(1);
+
+        assertTrue(ClusterTool.addServiceSnapshot(
+            capturingPrintStream.resetAndGetPrintStream(),
+            leader.consensusModule().context().clusterDir(),
+            7));
+
+        assertThat(
+            capturingPrintStream.flushAndGetContent(),
+            containsString("recordingId=7"));
+
+        ClusterTool.recordingLog(
+            capturingPrintStream.resetAndGetPrintStream(),
+            leader.consensusModule().context().clusterDir());
+
+        final String log = capturingPrintStream.flushAndGetContent();
+        assertThat(log, containsString("serviceId=1"));
+        assertThat(log, containsString("recordingId=7"));
+        assertThat(log, not(containsString("recordingId=5")));
+    }
+
+    @Test
+    @InterruptAfter(5)
     void shouldAddNewServiceAfterSnapshot()
     {
+        final int[] recordingIds = new int[3];
+
         final TestCluster cluster = aCluster().withStaticNodes(3).start();
         systemTestWatcher.cluster(cluster);
 
@@ -135,36 +178,24 @@ class ClusterToolTest
 
         for (int i = 0; i <= 2; i++)
         {
-            final TestNode node = cluster.node(i);
-
             assertTrue(ClusterTool.createEmptyServiceSnapshot(
-                node.consensusModule().context().clusterDir(),
+                cluster.node(i).consensusModule().context().clusterDir(),
                 capturingPrintStream.resetAndGetPrintStream()));
 
             final Matcher matcher = pattern.matcher(capturingPrintStream.flushAndGetContent());
             assertTrue(matcher.find());
-            final int recordingId = Integer.parseInt(matcher.group(1));
-
-            try (RecordingLog recordingLog = node.consensusModule().context().recordingLog())
-            {
-                final RecordingLog.Entry snapshotEntry =
-                    recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID);
-                assertNotNull(snapshotEntry);
-
-                recordingLog.appendSnapshot(
-                    recordingId,
-                    snapshotEntry.leadershipTermId,
-                    snapshotEntry.termBaseLogPosition,
-                    snapshotEntry.logPosition,
-                    snapshotEntry.timestamp,
-                    1);
-            }
+            recordingIds[i] = Integer.parseInt(matcher.group(1));
         }
 
         cluster.stopAllNodes();
 
         for (int i = 0; i <= 2; i++)
         {
+            assertTrue(ClusterTool.addServiceSnapshot(
+                capturingPrintStream.resetAndGetPrintStream(),
+                cluster.node(i).consensusModule().context().clusterDir(),
+                recordingIds[i]));
+
             cluster.startStaticNode(
                 i,
                 false,

@@ -352,6 +352,37 @@ public class ClusterToolOperator
         return SUCCESS;
     }
 
+    protected int addServiceSnapshot(
+        final PrintStream out,
+        final File clusterDir,
+        final int recordingId)
+    {
+        try (RecordingLog recordingLog = new RecordingLog(clusterDir, false))
+        {
+            final RecordingLog.Entry entry = recordingLog.getLatestSnapshot(ConsensusModule.Configuration.SERVICE_ID);
+
+            if (null == entry)
+            {
+                out.println("Snapshot not found");
+                return FAILURE;
+            }
+
+            final int newServiceId = recordingLog.getHighServiceIdOfLatestSnapshot() + 1;
+
+            recordingLog.appendSnapshot(
+                recordingId,
+                entry.leadershipTermId,
+                entry.termBaseLogPosition,
+                entry.logPosition,
+                entry.timestamp,
+                newServiceId);
+
+            out.println("Snapshot added for serviceId=" + newServiceId + " and recordingId=" + recordingId);
+        }
+
+        return SUCCESS;
+    }
+
     /**
      * Print out the errors in the error logs for the cluster components.
      *

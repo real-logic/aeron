@@ -933,10 +933,15 @@ class ArchiveTest
                 while (client2.controlResponsePoller().subscription().isConnected())
                 {
                     assertNull(client1.pollForErrorResponse());
-                    final String response = client2.pollForErrorResponse();
-                    if (null != response)
+                    try
                     {
-                        assertEquals(AeronArchive.NOT_CONNECTED_MSG, response);
+                        client2.checkForErrorResponse();
+                    }
+                    catch (final ArchiveException ex)
+                    {
+                        assertThat(ex.getMessage(), anyOf(
+                            equalTo("ERROR - client is closed"),
+                            equalTo("ERROR - not connected")));
                         break;
                     }
                 }

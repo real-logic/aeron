@@ -146,7 +146,6 @@ public class LogBufferDescriptor
     // todo: Add documentation
     public static final int LOG_ACTIVE_TERM_ID_OFFSET;
     public static final int LOG_TERM_OFFSET_OFFSET;
-    public static final int LOG_SENDER_MTU_LENGTH_OFFSET;
     public static final int LOG_IS_SPARSE_OFFSET;
     public static final int LOG_IS_TETHER_OFFSET;
     public static final int LOG_IS_REJOIN_OFFSET;
@@ -249,10 +248,7 @@ public class LogBufferDescriptor
         LOG_TERM_OFFSET_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-        LOG_SENDER_MTU_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_IS_SPARSE_OFFSET = offset;
+         LOG_IS_SPARSE_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         LOG_IS_TETHER_OFFSET = offset;
@@ -263,7 +259,6 @@ public class LogBufferDescriptor
 
         LOG_IS_RELIABLE_OFFSET = offset;
         offset += SIZE_OF_INT;
-
 
         LOG_SOCKET_RCVBUF_LENGTH_OFFSET = offset;
         offset += SIZE_OF_INT;
@@ -280,7 +275,13 @@ public class LogBufferDescriptor
         LOG_GROUP_OFFSET = offset;
         offset += SIZE_OF_INT;
 
+        LOG_MAX_RESEND_OFFSET = offset;
+        offset += SIZE_OF_INT;
+
         LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = offset;
+        if((LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_LONG)!=0){
+            throw new Error();
+        }
         offset += SIZE_OF_LONG;
 
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
@@ -288,9 +289,6 @@ public class LogBufferDescriptor
 
         LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
-
-        LOG_MAX_RESEND_OFFSET = offset;
-        offset += SIZE_OF_INT;
 
         LOG_SIGNAL_EOS_OFFSET = offset;
         offset += SIZE_OF_INT;
@@ -963,158 +961,172 @@ public class LogBufferDescriptor
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
     }
 
-    // Active Term ID
+    // todo: javadoc
     public static int activeTermId(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_ACTIVE_TERM_ID_OFFSET);
     }
 
+    // todo: javadoc
     public static void activeTermId(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_ACTIVE_TERM_ID_OFFSET, value);
     }
 
-    // Term Offset
+    // todo: javadoc
     public static int termOffset(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_TERM_OFFSET_OFFSET);
     }
 
+    // todo: javadoc
     public static void termOffset(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_TERM_OFFSET_OFFSET, value);
     }
 
-    // Sender MTU Length
-    public static int senderMtuLength(final UnsafeBuffer metadataBuffer) {
-        return metadataBuffer.getInt(LOG_SENDER_MTU_LENGTH_OFFSET);
-    }
-
-    public static void senderMtuLength(final UnsafeBuffer metadataBuffer, final int value) {
-        metadataBuffer.putInt(LOG_SENDER_MTU_LENGTH_OFFSET, value);
-    }
-
-    // Is Sparse
+    // todo: javadoc
     public static boolean isSparse(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_IS_SPARSE_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_IS_SPARSE_OFFSET, value ? 1 : 0);
     }
 
-    // Is Tether
+    // todo: javadoc
     public static boolean isTether(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_IS_TETHER_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_IS_TETHER_OFFSET, value ? 1 : 0);
     }
 
-    // Is Rejoin
+    // todo: javadoc
     public static boolean isRejoin(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_IS_REJOIN_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_IS_REJOIN_OFFSET, value ? 1 : 0);
     }
 
-    // Is Reliable
+    // todo: javadoc
     public static boolean isReliable(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_IS_RELIABLE_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_IS_RELIABLE_OFFSET, value ? 1 : 0);
     }
 
-    // Socket Rcvbuf Length
+    // todo: javadoc
     public static int socketRcvbufLength(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET);
     }
 
+    // todo: javadoc
     public static void socketRcvbufLength(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_SOCKET_RCVBUF_LENGTH_OFFSET, value);
     }
 
-    // Socket Sndbuf Length
+    // todo: javadoc
     public static int socketSndbufLength(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET);
     }
 
+    // todo: javadoc
     public static void socketSndbufLength(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_SOCKET_SNDBUF_LENGTH_OFFSET, value);
     }
 
-    // Receiver Window Length
+    // todo: javadoc
     public static int receiverWindowLength(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET);
     }
 
+    // todo: javadoc
     public static void receiverWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_RECEIVER_WINDOW_LENGTH_OFFSET, value);
     }
 
+    // todo: javadoc
     public static int publicationWindowLength(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET);
     }
 
+    // todo: javadoc
     public static void publicationWindowLength(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_PUBLICATION_WINDOW_LENGTH_OFFSET, value);
     }
 
+    // todo: javadoc
     public static long untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET);
     }
 
+    // todo: javadoc
     public static void untetheredWindowLimitTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
         metadataBuffer.putLong(LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET, value);
     }
 
-    // Untethered Resting Timeout (in nanoseconds)
+    // todo: javadoc
     public static long untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET);
     }
 
+    // todo: javadoc
     public static void untetheredRestingTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
         metadataBuffer.putLong(LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET, value);
     }
 
-    // Group
+    // todo: javadoc
     public static boolean group(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_GROUP_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void group(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_GROUP_OFFSET, value ? 1 : 0);
     }
 
+    // todo: javadoc
     public static int maxResend(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_MAX_RESEND_OFFSET);
     }
 
+    // todo: javadoc
     public static void maxResend(final UnsafeBuffer metadataBuffer, final int value) {
         metadataBuffer.putInt(LOG_MAX_RESEND_OFFSET, value);
     }
 
+    // todo: javadoc
     public static long lingerTimeoutNs(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getLong(LOG_LINGER_TIMEOUT_NS_OFFSET);
     }
 
+    // todo: javadoc
     public static void lingerTimeoutNs(final UnsafeBuffer metadataBuffer, final long value) {
         metadataBuffer.putLong(LOG_LINGER_TIMEOUT_NS_OFFSET, value);
     }
 
+    // todo: javadoc
     public static boolean signalEos(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_SIGNAL_EOS_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void signalEos(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_SIGNAL_EOS_OFFSET,value ? 1 : 0);
     }
 
+    // todo: javadoc
     public static boolean spiesSimulateConnection(final UnsafeBuffer metadataBuffer) {
         return metadataBuffer.getInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET) == 1;
     }
 
+    // todo: javadoc
     public static void spiesSimulateConnection(final UnsafeBuffer metadataBuffer, final boolean value) {
         metadataBuffer.putInt(LOG_SPIES_SIMULATE_CONNECTION_OFFSET, value ? 1 : 0);
     }

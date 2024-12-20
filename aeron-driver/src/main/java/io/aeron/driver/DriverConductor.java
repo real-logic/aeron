@@ -1860,25 +1860,20 @@ public final class DriverConductor implements Agent
         final PublicationParams params)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
-        final int socketRcvBufLength = 0;
-        final int socketSndBufLength = 0;
-        final int receiverWindowLength = 0;
-        final boolean tether = false;
-        final boolean rejoin = false;
-        final boolean reliable = false;
+
         initLogMetadata(
             sessionId,
             streamId,
             initialTermId,
             params.mtuLength,
             registrationId,
-            socketRcvBufLength,
-            socketSndBufLength,
+            0,
+            0,
             termOffset,
-            receiverWindowLength,
-            tether,
-            rejoin,
-            reliable,
+            0,
+            false,
+            false,
+            false,
             params.isSparse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,

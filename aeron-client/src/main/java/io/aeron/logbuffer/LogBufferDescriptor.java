@@ -144,7 +144,6 @@ public class LogBufferDescriptor
 
 
     // todo: Add documentation
-    public static final int LOG_ACTIVE_TERM_ID_OFFSET;
     public static final int LOG_TERM_OFFSET_OFFSET;
     public static final int LOG_IS_SPARSE_OFFSET;
     public static final int LOG_IS_TETHER_OFFSET;
@@ -240,15 +239,14 @@ public class LogBufferDescriptor
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
         // the new fields will be added with 1 cacheline of padding after the frame header.
-        offset+= LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH+CACHE_LINE_LENGTH;
-
-        LOG_ACTIVE_TERM_ID_OFFSET = offset;
-        offset += SIZE_OF_INT;
+        offset+= LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH + CACHE_LINE_LENGTH;
 
         LOG_TERM_OFFSET_OFFSET = offset;
         offset += SIZE_OF_INT;
 
-         LOG_IS_SPARSE_OFFSET = offset;
+        // todo: use a single int for a boolean? I can stick it into a byte (need to take care of alignment for
+        // other fields. Or I can use a 'bit' and have multiple booleans in the same byte.
+        LOG_IS_SPARSE_OFFSET = offset;
         offset += SIZE_OF_INT;
 
         LOG_IS_TETHER_OFFSET = offset;
@@ -279,14 +277,21 @@ public class LogBufferDescriptor
         offset += SIZE_OF_INT;
 
         LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = offset;
+
+        // todo: This will be removed
+        // It is temporary here to ensure that all fields are naturally aligned.
         if((LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_LONG)!=0){
             throw new Error();
         }
         offset += SIZE_OF_LONG;
 
+        // todo: remove
+        // will be aligned if previous field is aligned.
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
+        // todo: remove
+        // will be aligned if previous field is aligned.
         LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
@@ -295,7 +300,6 @@ public class LogBufferDescriptor
 
         LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
         offset += SIZE_OF_INT;
-
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
         System.out.println("Offset:"+offset);
@@ -959,16 +963,6 @@ public class LogBufferDescriptor
         final int remainingPayload = length % maxPayloadSize;
 
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
-    }
-
-    // todo: javadoc
-    public static int activeTermId(final UnsafeBuffer metadataBuffer) {
-        return metadataBuffer.getInt(LOG_ACTIVE_TERM_ID_OFFSET);
-    }
-
-    // todo: javadoc
-    public static void activeTermId(final UnsafeBuffer metadataBuffer, final int value) {
-        metadataBuffer.putInt(LOG_ACTIVE_TERM_ID_OFFSET, value);
     }
 
     // todo: javadoc

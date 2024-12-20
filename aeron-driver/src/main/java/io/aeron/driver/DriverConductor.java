@@ -312,10 +312,7 @@ public final class DriverConductor implements Agent
                     subscriptionChannel.socketRcvbufLength(),
                     subscriptionChannel.socketSndbufLength(),
                     termOffset,
-                    subscriptionParams.receiverWindowLength,
-                    subscriptionParams.isTether,
-                    subscriptionParams.isRejoin,
-                    subscriptionParams.isReliable,
+                    subscriptionParams,
                     registrationId);
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
@@ -1994,10 +1991,7 @@ public final class DriverConductor implements Agent
         final int socketRcvBufLength,
         final int socketSndBufLength,
         final int termOffset,
-        final int receiverWindowLength,
-        final boolean tether,
-        final boolean rejoin,
-        final boolean reliable,
+        final SubscriptionParams params,
         final long correlationId)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
@@ -2018,11 +2012,11 @@ public final class DriverConductor implements Agent
             socketRcvBufLength,
             socketSndBufLength,
             termOffset,
-            receiverWindowLength,
-            tether,
-            rejoin,
-            reliable,
-            isSparse,
+            params.receiverWindowLength,
+            params.isTether,
+            params.isRejoin,
+            params.isReliable,
+            params.isSparse,
             publicationWindowLength,
             untetheredWindowLimitTimeoutNs,
             untetheredRestingTimeoutNs,

@@ -15,11 +15,7 @@
  */
 
 #include "aeron_archive_configuration.h"
-
-int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)
-{
-    return (major << 16) | (minor << 8) | patch;
-}
+#include "aeron_common.h"
 
 int32_t aeron_archive_semantic_version(void)
 {

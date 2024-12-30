@@ -26,7 +26,6 @@ import org.agrona.collections.IntArrayList;
 import org.agrona.collections.IntHashSet;
 import org.agrona.collections.LongArrayList;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
@@ -132,16 +131,15 @@ class ServiceIpcIngressMessageTest
     @Test
     @SlowTest
     @InterruptAfter(60)
-    @Disabled
     void shouldProcessServiceMessagesWithoutDuplicatesDuringFailoverWithUncommittedPendingServiceMessages()
     {
         final IntFunction<TestNode.TestService[]> serviceSupplier =
             (i) -> new TestNode.TestService[]
-                {
-                    new TestNode.MessageTrackingService(1, i),
-                    new TestNode.MessageTrackingService(2, i),
-                    new TestNode.MessageTrackingService(3, i)
-                };
+            {
+                new TestNode.MessageTrackingService(1, i),
+                new TestNode.MessageTrackingService(2, i),
+                new TestNode.MessageTrackingService(3, i)
+            };
         final TestCluster cluster = aCluster()
             .withStaticNodes(3)
             .withTimerServiceSupplier(new PriorityHeapTimerServiceSupplier())

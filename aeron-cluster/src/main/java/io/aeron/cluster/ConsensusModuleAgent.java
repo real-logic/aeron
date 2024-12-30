@@ -1388,7 +1388,7 @@ final class ConsensusModuleAgent
 
     void onServiceMessage(final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
-        final int i = PendingServiceMessageTracker.serviceId(clusterSessionId);
+        final int i = (int)clusterSessionId;
         pendingServiceMessageTrackers[i].enqueueMessage((MutableDirectBuffer)buffer, offset, length);
     }
 

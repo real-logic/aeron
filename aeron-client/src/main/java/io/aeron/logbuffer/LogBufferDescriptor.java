@@ -140,12 +140,6 @@ public class LogBufferDescriptor
      */
     public static final int LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH = CACHE_LINE_LENGTH * 2;
 
-
-    /**
-     * Offset within the log metadata where the term offset is stored.
-     */
-    public static final int LOG_TERM_OFFSET_OFFSET;
-
     /**
      * Offset within the log metadata where the sparse property is stored.
      */
@@ -291,13 +285,12 @@ public class LogBufferDescriptor
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
-        LOG_TERM_OFFSET_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
-        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_TERM_OFFSET_OFFSET + SIZE_OF_BYTE + 3;
+        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
         LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_MAX_RESEND_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_INT;
+        LOG_MAX_RESEND_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET + SIZE_OF_INT;
 
         LOG_IS_SPARSE_OFFSET = LOG_MAX_RESEND_OFFSET + SIZE_OF_INT;
         LOG_IS_TETHER_OFFSET = LOG_IS_SPARSE_OFFSET + SIZE_OF_BYTE;
@@ -305,7 +298,7 @@ public class LogBufferDescriptor
         LOG_IS_RELIABLE_OFFSET = LOG_IS_REJOIN_OFFSET + SIZE_OF_BYTE;
         LOG_SIGNAL_EOS_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
 
-        // the last 3 bytes of the current cache line are not used.
+        // the last 7 bytes of the current cache line are not used.
 
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
@@ -983,27 +976,6 @@ public class LogBufferDescriptor
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
     }
 
-    /**
-     * Get the term offset from the log metadata.
-     *
-     * @param metadataBuffer containing the meta data.
-     * @return the term offset.
-     */
-    public static int termOffset(final UnsafeBuffer metadataBuffer)
-    {
-        return metadataBuffer.getInt(LOG_TERM_OFFSET_OFFSET);
-    }
-
-    /**
-     * Set the term offset in the log metadata.
-     *
-     * @param metadataBuffer containing the meta data.
-     * @param value          the term offset to set.
-     */
-    public static void termOffset(final UnsafeBuffer metadataBuffer, final int value)
-    {
-        metadataBuffer.putInt(LOG_TERM_OFFSET_OFFSET, value);
-    }
 
     /**
      * Get whether the log is sparse from the metadata.

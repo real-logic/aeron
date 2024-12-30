@@ -1916,7 +1916,7 @@ public final class DriverConductor implements Agent
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
-        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId);
+        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId).termOffset(termOffset);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
         initialTermId(logMetaData, initialTermId);
@@ -1925,21 +1925,22 @@ public final class DriverConductor implements Agent
         pageSize(logMetaData, ctx.filePageSize());
         correlationId(logMetaData, registrationId);
 
-        termOffset(logMetaData, termOffset);
         socketRcvbufLength(logMetaData, socketRcvBufLength);
         socketSndbufLength(logMetaData, socketSndbufLength);
         receiverWindowLength(logMetaData, receiverWindowLength);
+        publicationWindowLength(logMetaData, publicationWindowLength);
+        maxResend(logMetaData, maxResend);
+        spiesSimulateConnection(logMetaData, spiesSimulateConnection);
+
         isTether(logMetaData, tether);
         isRejoin(logMetaData, rejoin);
         isReliable(logMetaData, reliable);
         isSparse(logMetaData, sparse);
-        publicationWindowLength(logMetaData, publicationWindowLength);
+        signalEos(logMetaData, signalEos);
+
         untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
         untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);
-        maxResend(logMetaData, maxResend);
         lingerTimeoutNs(logMetaData, lingerTimeoutNs);
-        signalEos(logMetaData, signalEos);
-        spiesSimulateConnection(logMetaData, spiesSimulateConnection);
 
         // Acts like a release fence; so this should be the last statement.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);

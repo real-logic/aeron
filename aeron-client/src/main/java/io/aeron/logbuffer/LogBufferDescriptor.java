@@ -291,62 +291,28 @@ public class LogBufferDescriptor
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
+        LOG_TERM_OFFSET_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
+        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_TERM_OFFSET_OFFSET + SIZE_OF_BYTE + 3;
+        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_MAX_RESEND_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_INT;
+
+        LOG_IS_SPARSE_OFFSET = LOG_MAX_RESEND_OFFSET + SIZE_OF_INT;
+        LOG_IS_TETHER_OFFSET = LOG_IS_SPARSE_OFFSET + SIZE_OF_BYTE;
+        LOG_IS_REJOIN_OFFSET = LOG_IS_TETHER_OFFSET + SIZE_OF_BYTE;
+        LOG_IS_RELIABLE_OFFSET = LOG_IS_REJOIN_OFFSET + SIZE_OF_BYTE;
+        LOG_SIGNAL_EOS_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
+
+        // the last 3 bytes of the current cache line are not used.
+
         offset += CACHE_LINE_LENGTH;
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
 
         offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
-        LOG_TERM_OFFSET_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_IS_SPARSE_OFFSET = offset;
-        offset += SIZE_OF_BYTE;
-
-        LOG_IS_TETHER_OFFSET = offset;
-        offset += SIZE_OF_BYTE;
-
-        LOG_IS_REJOIN_OFFSET = offset;
-        offset += SIZE_OF_BYTE;
-
-        LOG_IS_RELIABLE_OFFSET = offset;
-        offset += SIZE_OF_BYTE;
-
-        LOG_SIGNAL_EOS_OFFSET = offset;
-        offset += SIZE_OF_BYTE;
-
-        // padding to ensure 4 byte aligned.
-        offset += 3;
-
-        // todo: will be removed
-        if (offset % 4 != 0)
-        {
-            throw new Error("Bad alignment: offset=" + offset);
-        }
-
-        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_RECEIVER_WINDOW_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
-        LOG_MAX_RESEND_OFFSET = offset;
-        offset += SIZE_OF_INT;
-
         LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = offset;
-
-        // todo: This will be removed
-        // It is temporary here to ensure that all fields are naturally aligned.
-        if ((LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_LONG) != 0)
-        {
-            throw new Error("LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET should be 8 bytes aligned, value: " +
-                LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET);
-        }
         offset += SIZE_OF_LONG;
 
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
@@ -354,9 +320,6 @@ public class LogBufferDescriptor
 
         LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
-
-        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
-        offset += SIZE_OF_INT;
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
     }

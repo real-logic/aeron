@@ -331,7 +331,7 @@ public class LogBufferDescriptor
         LOG_IS_REJOIN_OFFSET = LOG_IS_TETHER_OFFSET + SIZE_OF_BYTE;
         LOG_IS_RELIABLE_OFFSET = LOG_IS_REJOIN_OFFSET + SIZE_OF_BYTE;
         LOG_SIGNAL_EOS_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
-        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
+        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_SIGNAL_EOS_OFFSET + SIZE_OF_BYTE;
 
         int startNewOffset = LOG_PAGE_SIZE_OFFSET+SIZE_OF_INT;
         int totalSpace = CACHE_LINE_LENGTH;
@@ -347,8 +347,8 @@ public class LogBufferDescriptor
         System.out.println("new Used:"+newUsed+ " bytes");
         System.out.println("new remanining:"+newRemaining+ " bytes");
 
-        // then 3 bytes of padding
-        LOG_LINGER_TIMEOUT_NS_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_BYTE+3;
+        // then 2 bytes of padding
+        LOG_LINGER_TIMEOUT_NS_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_BYTE+2;
 
         // Grouped output with alignment checks
         System.out.println("LOG_CORRELATION_ID_OFFSET = " + LOG_CORRELATION_ID_OFFSET +
@@ -399,6 +399,13 @@ public class LogBufferDescriptor
 
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
+
+
+        System.out.println("LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = " + LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET +
+            " (alignment = " + SIZE_OF_LONG + ", isAligned = " + (LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = " + LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET +
+            " (alignment = " + SIZE_OF_LONG + ", isAligned = " + (LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET % SIZE_OF_INT == 0) + ")");
+
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
     }

@@ -253,11 +253,42 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                          Page Size                            |
      *  +---------------------------------------------------------------+
+     *  |                  Socket Receive Buffer Length                 |
+     *  +---------------------------------------------------------------+
+     *  |                  Socket Send Buffer Length                    |
+     *  +---------------------------------------------------------------+
+     *  |                  Receiver Window Length                       |
+     *  +---------------------------------------------------------------+
+     *  |                  Publication Window Length                    |
+     *  +---------------------------------------------------------------+
+     *  |                        Maximum Resend                         |
+     *  +---------------------------------------------------------------+
+     *  |                          Is Sparse                            |
+     *  +---------------------------------------------------------------+
+     *  |                          Is Tether                            |
+     *  +---------------------------------------------------------------+
+     *  |                          Is Rejoin                            |
+     *  +---------------------------------------------------------------+
+     *  |                         Is Reliable                           |
+     *  +---------------------------------------------------------------+
+     *  |                         Signal EOS                            |
+     *  +---------------------------------------------------------------+
+     *  |                 Spies Simulate Connection                     |
+     *  +---------------------------------------------------------------+
+     *  |                    Linger Timeout (ns)                        |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
      *  +---------------------------------------------------------------+
      *  |                     Default Frame Header                     ...
      * ...                                                              |
+     *  +---------------------------------------------------------------+
+     *  |               Untethered Window Limit Timeout (ns)            |
+     *  |                                                               |
+     *  +---------------------------------------------------------------+
+     *  |                   Untethered Resting Timeout (ns)             |
+     *  |                                                               |
      *  +---------------------------------------------------------------+
      *  //todo: Add the missing fields.
      * </pre>
@@ -278,6 +309,9 @@ public class LogBufferDescriptor
         LOG_ACTIVE_TRANSPORT_COUNT = LOG_IS_CONNECTED_OFFSET + SIZE_OF_INT;
 
         offset += (CACHE_LINE_LENGTH * 2);
+
+        int targetOffset = offset + CACHE_LINE_LENGTH;
+
         LOG_CORRELATION_ID_OFFSET = offset;
         LOG_INITIAL_TERM_ID_OFFSET = LOG_CORRELATION_ID_OFFSET + SIZE_OF_LONG;
         LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = LOG_INITIAL_TERM_ID_OFFSET + SIZE_OF_INT;
@@ -285,23 +319,78 @@ public class LogBufferDescriptor
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
+        // new fields
         LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
         LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_MAX_RESEND_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET + SIZE_OF_INT;
+        LOG_MAX_RESEND_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
 
         LOG_IS_SPARSE_OFFSET = LOG_MAX_RESEND_OFFSET + SIZE_OF_INT;
         LOG_IS_TETHER_OFFSET = LOG_IS_SPARSE_OFFSET + SIZE_OF_BYTE;
         LOG_IS_REJOIN_OFFSET = LOG_IS_TETHER_OFFSET + SIZE_OF_BYTE;
         LOG_IS_RELIABLE_OFFSET = LOG_IS_REJOIN_OFFSET + SIZE_OF_BYTE;
         LOG_SIGNAL_EOS_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
+        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
 
-        // the last 7 bytes of the current cache line are not used.
+        int startNewOffset = LOG_PAGE_SIZE_OFFSET+SIZE_OF_INT;
+        int totalSpace = CACHE_LINE_LENGTH;
+        int initialConsumed = LOG_PAGE_SIZE_OFFSET+SIZE_OF_INT-LOG_CORRELATION_ID_OFFSET;
+        int initialRemaining = CACHE_LINE_LENGTH-initialConsumed;
+        int endNewOffset = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_BYTE;
+        int newUsed = endNewOffset-startNewOffset;
+        int newRemaining = initialRemaining-newUsed;
+
+        System.out.println("totalSpace:"+totalSpace+ " bytes");
+        System.out.println("initialConsumed:"+initialConsumed+ " bytes");
+        System.out.println("initialRemaining:"+initialRemaining+ " bytes");
+        System.out.println("new Used:"+newUsed+ " bytes");
+        System.out.println("new remanining:"+newRemaining+ " bytes");
+
+        // then 3 bytes of padding
+        LOG_LINGER_TIMEOUT_NS_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET+SIZE_OF_BYTE+3;
+
+        // Grouped output with alignment checks
+        System.out.println("LOG_CORRELATION_ID_OFFSET = " + LOG_CORRELATION_ID_OFFSET +
+            " (alignment = " + SIZE_OF_LONG + ", isAligned = " + (LOG_CORRELATION_ID_OFFSET % SIZE_OF_LONG == 0) + ")");
+        System.out.println("LOG_INITIAL_TERM_ID_OFFSET = " + LOG_INITIAL_TERM_ID_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_INITIAL_TERM_ID_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET = " + LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_DEFAULT_FRAME_HEADER_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_MTU_LENGTH_OFFSET = " + LOG_MTU_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_MTU_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_TERM_LENGTH_OFFSET = " + LOG_TERM_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_TERM_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_PAGE_SIZE_OFFSET = " + LOG_PAGE_SIZE_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_PAGE_SIZE_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_SOCKET_RCVBUF_LENGTH_OFFSET = " + LOG_SOCKET_RCVBUF_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_SOCKET_RCVBUF_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_SOCKET_SNDBUF_LENGTH_OFFSET = " + LOG_SOCKET_SNDBUF_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_SOCKET_SNDBUF_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_RECEIVER_WINDOW_LENGTH_OFFSET = " + LOG_RECEIVER_WINDOW_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_RECEIVER_WINDOW_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = " + LOG_PUBLICATION_WINDOW_LENGTH_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_PUBLICATION_WINDOW_LENGTH_OFFSET % SIZE_OF_INT == 0) + ")");
+        System.out.println("LOG_MAX_RESEND_OFFSET = " + LOG_MAX_RESEND_OFFSET +
+            " (alignment = " + SIZE_OF_INT + ", isAligned = " + (LOG_MAX_RESEND_OFFSET % SIZE_OF_INT == 0) + ")");
+
+        System.out.println("LOG_IS_SPARSE_OFFSET = " + LOG_IS_SPARSE_OFFSET);
+        System.out.println("LOG_IS_TETHER_OFFSET = " + LOG_IS_TETHER_OFFSET);
+        System.out.println("LOG_IS_REJOIN_OFFSET = " + LOG_IS_REJOIN_OFFSET);
+        System.out.println("LOG_IS_RELIABLE_OFFSET = " + LOG_IS_RELIABLE_OFFSET);
+        System.out.println("LOG_SIGNAL_EOS_OFFSET = " + LOG_SIGNAL_EOS_OFFSET);
+        System.out.println("LOG_SPIES_SIMULATE_CONNECTION_OFFSET = " + LOG_SPIES_SIMULATE_CONNECTION_OFFSET);
+        System.out.println("LOG_LINGER_TIMEOUT_NS_OFFSET = " + LOG_LINGER_TIMEOUT_NS_OFFSET +
+            " (alignment = " + SIZE_OF_LONG + ", isAligned = " + (LOG_LINGER_TIMEOUT_NS_OFFSET % SIZE_OF_LONG == 0) + ")");
 
         offset += CACHE_LINE_LENGTH;
+
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
+
+        System.out.println("LOG_PAGE_SIZE_OFFSET:"+LOG_PAGE_SIZE_OFFSET);
+        System.out.println("LOG_DEFAULT_FRAME_HEADER_OFFSET:"+LOG_DEFAULT_FRAME_HEADER_OFFSET);
+        System.out.println("Start offset:"+LOG_PAGE_SIZE_OFFSET+SIZE_OF_INT);
+        System.out.println("Available:"+(LOG_DEFAULT_FRAME_HEADER_OFFSET-LOG_PAGE_SIZE_OFFSET-SIZE_OF_INT));
 
         offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
@@ -309,9 +398,6 @@ public class LogBufferDescriptor
         offset += SIZE_OF_LONG;
 
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
-        offset += SIZE_OF_LONG;
-
-        LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);

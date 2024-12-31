@@ -37,6 +37,10 @@
 #define _Static_assert static_assert
 #endif
 
+#ifdef __cplusplus
+#define _Static_assert static_assert
+#endif
+
 #pragma pack(push)
 #pragma pack(4)
 typedef struct aeron_logbuffer_metadata_stct
@@ -89,21 +93,21 @@ typedef struct aeron_logbuffer_metadata_stct
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
 
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, term_tail_counters) == 0,
-//    "offsetof(aeron_logbuffer_metadata_t, term_tail_counters) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, active_term_count) == 24,
-//    "offsetof(aeron_logbuffer_metadata_t, active_term_count) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, end_of_stream_position) == 128,
-//    "offsetof(aeron_logbuffer_metadata_t, end_of_stream_position) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, is_connected) == 136,
-//    "offsetof(aeron_logbuffer_metadata_t, is_connected) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, active_transport_count) == 140,
-//    "offsetof(aeron_logbuffer_metadata_t, active_transport_count) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, term_tail_counters) == 0,
+    "offsetof(aeron_logbuffer_metadata_t, term_tail_counters) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, active_term_count) == 24,
+    "offsetof(aeron_logbuffer_metadata_t, active_term_count) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, end_of_stream_position) == 128,
+    "offsetof(aeron_logbuffer_metadata_t, end_of_stream_position) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, is_connected) == 136,
+    "offsetof(aeron_logbuffer_metadata_t, is_connected) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, active_transport_count) == 140,
+    "offsetof(aeron_logbuffer_metadata_t, active_transport_count) is wrong");
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, correlation_id) == 256,
     "offsetof(aeron_logbuffer_metadata_t, correlation_id) is wrong");
@@ -138,7 +142,6 @@ _Static_assert(
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, max_resend) == 300,
     "offsetof(aeron_logbuffer_metadata_t, max_resend) is wrong");
-
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, sparse) == 304,
     "offsetof(aeron_logbuffer_metadata_t, sparse) is wrong");
@@ -154,34 +157,19 @@ _Static_assert(
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, signal_eos) == 308,
     "offsetof(aeron_logbuffer_metadata_t, signal_eos) is wrong");
-
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) == 309,
     "offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) is wrong");
-
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 312,
     "offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) is wrong");
-
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, default_header) == 320,
     "offsetof(aeron_logbuffer_metadata_t, default_header) is wrong");
 
-
-
-//_Static_assert(
-//    AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH >= AERON_DATA_HEADER_LENGTH,
-//    "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
-
-
-
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, group) == 472,
-//    "offsetof(aeron_logbuffer_metadata_t, group) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, is_response) == 473,
-//    "offsetof(aeron_logbuffer_metadata_t, is_response) is wrong");
-
+_Static_assert(
+    AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH >= AERON_DATA_HEADER_LENGTH,
+    "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
 
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 448,
@@ -190,9 +178,9 @@ _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 456,
     "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
 
-//_Static_assert(
-//    sizeof(aeron_logbuffer_metadata_t) == 480,
-//    "sizeof(aeron_logbuffer_metadata_t) is wrong")
+////_Static_assert(
+////    sizeof(aeron_logbuffer_metadata_t) == 480,
+////    "sizeof(aeron_logbuffer_metadata_t) is wrong")
 
 
 

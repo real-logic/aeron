@@ -83,7 +83,7 @@ typedef struct aeron_logbuffer_metadata_stct
 
      // Padding at the end will fill it up the aeron_logbuffer_metadata_t to 512 bytes
      // (which is 9x AERON_CACHE_LINE_LENGTH)
-     uint8_t pad4[44];
+     uint8_t pad4[48];
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
@@ -171,9 +171,9 @@ _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 456,
     "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
 
-//_Static_assert(
-//    sizeof(aeron_logbuffer_metadata_t) == 512,
-//    "sizeof(aeron_logbuffer_metadata_t) is wrong");
+_Static_assert(
+    sizeof(aeron_logbuffer_metadata_t) == 512,
+    "sizeof(aeron_logbuffer_metadata_t) is wrong");
 
 #define AERON_LOGBUFFER_META_DATA_LENGTH \
     (AERON_ALIGN((sizeof(aeron_logbuffer_metadata_t) + AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH), AERON_PAGE_MIN_SIZE))

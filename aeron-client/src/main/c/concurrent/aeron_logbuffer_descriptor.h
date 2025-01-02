@@ -87,11 +87,23 @@ typedef struct aeron_logbuffer_metadata_stct
 //        uint8_t is_response;
 
     // todo: is this padding correct
-
-    uint8_t pad4[(AERON_CACHE_LINE_LENGTH) - (7 * sizeof(int32_t))];
+    uint8_t pad4[(AERON_CACHE_LINE_LENGTH) - (7 * sizeof(int32_t)) - (2 * sizeof(int64_t))];
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
+
+ // ================ remove
+#define STRINGIFY(x) #x
+#define TOSTRING(x) STRINGIFY(x)
+
+_Static_assert(
+    sizeof(aeron_logbuffer_metadata_t) == sizeof(aeron_logbuffer_metadata_t),
+    "Size of aeron_logbuffer_metadata_t: " TOSTRING(sizeof(aeron_logbuffer_metadata_t)));
+_Static_assert(sizeof(aeron_logbuffer_metadata_t) == 480, "aeron_logbuffer_metadata_t size mismatch");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, term_tail_counters) == 1,
+    "offsetof(aeron_logbuffer_metadata_t, term_tail_counters) is wrong");
+// ================ remove
 
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, term_tail_counters) == 0,

@@ -1916,7 +1916,11 @@ public final class DriverConductor implements Agent
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
-        defaultDataHeader.sessionId(sessionId).streamId(streamId).termId(initialTermId).termOffset(termOffset);
+        defaultDataHeader.sessionId(sessionId)
+            .streamId(streamId)
+            .termId(initialTermId);
+        // todo: restore.
+        //    .termOffset(termOffset);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
         initialTermId(logMetaData, initialTermId);

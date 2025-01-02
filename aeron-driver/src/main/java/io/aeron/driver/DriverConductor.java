@@ -1945,7 +1945,8 @@ public final class DriverConductor implements Agent
         untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);
         lingerTimeoutNs(logMetaData, lingerTimeoutNs);
 
-        // Acts like a release fence; so this should be the last statement.
+        // Acts like a release fence; so this should be the last statement to ensure that all above writes
+        // are ordered before the eos-position.
         endOfStreamPosition(logMetaData, Long.MAX_VALUE);
     }
 

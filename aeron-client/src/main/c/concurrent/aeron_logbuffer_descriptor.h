@@ -77,18 +77,13 @@ typedef struct aeron_logbuffer_metadata_stct
      int64_t linger_timeout_ns;
 
      uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
-//
-//     int64_t untethered_window_limit_timeout_ns;
-//     int64_t untethered_resting_timeout_ns;
 
-//        int64_t entity_tag;
-//        int64_t response_correlation_id;
-//        uint8_t group;
-//        uint8_t is_response;
+     int64_t untethered_window_limit_timeout_ns;
+     int64_t untethered_resting_timeout_ns;
 
-    // todo: is this padding correct
-    //uint8_t pad4[(AERON_CACHE_LINE_LENGTH) - (7 * sizeof(int32_t)) - (2 * sizeof(int64_t))];
-    //uint8_t pad4[(AERON_CACHE_LINE_LENGTH) - (7 * sizeof(int32_t)) ];
+     // Padding at the end will fill it up the aeron_logbuffer_metadata_t to 512 bytes
+     // (which is 9x AERON_CACHE_LINE_LENGTH)
+     uint8_t pad4[44];
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
@@ -163,26 +158,22 @@ _Static_assert(
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 312,
     "offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, default_header) == 320,
-//    "offsetof(aeron_logbuffer_metadata_t, default_header) is wrong");
-//
-//_Static_assert(
-//    AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH >= AERON_DATA_HEADER_LENGTH,
-//    "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
-//
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 448,
-//    "offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) is wrong");
-//_Static_assert(
-//    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 456,
-//    "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, default_header) == 320,
+    "offsetof(aeron_logbuffer_metadata_t, default_header) is wrong");
+_Static_assert(
+    AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH >= AERON_DATA_HEADER_LENGTH,
+    "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 448,
+    "offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 456,
+    "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
 
-////_Static_assert(
-////    sizeof(aeron_logbuffer_metadata_t) == 480,
-////    "sizeof(aeron_logbuffer_metadata_t) is wrong")
-
-
+//_Static_assert(
+//    sizeof(aeron_logbuffer_metadata_t) == 512,
+//    "sizeof(aeron_logbuffer_metadata_t) is wrong");
 
 #define AERON_LOGBUFFER_META_DATA_LENGTH \
     (AERON_ALIGN((sizeof(aeron_logbuffer_metadata_t) + AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH), AERON_PAGE_MIN_SIZE))
@@ -316,9 +307,6 @@ inline void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
-    // todo: original
-    //aeron_data_header_t *data_header =
-    //    (aeron_data_header_t *)(log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t));
     aeron_data_header_t *data_header = (aeron_data_header_t *)(log_meta_data->default_header);
 
     log_meta_data->default_frame_header_length = AERON_DATA_HEADER_LENGTH;
@@ -336,9 +324,6 @@ inline void aeron_logbuffer_fill_default_header(
 inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
-    //uint8_t *default_header = log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t);
-
-    //memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
 
     memcpy(buffer, log_meta_data->default_header, (size_t)log_meta_data->default_frame_header_length);
 }

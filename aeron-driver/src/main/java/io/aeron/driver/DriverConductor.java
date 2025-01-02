@@ -1918,9 +1918,8 @@ public final class DriverConductor implements Agent
 
         defaultDataHeader.sessionId(sessionId)
             .streamId(streamId)
-            .termId(initialTermId);
-        // todo: restore.
-        //    .termOffset(termOffset);
+            .termId(initialTermId)
+            .termOffset(termOffset);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
         initialTermId(logMetaData, initialTermId);

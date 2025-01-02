@@ -76,7 +76,7 @@ typedef struct aeron_logbuffer_metadata_stct
      uint8_t pad3[2];
      int64_t linger_timeout_ns;
 
-//     uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
+     uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
 //
 //     int64_t untethered_window_limit_timeout_ns;
 //     int64_t untethered_resting_timeout_ns;
@@ -316,8 +316,10 @@ inline void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
-    aeron_data_header_t *data_header =
-        (aeron_data_header_t *)(log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t));
+    // todo: original
+    //aeron_data_header_t *data_header =
+    //    (aeron_data_header_t *)(log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t));
+    aeron_data_header_t *data_header = (aeron_data_header_t *)(log_meta_data->default_header);
 
     log_meta_data->default_frame_header_length = AERON_DATA_HEADER_LENGTH;
     data_header->frame_header.frame_length = 0;
@@ -334,9 +336,11 @@ inline void aeron_logbuffer_fill_default_header(
 inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
-    uint8_t *default_header = log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t);
+    //uint8_t *default_header = log_meta_data_buffer + sizeof(aeron_logbuffer_metadata_t);
 
-    memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
+    //memcpy(buffer, default_header, (size_t)log_meta_data->default_frame_header_length);
+
+    memcpy(buffer, log_meta_data->default_header, (size_t)log_meta_data->default_frame_header_length);
 }
 
 inline size_t aeron_logbuffer_compute_fragmented_length(size_t length, size_t max_payload_length)

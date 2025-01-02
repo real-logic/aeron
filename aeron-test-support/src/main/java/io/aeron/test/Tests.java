@@ -53,7 +53,9 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.LockSupport;
 import java.util.function.*;
 
 import static io.aeron.Aeron.NULL_VALUE;
@@ -224,14 +226,8 @@ public class Tests
      */
     public static void sleep(final long durationMs)
     {
-        try
-        {
-            Thread.sleep(durationMs);
-        }
-        catch (final InterruptedException ex)
-        {
-            throw new TimeoutException(ex, AeronException.Category.ERROR);
-        }
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(durationMs));
+        checkInterruptStatus();
     }
 
     /**
@@ -242,14 +238,8 @@ public class Tests
      */
     public static void sleep(final long durationMs, final Supplier<String> messageSupplier)
     {
-        try
-        {
-            Thread.sleep(durationMs);
-        }
-        catch (final InterruptedException ex)
-        {
-            throw new TimeoutException(messageSupplier.get());
-        }
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(durationMs));
+        checkInterruptStatus(messageSupplier);
     }
 
     /**
@@ -261,14 +251,8 @@ public class Tests
      */
     public static void sleep(final long durationMs, final String format, final Object... params)
     {
-        try
-        {
-            Thread.sleep(durationMs);
-        }
-        catch (final InterruptedException ex)
-        {
-            throw new TimeoutException(String.format(format, params));
-        }
+        LockSupport.parkNanos(TimeUnit.MILLISECONDS.toNanos(durationMs));
+        checkInterruptStatus(format, params);
     }
 
     /**

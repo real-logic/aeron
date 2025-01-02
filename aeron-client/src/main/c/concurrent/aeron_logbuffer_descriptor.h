@@ -80,7 +80,7 @@ typedef struct aeron_logbuffer_metadata_stct
     uint8_t spies_simulate_connection;
     uint8_t tether;
 
-    uint8_t pad_end[32]; // Padding to align the structure size to 512 bytes
+    uint8_t pad_end[32]; // Padding to align the structure size to 512 bytes (9x AERON_CACHE_LINE_LENGTH)
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)

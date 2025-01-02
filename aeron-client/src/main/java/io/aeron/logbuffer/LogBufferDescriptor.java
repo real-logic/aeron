@@ -215,6 +215,15 @@ public class LogBufferDescriptor
      */
     public static final int LOG_GROUP_OFFSET;
 
+    /**
+     * Offset within the log metadata where the entity tag is stored.
+     */
+    public static final int LOG_ENTITY_TAG_OFFSET;
+
+    /**
+     * Offset within the log metadata where the response correlation id is stored.
+     */
+    public static final int LOG_RESPONSE_CORRELATION_ID_OFFSET;
 
     /**
      * Offset within the log metadata where is-response is stored.
@@ -307,6 +316,7 @@ public class LogBufferDescriptor
      */
     public static final int LOG_META_DATA_LENGTH;
 
+
     static
     {
         int offset = 0;
@@ -329,19 +339,19 @@ public class LogBufferDescriptor
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
-        // new field
         LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
         LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_MAX_RESEND_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_ENTITY_TAG_OFFSET = LOG_MAX_RESEND_OFFSET + SIZE_OF_INT;
+        LOG_RESPONSE_CORRELATION_ID_OFFSET = LOG_ENTITY_TAG_OFFSET + SIZE_OF_LONG;
 
         offset += CACHE_LINE_LENGTH;
 
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
         offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
-        // 2 bytes of padding
         LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
@@ -355,7 +365,7 @@ public class LogBufferDescriptor
         offset += SIZE_OF_BYTE;
 
         LOG_IS_RESPONSE_OFFSET = offset;
-        offset+=SIZE_OF_BYTE;
+        offset += SIZE_OF_BYTE;
 
         LOG_IS_REJOIN_OFFSET = offset;
         offset += SIZE_OF_BYTE;

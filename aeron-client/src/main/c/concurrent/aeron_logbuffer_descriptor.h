@@ -33,9 +33,9 @@
 
 #define AERON_MAX_UDP_PAYLOAD_LENGTH (65504)
 
-#ifdef _MSC_VER
-#define _Static_assert static_assert
-#endif
+//#ifdef _MSC_VER
+//#define _Static_assert static_assert
+//#endif
 
 #ifdef __cplusplus
 #define _Static_assert static_assert
@@ -47,10 +47,12 @@ typedef struct aeron_logbuffer_metadata_stct
 {
     volatile int64_t term_tail_counters[AERON_LOGBUFFER_PARTITION_COUNT];
     volatile int32_t active_term_count;
+
     uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
     volatile int64_t end_of_stream_position;
     volatile int32_t is_connected;
     volatile int32_t active_transport_count;
+
     uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(int64_t) + (2 * sizeof(int32_t)))];
     int64_t correlation_id;
     int32_t initial_term_id;
@@ -58,32 +60,27 @@ typedef struct aeron_logbuffer_metadata_stct
     int32_t mtu_length;
     int32_t term_length;
     int32_t page_size;
-
-    // new fields since Aeron 1.47.0
-    int32_t socket_rcvbuf_length;
-    int32_t socket_sndbuf_length;
-    int32_t receiver_window_length;
     int32_t publication_window_length;
+    int32_t receiver_window_length;
+    int32_t socket_sndbuf_length;
+    int32_t socket_rcvbuf_length;
     int32_t max_resend;
+    int64_t entity_tag;
+    int64_t response_correlation_id;
+    uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
+    int64_t linger_timeout_ns;
+    int64_t untethered_window_limit_timeout_ns;
+    int64_t untethered_resting_timeout_ns;
+    uint8_t group;
+    uint8_t is_response;
+    uint8_t rejoin;
+    uint8_t reliable;
+    uint8_t sparse;
+    uint8_t signal_eos;
+    uint8_t spies_simulate_connection;
+    uint8_t tether;
 
-     uint8_t sparse;
-     uint8_t tether;
-     uint8_t rejoin;
-     uint8_t reliable;
-     uint8_t signal_eos;
-     uint8_t spies_simulate_connection;
-
-     uint8_t pad3[2];
-     int64_t linger_timeout_ns;
-
-     uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
-
-     int64_t untethered_window_limit_timeout_ns;
-     int64_t untethered_resting_timeout_ns;
-
-     // Padding at the end will fill it up the aeron_logbuffer_metadata_t to 512 bytes
-     // (which is 9x AERON_CACHE_LINE_LENGTH)
-     uint8_t pad4[48];
+    uint8_t pad_end[32]; // Padding to align the structure size to 512 bytes
 }
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
@@ -121,43 +118,30 @@ _Static_assert(
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, page_size) == 280,
     "offsetof(aeron_logbuffer_metadata_t, page_size) is wrong");
-
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) == 284,
-    "offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) is wrong");
+    offsetof(aeron_logbuffer_metadata_t, publication_window_length) == 284,
+    "offsetof(aeron_logbuffer_metadata_t, publication_window_length) is wrong");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, socket_sndbuf_length) == 288,
-    "offsetof(aeron_logbuffer_metadata_t, socket_sndbuf_length) is wrong");
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, receiver_window_length) == 292,
+    offsetof(aeron_logbuffer_metadata_t, receiver_window_length) == 288,
     "offsetof(aeron_logbuffer_metadata_t, receiver_window_length) is wrong");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, publication_window_length) == 296,
-    "offsetof(aeron_logbuffer_metadata_t, publication_window_length) is wrong");
+    offsetof(aeron_logbuffer_metadata_t, socket_sndbuf_length) == 292,
+    "offsetof(aeron_logbuffer_metadata_t, socket_sndbuf_length) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) == 296,
+    "offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) is wrong");
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, max_resend) == 300,
     "offsetof(aeron_logbuffer_metadata_t, max_resend) is wrong");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, sparse) == 304,
-    "offsetof(aeron_logbuffer_metadata_t, sparse) is wrong");
+    offsetof(aeron_logbuffer_metadata_t, entity_tag) == 304,
+    "offsetof(aeron_logbuffer_metadata_t, entity_tag) is wrong");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, tether) == 305,
-    "offsetof(aeron_logbuffer_metadata_t, tether) is wrong");
+    offsetof(aeron_logbuffer_metadata_t, entity_tag) % sizeof(int64_t) == 0,
+    "offsetof(aeron_logbuffer_metadata_t, entity_tag) not aligned");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, rejoin) == 306,
-    "offsetof(aeron_logbuffer_metadata_t, rejoin) is wrong");
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, reliable) == 307,
-    "offsetof(aeron_logbuffer_metadata_t, reliable) is wrong");
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, signal_eos) == 308,
-    "offsetof(aeron_logbuffer_metadata_t, signal_eos) is wrong");
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) == 309,
-    "offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) is wrong");
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 312,
-    "offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) is wrong");
+    offsetof(aeron_logbuffer_metadata_t, response_correlation_id) == 312,
+    "offsetof(aeron_logbuffer_metadata_t, response_correlation_id) is wrong");
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, default_header) == 320,
     "offsetof(aeron_logbuffer_metadata_t, default_header) is wrong");
@@ -165,18 +149,47 @@ _Static_assert(
     AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH >= AERON_DATA_HEADER_LENGTH,
     "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 448,
+    offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 448,
+    "offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 456,
     "offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) is wrong");
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 456,
+    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 464,
     "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
-
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, group) == 472,
+    "offsetof(aeron_logbuffer_metadata_t, group) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, is_response) == 473,
+    "offsetof(aeron_logbuffer_metadata_t, is_response) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, rejoin) == 474,
+    "offsetof(aeron_logbuffer_metadata_t, rejoin) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, reliable) == 475,
+    "offsetof(aeron_logbuffer_metadata_t, reliable) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, sparse) == 476,
+    "offsetof(aeron_logbuffer_metadata_t, sparse) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, signal_eos) == 477,
+    "offsetof(aeron_logbuffer_metadata_t, signal_eos) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) == 478,
+    "offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) is wrong");
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, tether) == 479,
+    "offsetof(aeron_logbuffer_metadata_t, tether) is wrong");
 _Static_assert(
     sizeof(aeron_logbuffer_metadata_t) == 512,
     "sizeof(aeron_logbuffer_metadata_t) is wrong");
 
 #define AERON_LOGBUFFER_META_DATA_LENGTH \
-    (AERON_ALIGN((sizeof(aeron_logbuffer_metadata_t) + AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH), AERON_PAGE_MIN_SIZE))
+    (AERON_ALIGN(sizeof(aeron_logbuffer_metadata_t), AERON_PAGE_MIN_SIZE))
+_Static_assert(
+    AERON_LOGBUFFER_META_DATA_LENGTH == AERON_PAGE_MIN_SIZE,
+    "AERON_LOGBUFFER_META_DATA_LENGTH != AERON_PAGE_MIN_SIZE");
 
 #define AERON_LOGBUFFER_FRAME_ALIGNMENT (32)
 

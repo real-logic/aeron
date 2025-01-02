@@ -201,14 +201,26 @@ public class LogBufferDescriptor
     public static final int LOG_LINGER_TIMEOUT_NS_OFFSET;
 
     /**
-     * Offset within the log metadata where the signal eos is stored.
+     * Offset within the log metadata where the signal-eos is stored.
      */
     public static final int LOG_SIGNAL_EOS_OFFSET;
 
     /**
-     * Offset within the log metadata where the spies simulate connection is stored.
+     * Offset within the log metadata where the spies-simulate-connection is stored.
      */
     public static final int LOG_SPIES_SIMULATE_CONNECTION_OFFSET;
+
+    /**
+     * Offset within the log metadata where the group is stored.
+     */
+    public static final int LOG_GROUP_OFFSET;
+
+
+    /**
+     * Offset within the log metadata where is-response is stored.
+     */
+    public static final int LOG_IS_RESPONSE_OFFSET;
+
 
     /**
      * Total length of the log metadata buffer in bytes.
@@ -317,33 +329,51 @@ public class LogBufferDescriptor
         LOG_TERM_LENGTH_OFFSET = LOG_MTU_LENGTH_OFFSET + SIZE_OF_INT;
         LOG_PAGE_SIZE_OFFSET = LOG_TERM_LENGTH_OFFSET + SIZE_OF_INT;
 
-        // new fields
-        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
-        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
-        LOG_MAX_RESEND_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
-
-        LOG_IS_SPARSE_OFFSET = LOG_MAX_RESEND_OFFSET + SIZE_OF_INT;
-        LOG_IS_TETHER_OFFSET = LOG_IS_SPARSE_OFFSET + SIZE_OF_BYTE;
-        LOG_IS_REJOIN_OFFSET = LOG_IS_TETHER_OFFSET + SIZE_OF_BYTE;
-        LOG_IS_RELIABLE_OFFSET = LOG_IS_REJOIN_OFFSET + SIZE_OF_BYTE;
-        LOG_SIGNAL_EOS_OFFSET = LOG_IS_RELIABLE_OFFSET + SIZE_OF_BYTE;
-        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = LOG_SIGNAL_EOS_OFFSET + SIZE_OF_BYTE;
-
-        // 2 bytes of padding
-        LOG_LINGER_TIMEOUT_NS_OFFSET = LOG_SPIES_SIMULATE_CONNECTION_OFFSET + SIZE_OF_BYTE + 2;
+        // new field
+        LOG_PUBLICATION_WINDOW_LENGTH_OFFSET = LOG_PAGE_SIZE_OFFSET + SIZE_OF_INT;
+        LOG_RECEIVER_WINDOW_LENGTH_OFFSET = LOG_PUBLICATION_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_SOCKET_SNDBUF_LENGTH_OFFSET = LOG_RECEIVER_WINDOW_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_SOCKET_RCVBUF_LENGTH_OFFSET = LOG_SOCKET_SNDBUF_LENGTH_OFFSET + SIZE_OF_INT;
+        LOG_MAX_RESEND_OFFSET = LOG_SOCKET_RCVBUF_LENGTH_OFFSET + SIZE_OF_INT;
 
         offset += CACHE_LINE_LENGTH;
 
         LOG_DEFAULT_FRAME_HEADER_OFFSET = offset;
         offset += LOG_DEFAULT_FRAME_HEADER_MAX_LENGTH;
 
+        // 2 bytes of padding
+        LOG_LINGER_TIMEOUT_NS_OFFSET = offset;
+        offset += SIZE_OF_LONG;
+
         LOG_UNTETHERED_WINDOW_LIMIT_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
 
         LOG_UNTETHERED_RESTING_TIMEOUT_NS_OFFSET = offset;
         offset += SIZE_OF_LONG;
+
+        LOG_GROUP_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_IS_RESPONSE_OFFSET = offset;
+        offset+=SIZE_OF_BYTE;
+
+        LOG_IS_REJOIN_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_IS_RELIABLE_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_IS_SPARSE_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_SIGNAL_EOS_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
+
+        LOG_IS_TETHER_OFFSET = offset;
+        offset += SIZE_OF_BYTE;
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
     }

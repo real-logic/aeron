@@ -16,9 +16,11 @@
 package io.aeron.archive.client;
 
 import io.aeron.Aeron;
+import io.aeron.AvailableImageHandler;
 import io.aeron.ChannelUri;
 import io.aeron.Publication;
 import io.aeron.Subscription;
+import io.aeron.UnavailableImageHandler;
 import io.aeron.archive.client.AeronArchive.Context;
 import io.aeron.archive.codecs.ControlResponseCode;
 import io.aeron.exceptions.AeronException;
@@ -50,6 +52,101 @@ class AeronArchiveTest
     private final ControlResponsePoller controlResponsePoller = mock(ControlResponsePoller.class);
     private final ArchiveProxy archiveProxy = mock(ArchiveProxy.class);
     private final ErrorHandler errorHandler = mock(ErrorHandler.class);
+
+    @Test
+    void asyncConnectedShouldConcludeContext()
+    {
+        final Context ctx = mock(Context.class);
+        final IllegalStateException expectedException = new IllegalStateException("test");
+        doThrow(expectedException).when(ctx).conclude();
+
+        final IllegalStateException actualException =
+            assertThrowsExactly(IllegalStateException.class, () -> AeronArchive.asyncConnect(ctx));
+        assertSame(expectedException, actualException);
+
+        verify(ctx).conclude();
+        verifyNoMoreInteractions(ctx);
+    }
+
+    @Test
+    void asyncConnectedShouldCloseContext()
+    {
+        final String responseChannel = "aeron:udp?endpoint=localhost:1234";
+        final int responseStreamId = 49;
+        final Context ctx = mock(Context.class);
+        when(ctx.aeron()).thenReturn(aeron);
+        when(ctx.controlResponseChannel()).thenReturn(responseChannel);
+        when(ctx.controlResponseStreamId()).thenReturn(responseStreamId);
+        final RuntimeException error = new RuntimeException("subscription");
+        when(aeron.addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class))).thenThrow(error);
+
+        final RuntimeException actualException =
+            assertThrowsExactly(RuntimeException.class, () -> AeronArchive.asyncConnect(ctx));
+        assertSame(error, actualException);
+
+        final InOrder inOrder = inOrder(ctx, aeron);
+        inOrder.verify(ctx).conclude();
+        inOrder.verify(ctx).aeron();
+        inOrder.verify(ctx).controlResponseChannel();
+        inOrder.verify(ctx).controlResponseStreamId();
+        inOrder.verify(aeron).addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class));
+        inOrder.verify(ctx).close();
+        inOrder.verifyNoMoreInteractions();
+    }
+
+    @Test
+    void asyncConnectedShouldCloseResourceInCaseOfExceptionUponStartup()
+    {
+        final String responseChannel = "aeron:udp?endpoint=localhost:0";
+        final int responseStreamId = 49;
+        final String requestChannel = "aeron:udp?endpoint=localhost:1234";
+        final int requestStreamId = -15;
+        final long pubId = -3275938475934759L;
+
+        final Context ctx = mock(Context.class);
+        when(ctx.aeron()).thenReturn(aeron);
+        when(ctx.controlResponseChannel()).thenReturn(responseChannel);
+        when(ctx.controlResponseStreamId()).thenReturn(responseStreamId);
+        when(ctx.controlRequestChannel()).thenReturn(requestChannel);
+        when(ctx.controlRequestStreamId()).thenReturn(requestStreamId);
+        final Subscription subscription = mock(Subscription.class);
+        when(aeron.addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class))).thenReturn(subscription);
+        when(aeron.asyncAddExclusivePublication(requestChannel, requestStreamId)).thenReturn(pubId);
+        final IndexOutOfBoundsException error = new IndexOutOfBoundsException("exception");
+        when(aeron.context()).thenThrow(error);
+
+        final IndexOutOfBoundsException actualException =
+            assertThrowsExactly(IndexOutOfBoundsException.class, () -> AeronArchive.asyncConnect(ctx));
+        assertSame(error, actualException);
+
+        final InOrder inOrder = inOrder(ctx, aeron, subscription);
+        inOrder.verify(ctx).conclude();
+        inOrder.verify(ctx).aeron();
+        inOrder.verify(ctx).controlResponseChannel();
+        inOrder.verify(ctx).controlResponseStreamId();
+        inOrder.verify(aeron).addSubscription(
+            eq(responseChannel),
+            eq(responseStreamId),
+            nullable(AvailableImageHandler.class),
+            any(UnavailableImageHandler.class));
+        inOrder.verify(aeron).asyncAddExclusivePublication(requestChannel, requestStreamId);
+        inOrder.verify(subscription).close();
+        inOrder.verify(aeron).asyncRemovePublication(pubId);
+        inOrder.verify(ctx).close();
+        inOrder.verifyNoMoreInteractions();
+    }
 
     @Test
     void closeNotOwningAeronClient()

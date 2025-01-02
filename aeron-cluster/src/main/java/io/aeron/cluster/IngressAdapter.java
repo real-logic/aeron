@@ -24,7 +24,7 @@ import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.collections.ArrayUtil;
 
-class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
+class IngressAdapter implements AutoCloseable
 {
     private final int fragmentPollLimit;
     private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
@@ -34,7 +34,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     private final SessionKeepAliveDecoder sessionKeepAliveDecoder = new SessionKeepAliveDecoder();
     private final ChallengeResponseDecoder challengeResponseDecoder = new ChallengeResponseDecoder();
     private final AdminRequestDecoder adminRequestDecoder = new AdminRequestDecoder();
-    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this);
+    private final ControlledFragmentAssembler fragmentAssembler = new ControlledFragmentAssembler(this::onMessage);
     private final ConsensusModuleAgent consensusModuleAgent;
     private Subscription subscription;
     private Subscription ipcSubscription;
@@ -67,7 +67,8 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
     }
 
     @SuppressWarnings("MethodLength")
-    public Action onFragment(final DirectBuffer buffer, final int offset, final int length, final Header header)
+    public ControlledFragmentHandler.Action onMessage(
+        final DirectBuffer buffer, final int offset, final int length, final Header header)
     {
         messageHeaderDecoder.wrap(buffer, offset);
 
@@ -194,7 +195,7 @@ class IngressAdapter implements ControlledFragmentHandler, AutoCloseable
             }
         }
 
-        return Action.CONTINUE;
+        return ControlledFragmentHandler.Action.CONTINUE;
     }
 
     void connect(final Subscription subscription, final Subscription ipcSubscription)

@@ -79,7 +79,6 @@ typedef struct aeron_logbuffer_metadata_stct
     uint8_t signal_eos;
     uint8_t spies_simulate_connection;
     uint8_t tether;
-
     uint8_t pad_end[32]; // Padding to align the structure size to 512 bytes (9x AERON_CACHE_LINE_LENGTH)
 }
 aeron_logbuffer_metadata_t;
@@ -187,6 +186,7 @@ _Static_assert(
 
 #define AERON_LOGBUFFER_META_DATA_LENGTH \
     (AERON_ALIGN(sizeof(aeron_logbuffer_metadata_t), AERON_PAGE_MIN_SIZE))
+
 _Static_assert(
     AERON_LOGBUFFER_META_DATA_LENGTH == AERON_PAGE_MIN_SIZE,
     "AERON_LOGBUFFER_META_DATA_LENGTH != AERON_PAGE_MIN_SIZE");

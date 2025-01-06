@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
+ * Copyright 2014-2025 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -15,11 +15,7 @@
  */
 
 #include "aeron_archive_configuration.h"
-
-int32_t aeron_semantic_version_compose(uint8_t major, uint8_t minor, uint8_t patch)
-{
-    return (major << 16) | (minor << 8) | patch;
-}
+#include "aeron_common.h"
 
 int32_t aeron_archive_semantic_version(void)
 {

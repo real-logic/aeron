@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
+ * Copyright 2014-2025 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -23,6 +23,8 @@ import io.aeron.logbuffer.ControlledFragmentHandler;
 import io.aeron.logbuffer.Header;
 import org.agrona.DirectBuffer;
 import org.agrona.SemanticVersion;
+
+import java.util.Objects;
 
 /**
  * Encapsulate the polling and decoding of archive control protocol response messages.
@@ -76,7 +78,7 @@ public final class ControlResponsePoller
      */
     public ControlResponsePoller(final Subscription subscription, final int fragmentLimit)
     {
-        this.subscription = subscription;
+        this.subscription = Objects.requireNonNull(subscription);
         this.fragmentLimit = fragmentLimit;
     }
 

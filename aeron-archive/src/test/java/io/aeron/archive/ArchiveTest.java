@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
+ * Copyright 2014-2025 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -933,18 +933,31 @@ class ArchiveTest
                 while (client2.controlResponsePoller().subscription().isConnected())
                 {
                     assertNull(client1.pollForErrorResponse());
-                    final String response = client2.pollForErrorResponse();
-                    if (null != response)
+                    try
                     {
-                        assertEquals(AeronArchive.NOT_CONNECTED_MSG, response);
+                        client2.checkForErrorResponse();
+                    }
+                    catch (final ArchiveException ex)
+                    {
+                        if (AeronArchive.State.DISCONNECTED == client2.state())
+                        {
+                            assertEquals("ERROR - not connected", ex.getMessage());
+                            assertTrue(client2.archiveProxy().publication().isConnected());
+                            assertFalse(client2.controlResponsePoller().subscription().isConnected());
+                        }
+                        else
+                        {
+                            assertEquals("ERROR - client is closed", ex.getMessage());
+                            assertFalse(client2.archiveProxy().publication().isConnected());
+                            assertFalse(client2.controlResponsePoller().subscription().isConnected());
+                        }
                         break;
                     }
                 }
 
+                assertEquals(AeronArchive.State.CONNECTED, client1.state());
                 assertTrue(client1.archiveProxy().publication().isConnected());
                 assertTrue(client1.controlResponsePoller().subscription().isConnected());
-                assertTrue(client2.archiveProxy().publication().isConnected());
-                assertFalse(client2.controlResponsePoller().subscription().isConnected());
             }
         }
     }

@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
+ * Copyright 2014-2025 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -38,13 +38,13 @@ public interface NameResolver
     InetAddress resolve(String name, String uriParamName, boolean isReResolution);
 
     /**
-     * Lookup the name and return a string of the form name:port that represents the endpoint or control param
+     * Lookup the name and return a string of the form {@code name:port} that represents the endpoint or control param
      * of the URI.
      *
      * @param name         to lookup
      * @param uriParamName that the lookup is for.
      * @param isReLookup   {@code true} if this is a re-lookup or {@code true} if initial lookup.
-     * @return string in name:port form.
+     * @return string in {@code name:port} form.
      */
     default String lookup(String name, String uriParamName, boolean isReLookup)
     {

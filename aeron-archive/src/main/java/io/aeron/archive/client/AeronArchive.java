@@ -1,5 +1,5 @@
 /*
- * Copyright 2014-2024 Real Logic Limited.
+ * Copyright 2014-2025 Real Logic Limited.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,9 +85,32 @@ public final class AeronArchive implements AutoCloseable
      */
     public static final String NOT_CONNECTED_MSG = "not connected";
 
+    /**
+     * Describes state of the client instance.
+     */
+    public enum State
+    {
+        /**
+         * Client connected to the archive.
+         */
+        CONNECTED,
+
+        /**
+         * Connection to the archive was lost. It is only possible to close this client instance. A new client instance
+         * must be created in order to establish connection with archive again.
+         */
+        DISCONNECTED,
+
+        /**
+         * Client was closed and can no longer be used. A new client instance must be created in order to establish
+         * connection with archive again.
+         */
+        CLOSED;
+    }
+
     private static final int FRAGMENT_LIMIT = 10;
 
-    private boolean isClosed = false;
+    private volatile State state;
     private boolean isInCallback = false;
     private long lastCorrelationId = Aeron.NULL_VALUE;
     private final long controlSessionId;
@@ -124,6 +147,7 @@ public final class AeronArchive implements AutoCloseable
         this.archiveProxy = archiveProxy;
         this.controlSessionId = controlSessionId;
         this.archiveId = archiveId;
+        state = State.CONNECTED;
     }
 
     /**
@@ -147,6 +171,16 @@ public final class AeronArchive implements AutoCloseable
     }
 
     /**
+     * Returns the state of this client.
+     *
+     * @return client state.
+     */
+    public State state()
+    {
+        return state;
+    }
+
+    /**
      * Notify the archive that this control session is closed, so it can promptly release resources then close the
      * local resources associated with the client.
      */
@@ -155,9 +189,9 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            if (!isClosed)
+            if (State.CLOSED != state)
             {
-                isClosed = true;
+                state = State.CLOSED;
                 final ErrorHandler errorHandler = context.errorHandler();
                 Exception resultEx = null;
 
@@ -231,46 +265,25 @@ public final class AeronArchive implements AutoCloseable
      */
     public static AeronArchive connect(final Context ctx)
     {
-        Subscription subscription = null;
-        ExclusivePublication publication = null;
-        AsyncConnect asyncConnect = null;
+        final AsyncConnect asyncConnect = asyncConnect(ctx);
         try
         {
-            ctx.conclude();
-
-            final Aeron aeron = ctx.aeron();
-            subscription = aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId());
-
-            checkAndSetupResponseChannel(ctx, subscription);
-
-            publication = aeron.addExclusivePublication(ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            final ControlResponsePoller controlResponsePoller = new ControlResponsePoller(subscription);
-
-            final ArchiveProxy archiveProxy = new ArchiveProxy(
-                publication,
-                ctx.idleStrategy(),
-                aeron.context().nanoClock(),
-                ctx.messageTimeoutNs(),
-                DEFAULT_RETRY_ATTEMPTS,
-                ctx.credentialsSupplier());
-
-            asyncConnect = new AsyncConnect(ctx, controlResponsePoller, archiveProxy);
             final IdleStrategy idleStrategy = ctx.idleStrategy();
-            final AgentInvoker aeronClientInvoker = aeron.conductorAgentInvoker();
+            final AgentInvoker aeronClientInvoker = ctx.aeron().conductorAgentInvoker();
             final AgentInvoker delegatingInvoker = ctx.agentInvoker();
-            int previousStep = asyncConnect.step();
+            AsyncConnect.State previousState = asyncConnect.state();
 
             AeronArchive aeronArchive;
             while (null == (aeronArchive = asyncConnect.poll()))
             {
-                if (asyncConnect.step() == previousStep)
+                if (asyncConnect.state() == previousState)
                 {
                     idleStrategy.idle();
                 }
                 else
                 {
                     idleStrategy.reset();
-                    previousStep = asyncConnect.step();
+                    previousState = asyncConnect.state();
                 }
 
                 if (null != aeronClientInvoker)
@@ -286,21 +299,11 @@ public final class AeronArchive implements AutoCloseable
 
             return aeronArchive;
         }
-        catch (final ConcurrentConcludeException ex)
-        {
-            throw ex;
-        }
         catch (final Exception ex)
         {
-            if (!ctx.ownsAeronClient())
-            {
-                CloseHelper.quietClose(subscription);
-                CloseHelper.quietClose(publication);
-            }
-
-            CloseHelper.quietCloseAll(asyncConnect, ctx::close);
-
-            throw ex;
+            final Exception error = quietClose(ex, asyncConnect);
+            LangUtil.rethrowUnchecked(error);
+            return null;
         }
     }
 
@@ -324,21 +327,8 @@ public final class AeronArchive implements AutoCloseable
      */
     public static AsyncConnect asyncConnect(final Context ctx)
     {
-        try
-        {
-            ctx.conclude();
-
-            return new AsyncConnect(ctx);
-        }
-        catch (final ConcurrentConcludeException ex)
-        {
-            throw ex;
-        }
-        catch (final Exception ex)
-        {
-            ctx.close();
-            throw ex;
-        }
+        ctx.conclude();
+        return new AsyncConnect(ctx);
     }
 
     /**
@@ -443,11 +433,12 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
 
             final ControlResponsePoller poller = controlResponsePoller;
             if (!poller.subscription().isConnected())
             {
+                state = State.DISCONNECTED;
                 return NOT_CONNECTED_MSG;
             }
 
@@ -487,11 +478,12 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
 
             final ControlResponsePoller poller = controlResponsePoller;
             if (!poller.subscription().isConnected())
             {
+                state = State.DISCONNECTED;
                 if (null != context.errorHandler())
                 {
                     context.errorHandler().onError(new ArchiveException(NOT_CONNECTED_MSG));
@@ -545,7 +537,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
 
             final ControlResponsePoller poller = controlResponsePoller;
             if (poller.poll() != 0 && poller.isPollComplete())
@@ -601,7 +593,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             publication = aeron.addPublication(channel, streamId);
@@ -641,7 +633,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             publication = aeron.addExclusivePublication(channel, streamId);
@@ -678,7 +670,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -717,7 +709,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -759,7 +751,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -804,7 +796,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -838,7 +830,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -872,7 +864,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -902,7 +894,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -933,7 +925,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -962,7 +954,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1017,7 +1009,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1071,7 +1063,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1118,7 +1110,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
@@ -1159,7 +1151,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1187,7 +1179,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1226,7 +1218,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
@@ -1280,7 +1272,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
@@ -1330,7 +1322,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             final ChannelUri replayChannelUri = ChannelUri.parse(replayChannel);
@@ -1379,7 +1371,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             isInCallback = true;
@@ -1422,7 +1414,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             isInCallback = true;
@@ -1462,7 +1454,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
             isInCallback = true;
 
@@ -1494,7 +1486,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1524,7 +1516,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1554,7 +1546,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1585,7 +1577,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1629,7 +1621,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1661,7 +1653,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1692,7 +1684,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1735,7 +1727,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             isInCallback = true;
@@ -1792,7 +1784,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1854,7 +1846,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1915,7 +1907,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -1981,7 +1973,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2037,7 +2029,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2072,7 +2064,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2103,7 +2095,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2137,7 +2129,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2167,7 +2159,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2204,7 +2196,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2237,7 +2229,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2276,7 +2268,7 @@ public final class AeronArchive implements AutoCloseable
         lock.lock();
         try
         {
-            ensureOpen();
+            ensureConnected();
             ensureNotReentrant();
 
             lastCorrelationId = aeron.nextCorrelationId();
@@ -2333,18 +2325,25 @@ public final class AeronArchive implements AutoCloseable
                 continue;
             }
 
-            if (!poller.subscription().isConnected())
-            {
-                throw new ArchiveException(
-                    "response channel from archive is not connected, " +
-                    "channel=" + poller.subscription().channel() +
-                    ", streamId=" + poller.subscription().streamId() +
-                    ", imageCount=" + poller.subscription().imageCount());
-            }
+            final Subscription subscription = poller.subscription();
+            checkForDisconnect(subscription);
 
             checkDeadline(deadlineNs, "awaiting response", correlationId);
             idleStrategy.idle();
             invokeInvokers();
+        }
+    }
+
+    private void checkForDisconnect(final Subscription subscription)
+    {
+        if (!subscription.isConnected())
+        {
+            state = State.DISCONNECTED;
+            throw new ArchiveException(
+                "response channel from archive is not connected, " +
+                "channel=" + subscription.channel() +
+                ", streamId=" + subscription.streamId() +
+                ", imageCount=" + subscription.imageCount());
         }
     }
 
@@ -2475,14 +2474,7 @@ public final class AeronArchive implements AutoCloseable
                 continue;
             }
 
-            if (!poller.subscription().isConnected())
-            {
-                throw new ArchiveException(
-                    "response channel from archive is not connected, " +
-                    "channel=" + poller.subscription().channel() +
-                    ", streamId=" + poller.subscription().streamId() +
-                    ", imageCount=" + poller.subscription().imageCount());
-            }
+            checkForDisconnect(poller.subscription());
 
             checkDeadline(deadlineNs, "awaiting recording descriptors", correlationId);
             idleStrategy.idle();
@@ -2521,14 +2513,7 @@ public final class AeronArchive implements AutoCloseable
                 continue;
             }
 
-            if (!poller.subscription().isConnected())
-            {
-                throw new ArchiveException(
-                    "response channel from archive is not connected, " +
-                    "channel=" + poller.subscription().channel() +
-                    ", streamId=" + poller.subscription().streamId() +
-                    ", imageCount=" + poller.subscription().imageCount());
-            }
+            checkForDisconnect(poller.subscription());
 
             checkDeadline(deadlineNs, "awaiting subscription descriptors", correlationId);
             idleStrategy.idle();
@@ -2559,10 +2544,11 @@ public final class AeronArchive implements AutoCloseable
         }
     }
 
-    private void ensureOpen()
+    private void ensureConnected()
     {
-        if (isClosed)
+        if (State.CONNECTED != state)
         {
+            close();
             throw new ArchiveException("client is closed");
         }
     }
@@ -3636,28 +3622,48 @@ public final class AeronArchive implements AutoCloseable
         static final int PROTOCOL_VERSION_WITH_ARCHIVE_ID = SemanticVersion.compose(1, 11, 0);
         private final Context ctx;
         private final ControlResponsePoller controlResponsePoller;
-        private ArchiveProxy archiveProxy;
         private final long deadlineNs;
         private long publicationRegistrationId = Aeron.NULL_VALUE;
         private long correlationId = Aeron.NULL_VALUE;
         private long controlSessionId = Aeron.NULL_VALUE;
         private byte[] encodedCredentialsFromChallenge = null;
         private State state = State.ADD_PUBLICATION;
+        private ArchiveProxy archiveProxy;
+        private AeronArchive aeronArchive;
 
         AsyncConnect(final Context ctx)
         {
-            this.ctx = ctx;
+            try
+            {
+                this.ctx = ctx;
 
-            final Aeron aeron = ctx.aeron();
+                final Aeron aeron = ctx.aeron();
 
-            controlResponsePoller = new ControlResponsePoller(
-                aeron.addSubscription(ctx.controlResponseChannel(), ctx.controlResponseStreamId()));
+                controlResponsePoller = new ControlResponsePoller(
+                    aeron.addSubscription(
+                        ctx.controlResponseChannel(),
+                        ctx.controlResponseStreamId(),
+                        null,
+                        (image) ->
+                        {
+                            final AeronArchive client = aeronArchive;
+                            if (null != client)
+                            {
+                                client.state = AeronArchive.State.DISCONNECTED;
+                            }
+                        }));
 
-            checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
+                checkAndSetupResponseChannel(ctx, controlResponsePoller.subscription());
 
-            publicationRegistrationId = aeron.asyncAddExclusivePublication(
-                ctx.controlRequestChannel(), ctx.controlRequestStreamId());
-            deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+                publicationRegistrationId = aeron.asyncAddExclusivePublication(
+                    ctx.controlRequestChannel(), ctx.controlRequestStreamId());
+                deadlineNs = aeron.context().nanoClock().nanoTime() + ctx.messageTimeoutNs();
+            }
+            catch (final Exception ex)
+            {
+                close();
+                throw ex;
+            }
         }
 
         AsyncConnect(
@@ -3678,12 +3684,14 @@ public final class AeronArchive implements AutoCloseable
         {
             if (State.DONE != state)
             {
-                final ErrorHandler errorHandler = ctx.errorHandler();
-                CloseHelper.close(errorHandler, controlResponsePoller.subscription());
+                if (null != controlResponsePoller)
+                {
+                    CloseHelper.close(ctx.errorHandler(), controlResponsePoller.subscription());
+                }
 
                 if (null != archiveProxy)
                 {
-                    CloseHelper.close(errorHandler, archiveProxy.publication());
+                    CloseHelper.close(ctx.errorHandler(), archiveProxy.publication());
                 }
                 else if (Aeron.NULL_VALUE != publicationRegistrationId)
                 {
@@ -3733,7 +3741,6 @@ public final class AeronArchive implements AutoCloseable
         public AeronArchive poll()
         {
             checkDeadline();
-            AeronArchive aeronArchive = null;
 
             if (State.ADD_PUBLICATION == state)
             {

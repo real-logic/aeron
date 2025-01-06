@@ -283,6 +283,12 @@ public class ClusterToolOperator
         try (Aeron aeron = Aeron.connect(new Aeron.Context().aeronDirectoryName(properties.aeronDirectoryName));
             AeronArchive archive = AeronArchive.connect(archiveCtx.aeron(aeron)))
         {
+            if (null == archive)
+            {
+                out.println("unable to connect to Archive");
+                return FAILURE;
+            }
+
             final int subscriptionSessionId = (int)archive.startReplay(
                 entry.recordingId, 0, AeronArchive.NULL_LENGTH, toolChannel, toolStreamId);
 

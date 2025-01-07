@@ -108,7 +108,7 @@ public class DriverComponentLogger implements ComponentLogger
             enabledEventCodes,
             SPECIAL_EVENTS,
             DriverEventCode::get,
-            DriverEventCode::valueOf);
+            DriverEventCode::get);
     }
 
     private static AgentBuilder addDriverConductorInstrumentation(final AgentBuilder agentBuilder)
@@ -238,14 +238,14 @@ public class DriverComponentLogger implements ComponentLogger
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
-            SEND_NAK_MESSAGE,
+            NAK_SENT,
             "ReceiveChannelEndpoint",
             ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.NakSent.class,
             "sendNakMessage");
 
         tempBuilder = addEventInstrumentation(
             tempBuilder,
-            SEND_NAK_MESSAGE,
+            NAK_RECEIVED,
             "SendChannelEndpoint",
             ChannelEndpointInterceptor.SendChannelEndpointInterceptor.NakReceived.class,
             "onNakMessage");

@@ -389,7 +389,7 @@ class DriverEventLoggerTest
     }
 
     @ParameterizedTest
-    @EnumSource(value = DriverEventCode.class, names = { "SEND_NAK_MESSAGE", "NAK_RECEIVED" })
+    @EnumSource(value = DriverEventCode.class, names = { "NAK_SENT", "NAK_RECEIVED" })
     void logNakMessage(final DriverEventCode eventCode)
     {
         final InetSocketAddress inetSocketAddress = new InetSocketAddress("192.168.1.1", 10001);

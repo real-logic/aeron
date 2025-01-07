@@ -205,7 +205,7 @@ public enum DriverEventCode implements EventCode
     /**
      * Nak sent.
      */
-    SEND_NAK_MESSAGE(54, DriverEventDissector::dissectNak),
+    NAK_SENT(54, DriverEventDissector::dissectNak),
 
     /**
      * Resend data upon Nak.
@@ -282,6 +282,18 @@ public enum DriverEventCode implements EventCode
         }
 
         return code;
+    }
+
+    static DriverEventCode get(final String name)
+    {
+        if ("SEND_NAK_MESSAGE".equals(name))
+        {
+            return NAK_SENT;
+        }
+        else
+        {
+            return DriverEventCode.valueOf(name);
+        }
     }
 
     /**

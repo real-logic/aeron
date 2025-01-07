@@ -137,7 +137,7 @@ class ChannelEndpointInterceptor
                     if (null != connection)
                     {
                         LOGGER.logNakMessage(
-                            SEND_NAK_MESSAGE,
+                            NAK_SENT,
                             connection.controlAddress,
                             sessionId,
                             streamId,

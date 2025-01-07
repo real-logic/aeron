@@ -201,11 +201,12 @@ public enum DriverEventCode implements EventCode
      */
     NAME_RESOLUTION_HOST_NAME(53,
         (code, buffer, offset, builder) -> DriverEventDissector.dissectHostName(buffer, offset, builder)),
+
     /**
-     * Nak received.
+     * Nak sent.
      */
-    SEND_NAK_MESSAGE(54,
-        (code, buffer, offset, builder) -> DriverEventDissector.dissectSendNak(buffer, offset, builder)),
+    SEND_NAK_MESSAGE(54, DriverEventDissector::dissectNak),
+
     /**
      * Resend data upon Nak.
      */
@@ -220,7 +221,12 @@ public enum DriverEventCode implements EventCode
     /**
      * Reject image command received by the driver.
      */
-    CMD_IN_REJECT_IMAGE(57, DriverEventDissector::dissectCommand);
+    CMD_IN_REJECT_IMAGE(57, DriverEventDissector::dissectCommand),
+
+    /**
+     * Nak received.
+     */
+    NAK_RECEIVED(58, DriverEventDissector::dissectNak);
 
     static final int EVENT_CODE_TYPE = EventCodeType.DRIVER.getTypeCode();
 

@@ -411,10 +411,14 @@ final class DriverEventDissector
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
-    public static void dissectSendNak(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    static void dissectNak(
+        final DriverEventCode eventCode,
+        final MutableDirectBuffer buffer,
+        final int offset,
+        final StringBuilder builder)
     {
         int absoluteOffset = offset;
-        absoluteOffset += dissectLogHeader(CONTEXT, SEND_NAK_MESSAGE, buffer, absoluteOffset, builder);
+        absoluteOffset += dissectLogHeader(CONTEXT, eventCode, buffer, absoluteOffset, builder);
         builder.append(": address=");
         final int encodedSocketLength = dissectSocketAddress(buffer, absoluteOffset, builder);
         absoluteOffset += encodedSocketLength;
@@ -432,7 +436,7 @@ final class DriverEventDissector
         buffer.getStringAscii(absoluteOffset, builder);
     }
 
-    public static void dissectResend(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
+    static void dissectResend(final MutableDirectBuffer buffer, final int offset, final StringBuilder builder)
     {
         int absoluteOffset = offset;
         absoluteOffset += dissectLogHeader(CONTEXT, RESEND, buffer, absoluteOffset, builder);

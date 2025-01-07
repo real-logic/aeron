@@ -240,8 +240,15 @@ public class DriverComponentLogger implements ComponentLogger
             tempBuilder,
             SEND_NAK_MESSAGE,
             "ReceiveChannelEndpoint",
-            ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.SendNakMessage.class,
+            ChannelEndpointInterceptor.ReceiveChannelEndpointInterceptor.NakSent.class,
             "sendNakMessage");
+
+        tempBuilder = addEventInstrumentation(
+            tempBuilder,
+            SEND_NAK_MESSAGE,
+            "SendChannelEndpoint",
+            ChannelEndpointInterceptor.SendChannelEndpointInterceptor.NakReceived.class,
+            "onNakMessage");
 
         return tempBuilder;
     }

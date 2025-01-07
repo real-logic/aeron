@@ -18,6 +18,7 @@ package io.aeron.agent;
 import io.aeron.driver.media.ImageConnection;
 import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.SendChannelEndpoint;
+import io.aeron.protocol.NakFlyweight;
 import net.bytebuddy.asm.Advice;
 import org.agrona.concurrent.UnsafeBuffer;
 
@@ -112,7 +113,7 @@ class ChannelEndpointInterceptor
 
     static class ReceiveChannelEndpointInterceptor
     {
-        static class SendNakMessage
+        static class NakSent
         {
             @Advice.OnMethodEnter
             static void sendNakMessage(
@@ -135,10 +136,48 @@ class ChannelEndpointInterceptor
                 {
                     if (null != connection)
                     {
-                        LOGGER.logSendNakMessage(
-                            connection.controlAddress, sessionId, streamId, termId, termOffset, length, channel);
+                        LOGGER.logNakMessage(
+                            SEND_NAK_MESSAGE,
+                            connection.controlAddress,
+                            sessionId,
+                            streamId,
+                            termId,
+                            termOffset,
+                            length,
+                            channel);
                     }
                 }
+            }
+        }
+    }
+
+    static class SendChannelEndpointInterceptor
+    {
+        static class NakReceived
+        {
+            @Advice.OnMethodEnter
+            static void onNakMessage(
+                final NakFlyweight msg,
+                final UnsafeBuffer buffer,
+                final int length,
+                final InetSocketAddress srcAddress,
+                @Advice.This final Object thisObject)
+            {
+                if (null == thisObject)
+                {
+                    return;
+                }
+
+                final String channel = ((SendChannelEndpoint)thisObject).originalUriString();
+                LOGGER.logNakMessage(
+                    NAK_RECEIVED,
+                    srcAddress,
+                    msg.sessionId(),
+                    msg.streamId(),
+                    msg.termId(),
+                    msg.termOffset(),
+                    length,
+                    channel);
             }
         }
     }

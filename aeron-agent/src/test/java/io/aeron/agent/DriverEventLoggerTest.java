@@ -388,8 +388,9 @@ class DriverEventLoggerTest
         assertEquals(expectedHostName, logBuffer.getStringAscii(index, LITTLE_ENDIAN));
     }
 
-    @Test
-    void logSendNakMessage()
+    @ParameterizedTest
+    @EnumSource(value = DriverEventCode.class, names = { "SEND_NAK_MESSAGE", "NAK_RECEIVED" })
+    void logNakMessage(final DriverEventCode eventCode)
     {
         final InetSocketAddress inetSocketAddress = new InetSocketAddress("192.168.1.1", 10001);
 
@@ -404,15 +405,15 @@ class DriverEventLoggerTest
         final int captureLength = socketAddressLength(inetSocketAddress) + (6 * SIZE_OF_INT) + channel.length();
 
         logBuffer.putLong(CAPACITY + TAIL_POSITION_OFFSET, recordOffset);
-        logger.logSendNakMessage(inetSocketAddress, sessionId, streamId, termId, termOffset, length, channel);
+        logger.logNakMessage(eventCode, inetSocketAddress, sessionId, streamId, termId, termOffset, length, channel);
         verifyLogHeader(
-            logBuffer, recordOffset, toEventCodeId(SEND_NAK_MESSAGE), captureLength, captureLength);
+            logBuffer, recordOffset, toEventCodeId(eventCode), captureLength, captureLength);
 
         final StringBuilder sb = new StringBuilder();
-        DriverEventDissector.dissectSendNak(logBuffer, encodedMsgOffset(recordOffset), sb);
+        DriverEventDissector.dissectNak(eventCode, logBuffer, encodedMsgOffset(recordOffset), sb);
 
         final String expectedMessagePattern =
-            "\\[[0-9]+\\.[0-9]+] DRIVER: SEND_NAK_MESSAGE \\[124/124]: address=192.168.1.1:10001 " +
+            "\\[[0-9]+\\.[0-9]+] DRIVER: " + eventCode + " \\[124/124]: address=192.168.1.1:10001 " +
             "sessionId=9821374 streamId=988234 termId=89324 termOffset=9862314 length=1239 channel=" +
             "aeron:udp\\?endpoint=localhost:10000\\|term-length=1m\\|init-term-id=0\\|term-id=0\\|term-offset=0";
 

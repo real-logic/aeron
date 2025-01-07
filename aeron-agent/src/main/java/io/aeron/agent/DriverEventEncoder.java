@@ -311,12 +311,12 @@ final class DriverEventEncoder
             encodingBuffer, offset + encodedLength, SIZE_OF_INT + MAX_HOST_NAME_LENGTH, hostName);
     }
 
-    static void encodeSendNakMessage(
+    static void encodeNakMessage(
         final UnsafeBuffer encodingBuffer,
         final int offset,
         final int length,
         final int captureLength,
-        final InetSocketAddress controlAddress,
+        final InetSocketAddress address,
         final int sessionId,
         final int streamId,
         final int termId,
@@ -326,7 +326,7 @@ final class DriverEventEncoder
         final int headerLength = encodeLogHeader(encodingBuffer, offset, captureLength, length);
         final int bodyOffset = offset + headerLength;
         int bodyLength = 0;
-        final int socketEncodedLength = encodeSocketAddress(encodingBuffer, bodyOffset + bodyLength, controlAddress);
+        final int socketEncodedLength = encodeSocketAddress(encodingBuffer, bodyOffset + bodyLength, address);
         bodyLength += socketEncodedLength;
 
         encodingBuffer.putInt(bodyOffset + bodyLength, sessionId, LITTLE_ENDIAN);

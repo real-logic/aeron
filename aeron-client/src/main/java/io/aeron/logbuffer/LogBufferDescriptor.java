@@ -143,22 +143,22 @@ public class LogBufferDescriptor
     /**
      * Offset within the log metadata where the sparse property is stored.
      */
-    public static final int LOG_IS_SPARSE_OFFSET;
+    public static final int LOG_SPARSE_OFFSET;
 
     /**
      * Offset within the log metadata where the tether property is stored.
      */
-    public static final int LOG_IS_TETHER_OFFSET;
+    public static final int LOG_TETHER_OFFSET;
 
     /**
      * Offset within the log metadata where the rejoin property is stored.
      */
-    public static final int LOG_IS_REJOIN_OFFSET;
+    public static final int LOG_REJOIN_OFFSET;
 
     /**
      * Offset within the log metadata where the reliable property is stored.
      */
-    public static final int LOG_IS_RELIABLE_OFFSET;
+    public static final int LOG_RELIABLE_OFFSET;
 
     /**
      * Offset within the log metadata where the socket receive buffer length is stored.
@@ -306,17 +306,17 @@ public class LogBufferDescriptor
      *  +---------------------------------------------------------------+
      *  |                          Is response                          |
      *  +---------------------------------------------------------------+
-     *  |                          Is Rejoin                            |
+     *  |                            Rejoin                             |
      *  +---------------------------------------------------------------+
-     *  |                         Is Reliable                           |
+     *  |                           Reliable                            |
      *  +---------------------------------------------------------------+
-     *  |                          Is Sparse                            |
+     *  |                            Sparse                             |
      *  +---------------------------------------------------------------+
      *  |                         Signal EOS                            |
      *  +---------------------------------------------------------------+
      *  |                 Spies Simulate Connection                     |
      *  +---------------------------------------------------------------+
-     *  |                          Is Tether                            |
+     *  |                          Tether                               |
      *  +---------------------------------------------------------------+
      *  |                      Cache Line Padding                      ...
      * ...                                                              |
@@ -376,13 +376,13 @@ public class LogBufferDescriptor
         LOG_IS_RESPONSE_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
-        LOG_IS_REJOIN_OFFSET = offset;
+        LOG_REJOIN_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
-        LOG_IS_RELIABLE_OFFSET = offset;
+        LOG_RELIABLE_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
-        LOG_IS_SPARSE_OFFSET = offset;
+        LOG_SPARSE_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
         LOG_SIGNAL_EOS_OFFSET = offset;
@@ -391,7 +391,7 @@ public class LogBufferDescriptor
         LOG_SPIES_SIMULATE_CONNECTION_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
-        LOG_IS_TETHER_OFFSET = offset;
+        LOG_TETHER_OFFSET = offset;
         offset += SIZE_OF_BYTE;
 
         LOG_META_DATA_LENGTH = align(offset, PAGE_MIN_SIZE);
@@ -1056,16 +1056,15 @@ public class LogBufferDescriptor
         return HEADER_LENGTH + (numMaxPayloads * maxPayloadSize) + remainingPayload;
     }
 
-
     /**
      * Get whether the log is sparse from the metadata.
      *
      * @param metadataBuffer containing the meta data.
      * @return true if the log is sparse, otherwise false.
      */
-    public static boolean isSparse(final UnsafeBuffer metadataBuffer)
+    public static boolean sparse(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getByte(LOG_IS_SPARSE_OFFSET) == 1;
+        return metadataBuffer.getByte(LOG_SPARSE_OFFSET) == 1;
     }
 
     /**
@@ -1074,9 +1073,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @param value          true if the log is sparse, otherwise false.
      */
-    public static void isSparse(final UnsafeBuffer metadataBuffer, final boolean value)
+    public static void sparse(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_SPARSE_OFFSET, (byte)(value ? 1 : 0));
+        metadataBuffer.putByte(LOG_SPARSE_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1085,9 +1084,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @return true if the log is tethered, otherwise false.
      */
-    public static boolean isTether(final UnsafeBuffer metadataBuffer)
+    public static boolean tether(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getByte(LOG_IS_TETHER_OFFSET) == 1;
+        return metadataBuffer.getByte(LOG_TETHER_OFFSET) == 1;
     }
 
     /**
@@ -1096,9 +1095,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @param value          true if the log is tethered, otherwise false.
      */
-    public static void isTether(final UnsafeBuffer metadataBuffer, final boolean value)
+    public static void tether(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_TETHER_OFFSET, (byte)(value ? 1 : 0));
+        metadataBuffer.putByte(LOG_TETHER_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1107,9 +1106,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @return true if the log is rejoining, otherwise false.
      */
-    public static boolean isRejoin(final UnsafeBuffer metadataBuffer)
+    public static boolean rejoin(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getByte(LOG_IS_REJOIN_OFFSET) == 1;
+        return metadataBuffer.getByte(LOG_REJOIN_OFFSET) == 1;
     }
 
     /**
@@ -1118,9 +1117,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @param value          true if the log is rejoining, otherwise false.
      */
-    public static void isRejoin(final UnsafeBuffer metadataBuffer, final boolean value)
+    public static void rejoin(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_REJOIN_OFFSET, (byte)(value ? 1 : 0));
+        metadataBuffer.putByte(LOG_REJOIN_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**
@@ -1129,9 +1128,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @return true if the log is reliable, otherwise false.
      */
-    public static boolean isReliable(final UnsafeBuffer metadataBuffer)
+    public static boolean reliable(final UnsafeBuffer metadataBuffer)
     {
-        return metadataBuffer.getByte(LOG_IS_RELIABLE_OFFSET) == 1;
+        return metadataBuffer.getByte(LOG_RELIABLE_OFFSET) == 1;
     }
 
     /**
@@ -1140,9 +1139,9 @@ public class LogBufferDescriptor
      * @param metadataBuffer containing the meta data.
      * @param value          true if the log is reliable, otherwise false.
      */
-    public static void isReliable(final UnsafeBuffer metadataBuffer, final boolean value)
+    public static void reliable(final UnsafeBuffer metadataBuffer, final boolean value)
     {
-        metadataBuffer.putByte(LOG_IS_RELIABLE_OFFSET, (byte)(value ? 1 : 0));
+        metadataBuffer.putByte(LOG_RELIABLE_OFFSET, (byte)(value ? 1 : 0));
     }
 
     /**

@@ -151,7 +151,7 @@ _Static_assert(
     "offsetof(aeron_logbuffer_metadata_t, tether) is wrong");
 
 _Static_assert(
-    sizeof(aeron_logbuffer_metadata_t) == 512,
+    sizeof(aeron_logbuffer_metadata_t) == 480,
     "sizeof(aeron_logbuffer_metadata_t) is wrong");
 
 _Static_assert(

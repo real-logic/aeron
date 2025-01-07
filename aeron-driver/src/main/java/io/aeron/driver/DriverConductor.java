@@ -1728,8 +1728,7 @@ public final class DriverConductor implements Agent
             params.initialTermId,
             params.termLength);
 
-        // todo:
-        final int termOffset = 0;
+        final int termOffset = params.termOffset;
         final RawLog rawLog = newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
             udpChannel.socketRcvbufLength(), udpChannel.socketSndbufLength(), termOffset, params);
         UnsafeBufferPosition publisherPos = null;
@@ -1935,10 +1934,10 @@ public final class DriverConductor implements Agent
         maxResend(logMetaData, maxResend);
         spiesSimulateConnection(logMetaData, spiesSimulateConnection);
 
-        isTether(logMetaData, tether);
-        isRejoin(logMetaData, rejoin);
-        isReliable(logMetaData, reliable);
-        isSparse(logMetaData, sparse);
+        tether(logMetaData, tether);
+        rejoin(logMetaData, rejoin);
+        reliable(logMetaData, reliable);
+        sparse(logMetaData, sparse);
         signalEos(logMetaData, signalEos);
 
         untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
@@ -2408,8 +2407,7 @@ public final class DriverConductor implements Agent
         final boolean isExclusive,
         final PublicationParams params)
     {
-        // todo:
-        final int termOffset = 0;
+        final int termOffset = params.termOffset;
 
         final RawLog rawLog =
             newIpcPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId, termOffset, params);

@@ -1606,4 +1606,18 @@ TEST_F(DriverAgentTest, shouldDissect)
     EXPECT_NE(nullptr, m_context->log.resend);
 }
 
+TEST_F(DriverAgentTest, shouldEnableNakSentUsingOldName)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("SEND_NAK_MESSAGE", ""));
 
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_SENT));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_RECEIVED));
+}
+
+TEST_F(DriverAgentTest, shouldEnableNakSentUsingNewName)
+{
+    EXPECT_TRUE(aeron_driver_agent_logging_events_init("NAK_SENT", ""));
+
+    EXPECT_TRUE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_SENT));
+    EXPECT_FALSE(aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_RECEIVED));
+}

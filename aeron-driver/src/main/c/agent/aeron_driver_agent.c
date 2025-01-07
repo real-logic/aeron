@@ -128,7 +128,7 @@ static aeron_driver_agent_log_event_t log_events[] =
         { "GENERIC_MESSAGE",                      AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_LOOKUP",               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "NAME_RESOLUTION_HOST_NAME",            AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
-        { "SEND_NAK_MESSAGE",                     AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
+        { "NAK_SENT",                             AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "RESEND",                               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "CMD_IN_REMOVE_DESTINATION_BY_ID",      AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
         { "CMD_IN_REJECT_IMAGE",                  AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
@@ -310,18 +310,25 @@ static bool any_event_enabled(const uint8_t type)
 
 static aeron_driver_agent_event_t parse_event_name(const char *event_name)
 {
-    aeron_driver_agent_event_t event_id = aeron_driver_agent_event_name_to_id(event_name);
-    if (AERON_DRIVER_EVENT_UNKNOWN_EVENT == event_id)
+    if (0 == strncmp("SEND_NAK_MESSAGE", event_name, strlen("SEND_NAK_MESSAGE") + 1))
     {
-        const long id = strtol(event_name, NULL, 0);
-        if (is_valid_event_id((int)id) &&
-            !aeron_driver_agent_is_unknown_event(aeron_driver_agent_event_name((aeron_driver_agent_event_t)id)))
-        {
-            event_id = (aeron_driver_agent_event_t)id;
-        }
+        return AERON_DRIVER_EVENT_NAK_SENT;
     }
 
-    return event_id;
+    aeron_driver_agent_event_t event_id = aeron_driver_agent_event_name_to_id(event_name);
+    if (AERON_DRIVER_EVENT_UNKNOWN_EVENT != event_id)
+    {
+        return event_id;
+    }
+
+    const long id = strtol(event_name, NULL, 0);
+    if (is_valid_event_id((int)id) &&
+        !aeron_driver_agent_is_unknown_event(aeron_driver_agent_event_name((aeron_driver_agent_event_t)id)))
+    {
+        return (aeron_driver_agent_event_t)id;
+    }
+
+    return AERON_DRIVER_EVENT_UNKNOWN_EVENT;
 }
 
 static bool aeron_driver_agent_events_set_enabled(char const **events, const int num_events, const bool is_enabled)
@@ -983,7 +990,7 @@ void aeron_driver_agent_send_nak_message(
     const char *channel)
 {
     aeron_driver_agent_log_nak_message(
-        AERON_DRIVER_EVENT_SEND_NAK_MESSAGE,
+        AERON_DRIVER_EVENT_NAK_SENT,
         address,
         session_id,
         stream_id,
@@ -1395,7 +1402,7 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
         context->log.on_host_name = aeron_driver_agent_name_resolver_on_host_name;
     }
 
-    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_NAK_MESSAGE))
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_SENT))
     {
         context->log.send_nak_message = aeron_driver_agent_send_nak_message;
     }
@@ -2221,7 +2228,7 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
             break;
         }
 
-        case AERON_DRIVER_EVENT_SEND_NAK_MESSAGE:
+        case AERON_DRIVER_EVENT_NAK_SENT:
         case AERON_DRIVER_EVENT_NAK_RECEIVED:
         {
             aeron_driver_agent_nak_message_header_t *hdr = (aeron_driver_agent_nak_message_header_t *)message;

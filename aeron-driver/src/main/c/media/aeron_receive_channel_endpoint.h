@@ -68,7 +68,7 @@ typedef struct aeron_receive_channel_endpoint_stct
     aeron_udp_channel_transport_bindings_t *transport_bindings;
     aeron_clock_cache_t *cached_clock;
 
-    aeron_driver_send_nak_message_func_t send_nak_message;
+    aeron_driver_nak_message_func_t send_nak_message;
 
     int64_t receiver_id;
     volatile bool has_receiver_released;

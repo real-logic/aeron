@@ -81,7 +81,7 @@ typedef void (*aeron_driver_flow_control_strategy_on_receiver_change_func_t)(
     const char *channel,
     size_t receiver_count);
 
-typedef void (*aeron_driver_send_nak_message_func_t)(
+typedef void (*aeron_driver_nak_message_func_t)(
     const struct sockaddr_storage *address,
     int32_t session_id,
     int32_t stream_id,
@@ -284,7 +284,8 @@ typedef struct aeron_driver_context_stct
         aeron_driver_name_resolver_on_resolve_t on_name_resolve;
         aeron_driver_name_resolver_on_lookup_t on_name_lookup;
         aeron_driver_name_resolver_on_host_name_t on_host_name;
-        aeron_driver_send_nak_message_func_t send_nak_message;
+        aeron_driver_nak_message_func_t send_nak_message;
+        aeron_driver_nak_message_func_t on_nak_message;
         aeron_driver_resend_func_t resend;
     } log;
 

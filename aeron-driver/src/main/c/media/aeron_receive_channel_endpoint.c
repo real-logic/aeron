@@ -336,7 +336,7 @@ int aeron_receive_channel_endpoint_send_nak(
         }
     }
 
-    aeron_driver_send_nak_message_func_t send_nak_message = endpoint->send_nak_message;
+    aeron_driver_nak_message_func_t send_nak_message = endpoint->send_nak_message;
     if (NULL != send_nak_message)
     {
         send_nak_message(

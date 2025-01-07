@@ -132,6 +132,7 @@ static aeron_driver_agent_log_event_t log_events[] =
         { "RESEND",                               AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "CMD_IN_REMOVE_DESTINATION_BY_ID",      AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
         { "CMD_IN_REJECT_IMAGE",                  AERON_DRIVER_AGENT_EVENT_TYPE_CMD_IN,  false },
+        { "NAK_RECEIVED",                         AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "ADD_DYNAMIC_DISSECTOR",                AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
         { "DYNAMIC_DISSECTOR_EVENT",              AERON_DRIVER_AGENT_EVENT_TYPE_OTHER,   false },
     };
@@ -610,6 +611,45 @@ static aeron_driver_agent_event_t command_id_to_driver_event_id(const int32_t ms
     }
 }
 
+static void aeron_driver_agent_log_nak_message(
+    const aeron_driver_agent_event_t log_event,
+    const struct sockaddr_storage *address,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const int32_t term_id,
+    const int32_t term_offset,
+    const int32_t nak_length,
+    const size_t channel_length,
+    const char *channel)
+{
+    int32_t offset = aeron_mpsc_rb_try_claim(
+        &logging_mpsc_rb,
+        log_event,
+        sizeof(aeron_driver_agent_nak_message_header_t) +
+            channel_length);
+
+    if (offset > 0)
+    {
+        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
+        aeron_driver_agent_nak_message_header_t *hdr =
+            (aeron_driver_agent_nak_message_header_t *)ptr;
+
+        hdr->time_ns = aeron_nano_clock();
+        memcpy(&hdr->address, address, sizeof(hdr->address));
+        hdr->session_id = session_id;
+        hdr->stream_id = stream_id;
+        hdr->term_id = term_id;
+        hdr->term_offset = term_offset;
+        hdr->nak_length = nak_length;
+        hdr->channel_length = (int32_t)channel_length;
+
+        ptr += sizeof(aeron_driver_agent_nak_message_header_t);
+        memcpy(ptr, channel, channel_length);
+
+        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
+    }
+}
+
 void aeron_driver_agent_conductor_to_driver_interceptor(
     int32_t msg_type_id, const void *message, size_t length, void *clientd)
 {
@@ -942,32 +982,38 @@ void aeron_driver_agent_send_nak_message(
     const size_t channel_length,
     const char *channel)
 {
-    int32_t offset = aeron_mpsc_rb_try_claim(
-        &logging_mpsc_rb,
+    aeron_driver_agent_log_nak_message(
         AERON_DRIVER_EVENT_SEND_NAK_MESSAGE,
-        sizeof(aeron_driver_agent_send_nak_message_header_t) +
-            channel_length);
+        address,
+        session_id,
+        stream_id,
+        term_id,
+        term_offset,
+        nak_length,
+        channel_length,
+        channel);
+}
 
-    if (offset > 0)
-    {
-        uint8_t *ptr = (logging_mpsc_rb.buffer + offset);
-        aeron_driver_agent_send_nak_message_header_t *hdr =
-            (aeron_driver_agent_send_nak_message_header_t *)ptr;
-
-        hdr->time_ns = aeron_nano_clock();
-        memcpy(&hdr->address, address, sizeof(hdr->address));
-        hdr->session_id = session_id;
-        hdr->stream_id = stream_id;
-        hdr->term_id = term_id;
-        hdr->term_offset = term_offset;
-        hdr->nak_length = nak_length;
-        hdr->channel_length = (int32_t)channel_length;
-
-        ptr += sizeof(aeron_driver_agent_send_nak_message_header_t);
-        memcpy(ptr, channel, channel_length);
-
-        aeron_mpsc_rb_commit(&logging_mpsc_rb, offset);
-    }
+void aeron_driver_agent_on_nak_message(
+    const struct sockaddr_storage *address,
+    const int32_t session_id,
+    const int32_t stream_id,
+    const int32_t term_id,
+    const int32_t term_offset,
+    const int32_t nak_length,
+    const size_t channel_length,
+    const char *channel)
+{
+    aeron_driver_agent_log_nak_message(
+        AERON_DRIVER_EVENT_NAK_RECEIVED,
+        address,
+        session_id,
+        stream_id,
+        term_id,
+        term_offset,
+        nak_length,
+        channel_length,
+        channel);
 }
 
 void aeron_driver_agent_resend(
@@ -1352,6 +1398,11 @@ int aeron_driver_agent_init_logging_events_interceptors(aeron_driver_context_t *
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_SEND_NAK_MESSAGE))
     {
         context->log.send_nak_message = aeron_driver_agent_send_nak_message;
+    }
+
+    if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_NAK_RECEIVED))
+    {
+        context->log.on_nak_message = aeron_driver_agent_on_nak_message;
     }
 
     if (aeron_driver_agent_is_event_enabled(AERON_DRIVER_EVENT_RESEND))
@@ -2171,11 +2222,12 @@ void aeron_driver_agent_log_dissector(int32_t msg_type_id, const void *message, 
         }
 
         case AERON_DRIVER_EVENT_SEND_NAK_MESSAGE:
+        case AERON_DRIVER_EVENT_NAK_RECEIVED:
         {
-            aeron_driver_agent_send_nak_message_header_t *hdr = (aeron_driver_agent_send_nak_message_header_t *)message;
+            aeron_driver_agent_nak_message_header_t *hdr = (aeron_driver_agent_nak_message_header_t *)message;
             char address_buf[AERON_NETUTIL_FORMATTED_MAX_LENGTH];
             const int address_length = aeron_format_source_identity(address_buf, sizeof(address_buf), &hdr->address);
-            const char *channel = (const char *)message + sizeof(aeron_driver_agent_send_nak_message_header_t);
+            const char *channel = (const char *)message + sizeof(aeron_driver_agent_nak_message_header_t);
 
             fprintf(
                 logfp,

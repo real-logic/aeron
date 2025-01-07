@@ -1084,6 +1084,7 @@ int aeron_driver_context_init(aeron_driver_context_t **context)
     _context->log.on_name_resolve = NULL;
 
     _context->log.send_nak_message = NULL;
+    _context->log.on_nak_message = NULL;
     _context->log.resend = NULL;
 
     if ((_context->termination_validator_func = aeron_driver_termination_validator_load(

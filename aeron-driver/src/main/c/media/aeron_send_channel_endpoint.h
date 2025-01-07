@@ -65,6 +65,9 @@ typedef struct aeron_send_channel_endpoint_stct
     aeron_port_manager_t *port_manager;
     aeron_clock_cache_t *cached_clock;
     int64_t time_of_last_sm_ns;
+
+    aeron_driver_nak_message_func_t on_nak_message;
+
     uint8_t padding[AERON_CACHE_LINE_LENGTH];
 }
 aeron_send_channel_endpoint_t;

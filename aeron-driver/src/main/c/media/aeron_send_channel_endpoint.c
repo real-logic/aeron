@@ -166,6 +166,8 @@ int aeron_send_channel_endpoint_create(
         return -1;
     }
 
+    _endpoint->on_nak_message = context->log.on_nak_message;
+
     if (NULL != _endpoint->destination_tracker)
     {
         _endpoint->tracker_num_destinations.counter_id = aeron_channel_endpoint_status_allocate(
@@ -476,6 +478,20 @@ int aeron_send_channel_endpoint_on_nak(
         }
 
         return result;
+    }
+
+    aeron_driver_nak_message_func_t on_nak_message = endpoint->on_nak_message;
+    if (NULL != on_nak_message)
+    {
+        on_nak_message(
+            addr,
+            nak_header->session_id,
+            nak_header->stream_id,
+            nak_header->term_id,
+            nak_header->term_offset,
+            nak_header->length,
+            endpoint->conductor_fields.udp_channel->uri_length,
+            endpoint->conductor_fields.udp_channel->original_uri);
     }
 
     // we got a NAK for a publication that doesn't exist...

@@ -440,7 +440,7 @@ public final class ConsensusModule implements AutoCloseable
         public static final String CLUSTER_MEMBERS_PROP_NAME = "aeron.cluster.members";
 
         /**
-         * Property name for the comma separated list of cluster consensus endpoints used for dynamic join, cluster
+         * Property name for the comma separated list of cluster consensus endpoints used for cluster
          * backup and cluster standby nodes.
          */
         @Config
@@ -451,22 +451,6 @@ public final class ConsensusModule implements AutoCloseable
          */
         @Config
         public static final String CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT = "";
-
-        /**
-         * Property name for whether cluster member information in snapshots should be ignored on load or not.
-         * @deprecated Was used by the dynamic join.
-         */
-        @Config
-        @Deprecated(forRemoval = true, since = "1.47.0")
-        public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME = "aeron.cluster.members.ignore.snapshot";
-
-        /**
-         * Default property for whether cluster member information in snapshots should be ignored or not.
-         * @deprecated Was used by the dynamic join.
-         */
-        @Config
-        @Deprecated(forRemoval = true, since = "1.47.0")
-        public static final String CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT = "false";
 
         /**
          * Channel for the clustered log.
@@ -750,20 +734,6 @@ public final class ConsensusModule implements AutoCloseable
         public static final long ELECTION_STATUS_INTERVAL_DEFAULT_NS = TimeUnit.MILLISECONDS.toNanos(100);
 
         /**
-         * Interval at which a dynamic joining member will send add cluster member and snapshot recording
-         * queries.
-         */
-        @Config(hasContext = false)
-        public static final String DYNAMIC_JOIN_INTERVAL_PROP_NAME = "aeron.cluster.dynamic.join.interval";
-
-        /**
-         * Default interval at which a dynamic joining member will send add cluster member and snapshot recording
-         * queries.
-         */
-        @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
-        public static final long DYNAMIC_JOIN_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
-
-        /**
          * Name of the system property for specifying a supplier of {@link Authenticator} for the cluster.
          */
         @Config(defaultType = DefaultType.STRING, defaultString = "io.aeron.security.DefaultAuthenticatorSupplier")
@@ -1033,21 +1003,6 @@ public final class ConsensusModule implements AutoCloseable
         public static String clusterConsensusEndpoints()
         {
             return System.getProperty(CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME, CLUSTER_CONSENSUS_ENDPOINTS_DEFAULT);
-        }
-
-        /**
-         * The value {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME} if set.
-         *
-         * @return {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT} or system property
-         * {@link #CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME} it set.
-         * @deprecated Was used by the dynamic join.
-         */
-        @Deprecated(forRemoval = true, since = "1.47.0")
-        public static boolean clusterMembersIgnoreSnapshot()
-        {
-            return "true".equalsIgnoreCase(System.getProperty(
-                CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME, CLUSTER_MEMBERS_IGNORE_SNAPSHOT_DEFAULT));
         }
 
         /**
@@ -1517,7 +1472,6 @@ public final class ConsensusModule implements AutoCloseable
         private int clusterMemberId = Configuration.clusterMemberId();
         private int appointedLeaderId = Configuration.appointedLeaderId();
         private String clusterMembers = Configuration.clusterMembers();
-        private String clusterConsensusEndpoints = Configuration.clusterConsensusEndpoints();
         private String ingressChannel = AeronCluster.Configuration.ingressChannel();
         private int ingressStreamId = AeronCluster.Configuration.ingressStreamId();
         private boolean isIpcIngressAllowed = Configuration.isIpcIngressAllowed();
@@ -2412,67 +2366,6 @@ public final class ConsensusModule implements AutoCloseable
         public String clusterMembers()
         {
             return clusterMembers;
-        }
-
-        /**
-         * String representing the cluster members consensus endpoints used to request to join the cluster.
-         * <p>
-         * {@code "endpoint,endpoint,endpoint"}
-         *
-         * @param endpoints which are to be contacted for joining the cluster.
-         * @return this for a fluent API.
-         * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
-         * @deprecated the dynamic join feature that uses this configuration in order to join the cluster is now
-         * deprecated and will be removed in a later release.
-         */
-        @Deprecated
-        public Context clusterConsensusEndpoints(final String endpoints)
-        {
-            this.clusterConsensusEndpoints = endpoints;
-            return this;
-        }
-
-        /**
-         * The endpoints representing cluster members of the cluster to attempt to contact to join the cluster.
-         *
-         * @return members of the cluster to attempt to request to join from.
-         * @see Configuration#CLUSTER_CONSENSUS_ENDPOINTS_PROP_NAME
-         * @deprecated the dynamic join feature that uses this configuration in order to join the cluster is now
-         * deprecated and will be removed in a later release.
-         */
-        @Deprecated
-        @Config
-        public String clusterConsensusEndpoints()
-        {
-            return clusterConsensusEndpoints;
-        }
-
-        /**
-         * Whether the cluster members in the snapshot should be ignored or not.
-         *
-         * @param ignore or not the cluster members in the snapshot.
-         * @return this for a fluent API.
-         * @see Configuration#CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME
-         * @deprecated Was used by the dynamic join.
-         */
-        @Deprecated(forRemoval = true, since = "1.47.0")
-        public Context clusterMembersIgnoreSnapshot(final boolean ignore)
-        {
-            return this;
-        }
-
-        /**
-         * Whether the cluster members in the snapshot should be ignored or not.
-         *
-         * @return ignore or not the cluster members in the snapshot.
-         * @see Configuration#CLUSTER_MEMBERS_IGNORE_SNAPSHOT_PROP_NAME
-         * @deprecated Was used by the dynamic join.
-         */
-        @Config
-        @Deprecated(forRemoval = true, since = "1.47.0")
-        public boolean clusterMembersIgnoreSnapshot()
-        {
-            return false;
         }
 
         /**
@@ -4493,7 +4386,6 @@ public final class ConsensusModule implements AutoCloseable
                 "\n    clusterMemberId=" + clusterMemberId +
                 "\n    appointedLeaderId=" + appointedLeaderId +
                 "\n    clusterMembers='" + clusterMembers + '\'' +
-                "\n    clusterConsensusEndpoints='" + clusterConsensusEndpoints + '\'' +
                 "\n    ingressChannel='" + ingressChannel + '\'' +
                 "\n    ingressStreamId=" + ingressStreamId +
                 "\n    ingressFragmentLimit=" + ingressFragmentLimit +

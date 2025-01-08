@@ -98,6 +98,15 @@ public class CommonContext implements Cloneable
     }
 
     /**
+     * Should a component print its configuration on start to {@link System#out}.
+     */
+    @Config(
+        expectedCEnvVarFieldName = "AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR",
+        defaultType = DefaultType.BOOLEAN,
+        defaultBoolean = false)
+    public static final String PRINT_CONFIGURATION_ON_START_PROP_NAME = "aeron.print.configuration";
+
+    /**
      * Property name for driver timeout after which the driver is considered inactive.
      */
     @Config
@@ -450,6 +459,17 @@ public class CommonContext implements Cloneable
      */
     public static final String SECURE_RANDOM_ALGORITHM_DEFAULT =
         SystemUtil.isWindows() ? "Windows-PRNG" : "NativePRNGNonBlocking";
+
+    /**
+     * Should a component's configuration be printed on start.
+     *
+     * @return {@code true} if the configuration should be printed on start.
+     * @see #PRINT_CONFIGURATION_ON_START_PROP_NAME
+     */
+    public static boolean shouldPrintConfigurationOnStart()
+    {
+        return "true".equals(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME));
+    }
 
     /**
      * Get the configured value for the secure random algorithm, falling back to the default if not supplied.

@@ -2045,7 +2045,7 @@ public final class ConsensusModule implements AutoCloseable
 
             concludeMarkFile();
 
-            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            if (CommonContext.shouldPrintConfigurationOnStart())
             {
                 System.out.println(this);
             }

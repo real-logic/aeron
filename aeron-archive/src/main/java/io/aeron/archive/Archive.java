@@ -1577,7 +1577,7 @@ public final class Archive implements AutoCloseable
                 markFile.force();
             }
 
-            if (io.aeron.driver.Configuration.printConfigurationOnStart())
+            if (CommonContext.shouldPrintConfigurationOnStart())
             {
                 System.out.println(this);
             }

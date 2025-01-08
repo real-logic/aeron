@@ -445,7 +445,7 @@ public final class MediaDriver implements AutoCloseable
         }
 
         private volatile boolean isClosed;
-        private boolean printConfigurationOnStart = Configuration.printConfigurationOnStart();
+        private boolean printConfigurationOnStart = CommonContext.shouldPrintConfigurationOnStart();
         private boolean useWindowsHighResTimer = Configuration.useWindowsHighResTimer();
         private boolean warnIfDirectoryExists = Configuration.warnIfDirExists();
         private boolean dirDeleteOnStart = Configuration.dirDeleteOnStart();
@@ -775,7 +775,7 @@ public final class MediaDriver implements AutoCloseable
          * Should the driver print its configuration on start to {@link System#out} at the end of {@link #conclude()}.
          *
          * @return true if the configuration should be printed on start.
-         * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
+         * @see CommonContext#PRINT_CONFIGURATION_ON_START_PROP_NAME
          */
         @Config
         public boolean printConfigurationOnStart()
@@ -788,7 +788,7 @@ public final class MediaDriver implements AutoCloseable
          *
          * @param printConfigurationOnStart if the configuration should be printed on start.
          * @return this for a fluent API.
-         * @see Configuration#PRINT_CONFIGURATION_ON_START_PROP_NAME
+         * @see CommonContext#PRINT_CONFIGURATION_ON_START_PROP_NAME
          */
         public Context printConfigurationOnStart(final boolean printConfigurationOnStart)
         {

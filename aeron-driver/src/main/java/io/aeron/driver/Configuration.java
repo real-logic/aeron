@@ -59,15 +59,6 @@ import static org.agrona.SystemUtil.*;
 public final class Configuration
 {
     /**
-     * Should the driver print its configuration on start to {@link System#out}.
-     */
-    @Config(
-        expectedCEnvVarFieldName = "AERON_PRINT_CONFIGURATION_ON_START_ENV_VAR",
-        defaultType = DefaultType.BOOLEAN,
-        defaultBoolean = false)
-    public static final String PRINT_CONFIGURATION_ON_START_PROP_NAME = "aeron.print.configuration";
-
-    /**
      * Warn if the Aeron directory exists.
      */
     @Config(defaultType = DefaultType.BOOLEAN, defaultBoolean = false)
@@ -1093,17 +1084,6 @@ public final class Configuration
      * {@link Executor} that run tasks on the caller thread.
      */
     public static final Executor CALLER_RUNS_TASK_EXECUTOR = Runnable::run;
-
-    /**
-     * Should the driver configuration be printed on start.
-     *
-     * @return true if the driver configuration be printed on start.
-     * @see #PRINT_CONFIGURATION_ON_START_PROP_NAME
-     */
-    public static boolean printConfigurationOnStart()
-    {
-        return "true".equals(getProperty(PRINT_CONFIGURATION_ON_START_PROP_NAME));
-    }
 
     /**
      * Should the high-resolution timer be used when running on Windows.

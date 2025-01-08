@@ -178,7 +178,7 @@ public final class ClusterMarkFile implements AutoCloseable
 
         final ClusterComponentType existingType = headerDecoder.componentType();
 
-        if (existingType != ClusterComponentType.NONE && existingType != type)
+        if (existingType != ClusterComponentType.UNKNOWN && existingType != type)
         {
             if (existingType != ClusterComponentType.BACKUP || ClusterComponentType.CONSENSUS_MODULE != type)
             {

@@ -23,7 +23,7 @@
         </composite>
         <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
         <enum name="ClusterComponentType" encodingType="int32" description="Type of Cluster Component">
-            <validValue name="NULL">0</validValue>
+            <validValue name="NONE">0</validValue>
             <validValue name="CONSENSUS_MODULE">1</validValue>
             <validValue name="CONTAINER">2</validValue>
             <validValue name="BACKUP">3</validValue>

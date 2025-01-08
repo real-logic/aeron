@@ -8,7 +8,7 @@ gradle = "8.11.1"
 [libraries]
 agrona = { group = "org.agrona", name = "agrona", version.ref = "agrona" }
 sbe = { group = "uk.co.real-logic", name = "sbe-tool", version = "1.34.0" }
-mockito = { group = "org.mockito", name = "mockito-core", version = "5.14.2" }
+mockito = { group = "org.mockito", name = "mockito-core", version = "5.15.2" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version = "3.0" }
 findbugs = { group = "com.google.code.findbugs", name = "findbugs-annotations", version = "3.0.1" }
 byteBuddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteBuddy" }

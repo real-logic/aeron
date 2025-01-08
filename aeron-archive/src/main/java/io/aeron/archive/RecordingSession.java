@@ -274,7 +274,10 @@ class RecordingSession implements Session
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, recordingId,
+        logStateChange(
+            state,
+            newState,
+            recordingId,
             null != image ? image.position() : NULL_POSITION,
             null == reason ? "" : reason);
         state = newState;

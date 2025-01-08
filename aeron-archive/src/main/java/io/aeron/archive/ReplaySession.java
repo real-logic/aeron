@@ -588,8 +588,7 @@ class ReplaySession implements Session, AutoCloseable
 
     private void state(final State newState, final String reason)
     {
-        logStateChange(state, newState, sessionId, recordingId, replayPosition,
-            null == reason ? "" : reason);
+        logStateChange(state, newState, sessionId, recordingId, replayPosition, null == reason ? "" : reason);
         state = newState;
     }
 

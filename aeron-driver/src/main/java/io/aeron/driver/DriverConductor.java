@@ -309,8 +309,8 @@ public final class DriverConductor implements Agent
                     termBufferLength,
                     isOldestSubscriptionSparse(subscriberPositions),
                     senderMtuLength,
-                    subscriptionChannel.socketRcvbufLength(),
-                    subscriptionChannel.socketSndbufLength(),
+                    channelEndpoint.socketRcvbufLength(),
+                    channelEndpoint.socketSndbufLength(),
                     termOffset,
                     subscriptionParams,
                     registrationId);
@@ -1729,8 +1729,9 @@ public final class DriverConductor implements Agent
             params.termLength);
 
         final int termOffset = params.termOffset;
+
         final RawLog rawLog = newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
-            udpChannel.socketRcvbufLength(), udpChannel.socketSndbufLength(), termOffset, params);
+            channelEndpoint.socketRcvbufLength(), channelEndpoint.socketSndbufLength(), termOffset, params);
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;

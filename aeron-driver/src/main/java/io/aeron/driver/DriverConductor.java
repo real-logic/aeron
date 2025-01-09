@@ -1916,30 +1916,35 @@ public final class DriverConductor implements Agent
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
 
-        defaultDataHeader.sessionId(sessionId)
+        defaultDataHeader
+            .sessionId(sessionId)
             .streamId(streamId)
             .termId(initialTermId)
             .termOffset(termOffset);
         storeDefaultFrameHeader(logMetaData, defaultDataHeader);
 
+        correlationId(logMetaData, registrationId);
         initialTermId(logMetaData, initialTermId);
         mtuLength(logMetaData, mtuLength);
         termLength(logMetaData, rawLog.termLength());
         pageSize(logMetaData, ctx.filePageSize());
-        correlationId(logMetaData, registrationId);
 
-        socketRcvbufLength(logMetaData, socketRcvBufLength);
-        socketSndbufLength(logMetaData, socketSndbufLength);
-        receiverWindowLength(logMetaData, receiverWindowLength);
         publicationWindowLength(logMetaData, publicationWindowLength);
+        receiverWindowLength(logMetaData, receiverWindowLength);
+        socketSndbufLength(logMetaData, socketSndbufLength);
+        osDefaultSocketSndbufLength(logMetaData, ctx.osDefaultSocketSndbufLength());
+        osMaxSocketSndbufLength(logMetaData, ctx.osMaxSocketSndbufLength());
+        socketRcvbufLength(logMetaData, socketRcvBufLength);
+        osDefaultSocketRcvbufLength(logMetaData, ctx.osDefaultSocketRcvbufLength());
+        osMaxSocketRcvbufLength(logMetaData, ctx.osMaxSocketRcvbufLength());
         maxResend(logMetaData, maxResend);
-        spiesSimulateConnection(logMetaData, spiesSimulateConnection);
 
-        tether(logMetaData, tether);
         rejoin(logMetaData, rejoin);
         reliable(logMetaData, reliable);
         sparse(logMetaData, sparse);
         signalEos(logMetaData, signalEos);
+        spiesSimulateConnection(logMetaData, spiesSimulateConnection);
+        tether(logMetaData, tether);
 
         untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
         untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);

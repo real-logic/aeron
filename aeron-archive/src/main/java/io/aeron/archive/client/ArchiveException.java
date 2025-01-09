@@ -110,7 +110,7 @@ public class ArchiveException extends AeronException
     private final long correlationId;
 
     /**
-     * Default ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR} and
+     * Default ArchiveException exception as {@link Category#ERROR} and
      * {@link #errorCode()} = {@link #GENERIC}.
      */
     public ArchiveException()
@@ -121,7 +121,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR} and
+     * ArchiveException exception as {@link Category#ERROR} and
      * {@link #errorCode()} = {@link #GENERIC}, plus detail.
      *
      * @param message providing detail.
@@ -134,7 +134,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail and
+     * ArchiveException exception as {@link Category#ERROR}, plus detail and
      * error code.
      *
      * @param message   providing detail.
@@ -148,7 +148,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, cause,
+     * ArchiveException exception as {@link Category#ERROR}, plus detail, cause,
      * and error code.
      *
      * @param message   providing detail.
@@ -163,7 +163,7 @@ public class ArchiveException extends AeronException
     }
 
     /**
-     * ArchiveException exception as {@link io.aeron.exceptions.AeronException.Category#ERROR}, plus detail, error code,
+     * ArchiveException exception as {@link Category#ERROR}, plus detail, error code,
      * and correlation if of the control request.
      *
      * @param message       providing detail.
@@ -179,7 +179,7 @@ public class ArchiveException extends AeronException
 
     /**
      * ArchiveException exception {@link #errorCode()} = {@link #GENERIC}, plus detail and
-     * {@link io.aeron.exceptions.AeronException.Category}.
+     * {@link Category}.
      *
      * @param message  providing detail.
      * @param category for type.
@@ -193,7 +193,7 @@ public class ArchiveException extends AeronException
 
     /**
      * ArchiveException exception {@link #errorCode()} = {@link #GENERIC}, plus detail, correlation id of control
-     * request, and {@link io.aeron.exceptions.AeronException.Category}.
+     * request, and {@link Category}.
      *
      * @param message       providing detail.
      * @param correlationId of the control request.
@@ -208,7 +208,7 @@ public class ArchiveException extends AeronException
 
     /**
      * ArchiveException exception, plus detail, error code, correlation id of control request,
-     * and {@link io.aeron.exceptions.AeronException.Category}.
+     * and {@link Category}.
      *
      * @param message       providing detail.
      * @param errorCode     for type.
@@ -242,5 +242,34 @@ public class ArchiveException extends AeronException
     public long correlationId()
     {
         return correlationId;
+    }
+
+    /**
+     * Return String representation for given error code.
+     *
+     * @param errorCode to convert.
+     * @return error code string.
+     */
+    public static String errorCodeAsString(final int errorCode)
+    {
+        return switch (errorCode)
+        {
+            case GENERIC -> "GENERIC";
+            case ACTIVE_LISTING -> "ACTIVE_LISTING";
+            case ACTIVE_RECORDING -> "ACTIVE_RECORDING";
+            case ACTIVE_SUBSCRIPTION -> "ACTIVE_SUBSCRIPTION";
+            case UNKNOWN_SUBSCRIPTION -> "UNKNOWN_SUBSCRIPTION";
+            case UNKNOWN_RECORDING -> "UNKNOWN_RECORDING";
+            case UNKNOWN_REPLAY -> "UNKNOWN_REPLAY";
+            case MAX_REPLAYS -> "MAX_REPLAYS";
+            case MAX_RECORDINGS -> "MAX_RECORDINGS";
+            case INVALID_EXTENSION -> "INVALID_EXTENSION";
+            case AUTHENTICATION_REJECTED -> "AUTHENTICATION_REJECTED";
+            case STORAGE_SPACE -> "STORAGE_SPACE";
+            case UNKNOWN_REPLICATION -> "UNKNOWN_REPLICATION";
+            case UNAUTHORISED_ACTION -> "UNAUTHORISED_ACTION";
+            case REPLICATION_CONNECTION_FAILURE -> "REPLICATION_CONNECTION_FAILURE";
+            default -> "unknown error code: " + errorCode;
+        };
     }
 }

@@ -29,6 +29,7 @@
 #define AERON_LOGBUFFER_TERM_MAX_LENGTH (1024 * 1024 * 1024)
 #define AERON_PAGE_MIN_SIZE (4 * 1024)
 #define AERON_PAGE_MAX_SIZE (1024 * 1024 * 1024)
+#define AERON_LOGBUFFER_PADDING_SIZE (64u)
 #define AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH (AERON_CACHE_LINE_LENGTH * 2)
 
 #define AERON_MAX_UDP_PAYLOAD_LENGTH (65504)
@@ -40,12 +41,12 @@ typedef struct aeron_logbuffer_metadata_stct
     volatile int64_t term_tail_counters[AERON_LOGBUFFER_PARTITION_COUNT];
     volatile int32_t active_term_count;
 
-    uint8_t pad1[(2 * AERON_CACHE_LINE_LENGTH) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
+    uint8_t pad1[(2 * AERON_LOGBUFFER_PADDING_SIZE) - ((AERON_LOGBUFFER_PARTITION_COUNT * sizeof(int64_t)) + sizeof(int32_t))];
     volatile int64_t end_of_stream_position;
     volatile int32_t is_connected;
     volatile int32_t active_transport_count;
 
-    uint8_t pad2[(2 * AERON_CACHE_LINE_LENGTH) - (sizeof(int64_t) + (2 * sizeof(int32_t)))];
+    uint8_t pad2[(2 * AERON_LOGBUFFER_PADDING_SIZE) - (sizeof(int64_t) + (2 * sizeof(int32_t)))];
     int64_t correlation_id;
     int32_t initial_term_id;
     int32_t default_frame_header_length;
@@ -55,11 +56,15 @@ typedef struct aeron_logbuffer_metadata_stct
     int32_t publication_window_length;
     int32_t receiver_window_length;
     int32_t socket_sndbuf_length;
+    int32_t os_default_socket_sndbuf_length;
+    int32_t os_max_socket_sndbuf_length;
     int32_t socket_rcvbuf_length;
+    int32_t os_default_socket_rcvbuf_length;
+    int32_t os_max_socket_rcvbuf_length;
     int32_t max_resend;
+    uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
     int64_t entity_tag;
     int64_t response_correlation_id;
-    uint8_t default_header[AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH];
     int64_t linger_timeout_ns;
     int64_t untethered_window_limit_timeout_ns;
     int64_t untethered_resting_timeout_ns;
@@ -75,8 +80,7 @@ typedef struct aeron_logbuffer_metadata_stct
 aeron_logbuffer_metadata_t;
 #pragma pack(pop)
 
-#define AERON_LOGBUFFER_META_DATA_LENGTH \
-    (AERON_ALIGN(sizeof(aeron_logbuffer_metadata_t), AERON_PAGE_MIN_SIZE))
+#define AERON_LOGBUFFER_META_DATA_LENGTH (AERON_PAGE_MIN_SIZE)
 
 #define AERON_LOGBUFFER_FRAME_ALIGNMENT (32)
 

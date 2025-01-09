@@ -79,24 +79,28 @@ _Static_assert(
     "offsetof(aeron_logbuffer_metadata_t, socket_sndbuf_length) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) == 296,
+    offsetof(aeron_logbuffer_metadata_t, os_default_socket_sndbuf_length) == 296,
+    "offsetof(aeron_logbuffer_metadata_t, os_default_socket_sndbuf_length) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, os_max_socket_sndbuf_length) == 300,
+    "offsetof(aeron_logbuffer_metadata_t, os_max_socket_sndbuf_length) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) == 304,
     "offsetof(aeron_logbuffer_metadata_t, socket_rcvbuf_length) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, max_resend) == 300,
+    offsetof(aeron_logbuffer_metadata_t, os_default_socket_rcvbuf_length) == 308,
+    "offsetof(aeron_logbuffer_metadata_t, os_default_socket_rcvbuf_length) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, os_max_socket_rcvbuf_length) == 312,
+    "offsetof(aeron_logbuffer_metadata_t, os_max_socket_rcvbuf_length) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, max_resend) == 316,
     "offsetof(aeron_logbuffer_metadata_t, max_resend) is wrong");
-
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, entity_tag) == 304,
-    "offsetof(aeron_logbuffer_metadata_t, entity_tag) is wrong");
-
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, entity_tag) % sizeof(int64_t) == 0,
-    "offsetof(aeron_logbuffer_metadata_t, entity_tag) not aligned");
-
-_Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, response_correlation_id) == 312,
-    "offsetof(aeron_logbuffer_metadata_t, response_correlation_id) is wrong");
 
 _Static_assert(
     offsetof(aeron_logbuffer_metadata_t, default_header) == 320,
@@ -107,51 +111,63 @@ _Static_assert(
     "AERON_LOGBUFFER_DEFAULT_FRAME_HEADER_MAX_LENGTH < AERON_DATA_HEADER_LENGTH");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 448,
+    offsetof(aeron_logbuffer_metadata_t, entity_tag) == 448,
+    "offsetof(aeron_logbuffer_metadata_t, entity_tag) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, entity_tag) % sizeof(int64_t) == 0,
+    "offsetof(aeron_logbuffer_metadata_t, entity_tag) not aligned");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, response_correlation_id) == 456,
+    "offsetof(aeron_logbuffer_metadata_t, response_correlation_id) is wrong");
+
+_Static_assert(
+    offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) == 464,
     "offsetof(aeron_logbuffer_metadata_t, linger_timeout_ns) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 456,
+    offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) == 472,
     "offsetof(aeron_logbuffer_metadata_t, untethered_window_limit_timeout_ns) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 464,
+    offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) == 480,
     "offsetof(aeron_logbuffer_metadata_t, untethered_resting_timeout_ns) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, group) == 472,
+    offsetof(aeron_logbuffer_metadata_t, group) == 488,
     "offsetof(aeron_logbuffer_metadata_t, group) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, is_response) == 473,
+    offsetof(aeron_logbuffer_metadata_t, is_response) == 489,
     "offsetof(aeron_logbuffer_metadata_t, is_response) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, rejoin) == 474,
+    offsetof(aeron_logbuffer_metadata_t, rejoin) == 490,
     "offsetof(aeron_logbuffer_metadata_t, rejoin) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, reliable) == 475,
+    offsetof(aeron_logbuffer_metadata_t, reliable) == 491,
     "offsetof(aeron_logbuffer_metadata_t, reliable) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, sparse) == 476,
+    offsetof(aeron_logbuffer_metadata_t, sparse) == 492,
     "offsetof(aeron_logbuffer_metadata_t, sparse) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, signal_eos) == 477,
+    offsetof(aeron_logbuffer_metadata_t, signal_eos) == 493,
     "offsetof(aeron_logbuffer_metadata_t, signal_eos) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) == 478,
+    offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) == 494,
     "offsetof(aeron_logbuffer_metadata_t, spies_simulate_connection) is wrong");
 
 _Static_assert(
-    offsetof(aeron_logbuffer_metadata_t, tether) == 479,
+    offsetof(aeron_logbuffer_metadata_t, tether) == 495,
     "offsetof(aeron_logbuffer_metadata_t, tether) is wrong");
 
 _Static_assert(
-    sizeof(aeron_logbuffer_metadata_t) == 480,
+    sizeof(aeron_logbuffer_metadata_t) == 496,
     "sizeof(aeron_logbuffer_metadata_t) is wrong");
 
 _Static_assert(

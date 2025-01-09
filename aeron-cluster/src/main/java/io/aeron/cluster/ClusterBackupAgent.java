@@ -849,10 +849,22 @@ public final class ClusterBackupAgent implements Agent
             }
             else if (NULL_VALUE == liveLogReplaySessionId)
             {
-                if (pollForResponse(clusterArchive, correlationId))
+                final ControlResponsePoller poller = clusterArchive.controlResponsePoller();
+                if (0 != poller.poll() && poller.isPollComplete() &&
+                    poller.controlSessionId() == clusterArchive.controlSessionId() &&
+                    poller.correlationId() == correlationId)
                 {
-                    liveLogReplaySessionId = clusterArchive.controlResponsePoller().relevantId();
-                    timeOfLastProgressMs = nowMs;
+                    switch (poller.code())
+                    {
+                        case OK ->
+                        {
+                            liveLogReplaySessionId = poller.relevantId();
+                            timeOfLastProgressMs = nowMs;
+                            workCount++;
+                        }
+                        case ERROR -> throwReplayFailedException(poller);
+                        default -> throw new ClusterException("Live log replay failed: " + poller.code());
+                    }
                 }
             }
             else if (NULL_COUNTER_ID == liveLogRecordingCounterId)
@@ -868,6 +880,17 @@ public final class ClusterBackupAgent implements Agent
                     timeOfLastBackupQueryMs = nowMs;
                     timeOfLastProgressMs = nowMs;
                     state(UPDATE_RECORDING_LOG, nowMs);
+                    workCount++;
+                }
+                else
+                {
+                    final ControlResponsePoller poller = clusterArchive.controlResponsePoller();
+                    if (0 != poller.poll() && poller.isPollComplete() &&
+                        poller.controlSessionId() == clusterArchive.controlSessionId() &&
+                        ControlResponseCode.ERROR == poller.code())
+                    {
+                        throwReplayFailedException(poller);
+                    }
                 }
             }
         }
@@ -878,6 +901,13 @@ public final class ClusterBackupAgent implements Agent
         }
 
         return workCount;
+    }
+
+    private void throwReplayFailedException(final ControlResponsePoller poller)
+    {
+        throw new ClusterException("Live log replay failed (replaySessionId=" + liveLogReplaySessionId + "):" +
+            " errorMessage=" + poller.errorMessage() + ", errorCode=" +
+            ArchiveException.errorCodeAsString((int)poller.relevantId()));
     }
 
     private int updateRecordingLog(final long nowMs)
@@ -1014,27 +1044,6 @@ public final class ClusterBackupAgent implements Agent
         final ClusterBackup.State oldState, final ClusterBackup.State newState, final long nowMs)
     {
         //System.out.println("ClusterBackup: " + oldState + " -> " + newState + " nowMs=" + nowMs);
-    }
-
-    private static boolean pollForResponse(final AeronArchive archive, final long correlationId)
-    {
-        final ControlResponsePoller poller = archive.controlResponsePoller();
-
-        if (poller.poll() > 0 && poller.isPollComplete())
-        {
-            if (poller.controlSessionId() == archive.controlSessionId())
-            {
-                final ControlResponseCode code = poller.code();
-                if (ControlResponseCode.ERROR == code)
-                {
-                    throw new ArchiveException(poller.errorMessage(), (int)poller.relevantId(), poller.correlationId());
-                }
-
-                return ControlResponseCode.OK == code && poller.correlationId() == correlationId;
-            }
-        }
-
-        return false;
     }
 
     private int pollBackupArchiveEvents()

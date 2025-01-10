@@ -536,7 +536,7 @@ int aeron_archive_async_connect_delete(aeron_archive_async_connect_t *async)
         async->subscription = NULL;
     }
 
-    if (NULL != async->exclusive_publication)
+    if (NULL != async->exclusive_publication && NULL == async->archive_proxy)
     {
         aeron_exclusive_publication_close(async->exclusive_publication, NULL, NULL);
         async->exclusive_publication = NULL;

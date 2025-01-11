@@ -439,6 +439,8 @@ public final class Archive implements AutoCloseable
 
         /**
          * Time interval in nanoseconds for checking session liveness checks.
+         *
+         * @since 1.47.0
          */
         @Config
         public static final String SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME =
@@ -448,6 +450,7 @@ public final class Archive implements AutoCloseable
          * Default time interval in nanoseconds for checking session liveness.
          *
          * @see #SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
+         * @since 1.47.0
          */
         @Config(defaultType = DefaultType.LONG, defaultLong = 1000L * 1000 * 1000)
         public static final long SESSION_LIVENESS_CHECK_INTERVAL_DEFAULT_NS = TimeUnit.SECONDS.toNanos(1);
@@ -2080,6 +2083,7 @@ public final class Archive implements AutoCloseable
          * @param sessionLivenessCheckIntervalNs of a liveness check.
          * @return this for a fluent API.
          * @see Configuration#SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
+         * @since 1.47.0
          */
         public Context sessionLivenessCheckIntervalNs(final long sessionLivenessCheckIntervalNs)
         {
@@ -2092,6 +2096,7 @@ public final class Archive implements AutoCloseable
          *
          * @return the time internal in nanoseconds at which session liveness checks are performed.
          * @see Configuration#SESSION_LIVENESS_CHECK_INTERVAL_PROP_NAME
+         * @since 1.47.0
          */
         @Config
         public long sessionLivenessCheckIntervalNs()

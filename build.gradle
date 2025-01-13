@@ -316,7 +316,7 @@ subprojects {
         options.charSet = 'UTF-8'
         options.links("https://www.javadoc.io/doc/org.agrona/agrona/${libs.versions.agrona.get()}/")
 
-        if (buildJavaVersion >= 23) { // early access JavaDoc location is different
+        if (buildJavaVersion > 23) { // early access JavaDoc location is different
             options.links("https://download.java.net/java/early_access/jdk${buildJavaVersion}/docs/api/")
         }
         else {

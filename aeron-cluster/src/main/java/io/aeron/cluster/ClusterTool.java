@@ -597,12 +597,12 @@ public class ClusterTool
         return BACKWARD_COMPATIBLE_OPERATIONS.loadControlProperties(clusterDir);
     }
 
-    ///////////////////////////////////////////////////////
+    /*--------------------------------------------------------------*/
 
     /**
      * Cluster Tool commands map.
      * This is to allow other tools to simply extend ClusterTool
-     *
+     * <p>
      * Note that the map is cloned and both key and value are Java immutable objects.
      *
      * @return a clone of Cluster Tool commands map

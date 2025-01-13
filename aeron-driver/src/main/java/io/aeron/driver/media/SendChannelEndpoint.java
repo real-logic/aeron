@@ -353,7 +353,7 @@ public class SendChannelEndpoint extends UdpChannelTransport
             {
                 timeOfLastResolutionNs = nowNs;
                 final String endpoint = udpChannel.channelUri().get(CommonContext.ENDPOINT_PARAM_NAME);
-                conductorProxy.reResolveEndpoint(endpoint, this, this.connectAddress);
+                conductorProxy.reResolveEndpoint(endpoint, this, connectAddress);
             }
         }
     }

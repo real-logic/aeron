@@ -191,6 +191,60 @@ class NameReResolutionTest
 
     @SlowTest
     @Test
+    @InterruptAfter(30)
+    void shouldReResolveEndpointOnNotConnectedWhenNamePointsBackAtTheOriginalAddress()
+    {
+        final long initialResolutionChanges = countersReader.getCounterValue(RESOLUTION_CHANGES.id());
+
+        buffer.putInt(0, 1);
+
+        subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
+        publication = client.addPublication(PUBLICATION_URI, STREAM_ID);
+
+        Tests.awaitConnected(publication);
+        Tests.awaitConnected(subscription);
+
+        while (publication.offer(buffer, 0, BitUtil.SIZE_OF_INT) < 0L)
+        {
+            Tests.yieldingIdle("No message offer to first subscription");
+        }
+
+        while (subscription.poll(handler, 1) <= 0)
+        {
+            Tests.yieldingIdle("No message received on first subscription");
+        }
+
+        subscription.close();
+
+        // wait for disconnect to ensure we stay in lock step
+        while (publication.isConnected())
+        {
+            Tests.sleep(10);
+        }
+
+        subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
+
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST));
+        Tests.awaitConnected(subscription);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 1);
+
+        subscription.close();
+
+        // wait for disconnect to ensure we stay in lock step
+        while (publication.isConnected())
+        {
+            Tests.sleep(10);
+        }
+
+        subscription = client.addSubscription(FIRST_SUBSCRIPTION_URI, STREAM_ID);
+
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_INITIAL_RESOLUTION_HOST));
+        Tests.awaitConnected(subscription);
+        Tests.awaitCounterDelta(countersReader, RESOLUTION_CHANGES.id(), initialResolutionChanges, 2);
+    }
+
+    @SlowTest
+    @Test
     @InterruptAfter(20)
     void shouldReResolveMdcManualEndpointOnNotConnected()
     {

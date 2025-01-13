@@ -155,21 +155,21 @@ public final class RecordingPos
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
+            final int counterState = countersReader.getCounterState(counterId);
             if (RECORD_ALLOCATED == counterState)
             {
-                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+                if (countersReader.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
                 {
-                    final int keyOffset = metaDataOffset(i) + KEY_OFFSET;
+                    final int keyOffset = metaDataOffset(counterId) + KEY_OFFSET;
                     if (buffer.getLong(keyOffset + RECORDING_ID_OFFSET) == recordingId)
                     {
                         final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
                         final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
                         if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
                         {
-                            return i;
+                            return counterId;
                         }
                     }
                 }
@@ -211,21 +211,21 @@ public final class RecordingPos
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
+            final int counterState = countersReader.getCounterState(counterId);
             if (RECORD_ALLOCATED == counterState)
             {
-                if (countersReader.getCounterTypeId(i) == RECORDING_POSITION_TYPE_ID)
+                if (countersReader.getCounterTypeId(counterId) == RECORDING_POSITION_TYPE_ID)
                 {
-                    final int keyOffset = metaDataOffset(i) + KEY_OFFSET;
+                    final int keyOffset = metaDataOffset(counterId) + KEY_OFFSET;
                     if (buffer.getInt(keyOffset + SESSION_ID_OFFSET) == sessionId)
                     {
                         final int sourceIdentityLength = buffer.getInt(keyOffset + SOURCE_IDENTITY_LENGTH_OFFSET);
                         final int archiveIdOffset = keyOffset + SOURCE_IDENTITY_OFFSET + sourceIdentityLength;
                         if (Aeron.NULL_VALUE == archiveId || buffer.getLong(archiveIdOffset) == archiveId)
                         {
-                            return i;
+                            return counterId;
                         }
                     }
                 }

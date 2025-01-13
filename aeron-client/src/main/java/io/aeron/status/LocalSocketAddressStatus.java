@@ -139,18 +139,18 @@ public class LocalSocketAddressStatus
         final ArrayList<String> bindings = new ArrayList<>(2);
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
+            final int counterState = countersReader.getCounterState(counterId);
             if (RECORD_ALLOCATED == counterState)
             {
-                if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
+                if (countersReader.getCounterTypeId(counterId) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
                 {
-                    final int recordOffset = CountersReader.metaDataOffset(i);
+                    final int recordOffset = CountersReader.metaDataOffset(counterId);
                     final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
 
                     if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
-                        ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
+                        ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
                     {
                         final int length = buffer.getInt(keyIndex + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
                         if (length > 0)
@@ -188,18 +188,18 @@ public class LocalSocketAddressStatus
         {
             final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-            for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+            for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
             {
-                final int counterState = countersReader.getCounterState(i);
+                final int counterState = countersReader.getCounterState(counterId);
                 if (RECORD_ALLOCATED == counterState)
                 {
-                    if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
+                    if (countersReader.getCounterTypeId(counterId) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
                     {
-                        final int recordOffset = CountersReader.metaDataOffset(i);
+                        final int recordOffset = CountersReader.metaDataOffset(counterId);
                         final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
 
                         if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
-                            ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
+                            ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
                         {
                             final int length = buffer.getInt(keyIndex + LOCAL_SOCKET_ADDRESS_LENGTH_OFFSET);
                             if (length > 0)
@@ -234,12 +234,12 @@ public class LocalSocketAddressStatus
     {
         int result = 0;
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
+            final int counterState = countersReader.getCounterState(counterId);
             if (counterState == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID &&
-                countersReader.getCounterRegistrationId(i) == registrationId)
+                countersReader.getCounterTypeId(counterId) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID &&
+                countersReader.getCounterRegistrationId(counterId) == registrationId)
             {
                 result++;
             }
@@ -263,18 +263,18 @@ public class LocalSocketAddressStatus
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
+            final int counterState = countersReader.getCounterState(counterId);
             if (RECORD_ALLOCATED == counterState)
             {
-                if (countersReader.getCounterTypeId(i) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
+                if (countersReader.getCounterTypeId(counterId) == LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID)
                 {
-                    final int recordOffset = CountersReader.metaDataOffset(i);
+                    final int recordOffset = CountersReader.metaDataOffset(counterId);
                     final int keyIndex = recordOffset + CountersReader.KEY_OFFSET;
 
                     if (channelStatusId == buffer.getInt(keyIndex + CHANNEL_STATUS_ID_OFFSET) &&
-                        ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(i))
+                        ChannelEndpointStatus.ACTIVE == countersReader.getCounterValue(counterId))
                     {
                         return true;
                     }

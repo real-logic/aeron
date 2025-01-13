@@ -2055,12 +2055,12 @@ class DriverConductorTest
 
     private static AtomicCounter clientHeartbeatCounter(final CountersReader countersReader)
     {
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            final int counterState = countersReader.getCounterState(i);
-            if (counterState == RECORD_ALLOCATED && countersReader.getCounterTypeId(i) == HEARTBEAT_TYPE_ID)
+            final int counterState = countersReader.getCounterState(counterId);
+            if (counterState == RECORD_ALLOCATED && countersReader.getCounterTypeId(counterId) == HEARTBEAT_TYPE_ID)
             {
-                return new AtomicCounter(countersReader.valuesBuffer(), i);
+                return new AtomicCounter(countersReader.valuesBuffer(), counterId);
             }
             else if (RECORD_UNUSED == counterState)
             {

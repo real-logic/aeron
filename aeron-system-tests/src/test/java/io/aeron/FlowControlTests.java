@@ -49,15 +49,15 @@ class FlowControlTests
     {
         final DirectBuffer buffer = countersReader.metaDataBuffer();
 
-        for (int i = 0, size = countersReader.maxCounterId(); i < size; i++)
+        for (int counterId = 0, maxId = countersReader.maxCounterId(); counterId <= maxId; counterId++)
         {
-            if (countersReader.getCounterState(i) == RECORD_ALLOCATED &&
-                countersReader.getCounterTypeId(i) == counterTypeId)
+            if (countersReader.getCounterState(counterId) == RECORD_ALLOCATED &&
+                countersReader.getCounterTypeId(counterId) == counterTypeId)
             {
-                final int recordOffset = CountersReader.metaDataOffset(i);
+                final int recordOffset = CountersReader.metaDataOffset(counterId);
                 if (buffer.getLong(recordOffset + KEY_OFFSET) == registrationId)
                 {
-                    return i;
+                    return counterId;
                 }
             }
         }

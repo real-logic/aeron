@@ -201,9 +201,13 @@ subprojects {
         options.compilerArgs.add("-Aio.aeron.gitsha=${gitCommitHash}")
     }
 
+    def mockitoAgent = configurations.create('mockitoAgent') { transitive = false }
+    mockitoAgent.withDependencies {it.add(libs.mockito.get()) }
+
     tasks.withType(Test).configureEach { test ->
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         jvmArgs('--add-opens', 'java.base/java.util.zip=ALL-UNNAMED')
+        jvmArgs("-javaagent:${mockitoAgent.asPath}")
         if (buildJavaVersion >= 21) {
             jvmArgs('-XX:+EnableDynamicAgentLoading')
         }
@@ -258,6 +262,8 @@ subprojects {
         javaLauncher.set(toolchainLauncher)
     }
 
+    def aeronLoggingAgent = project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
+
     tasks.register('slowTest', Test) {
         group 'verification'
         dependsOn ':aeron-agent:jar'
@@ -267,11 +273,7 @@ subprojects {
             includeTags 'slow'
         }
 
-        ext.agentFilename = {
-            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
-        }
-
-        jvmArgs '-javaagent:' + agentFilename()
+        jvmArgs("-javaagent:${aeronLoggingAgent}")
         systemProperty 'aeron.event.cluster.log', 'all'
         systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION,APPEND_POSITION,COMMIT_POSITION'
         systemProperty 'aeron.event.archive.log', 'all'
@@ -290,11 +292,7 @@ subprojects {
             includeTags 'bindings'
         }
 
-        ext.agentFilename = {
-            project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
-        }
-
-        jvmArgs '-javaagent:' + agentFilename()
+        jvmArgs("-javaagent:${aeronLoggingAgent}")
         systemProperty 'aeron.event.cluster.log', 'all'
         systemProperty 'aeron.event.cluster.log.disable', 'CANVASS_POSITION'
         systemProperty 'aeron.debug.timeout', '3600s'

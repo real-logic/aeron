@@ -368,6 +368,7 @@ public class ArchiveMarkFile implements AutoCloseable
             .eventsStreamId(ctx.recordingEventsStreamId())
             .headerLength(HEADER_LENGTH)
             .errorBufferLength(ctx.errorBufferLength())
+            .archiveId(ctx.archiveId())
             .controlChannel(ctx.controlChannel())
             .localControlChannel(ctx.localControlChannel())
             .eventsChannel(ctx.recordingEventsChannel())

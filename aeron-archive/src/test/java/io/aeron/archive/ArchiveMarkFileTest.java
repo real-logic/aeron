@@ -21,6 +21,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.test.TestContexts;
 import org.agrona.MarkFile;
+import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.Test;
@@ -47,16 +48,36 @@ class ArchiveMarkFileTest
         assertTrue(markFileDir.mkdirs());
         assertFalse(markFile.exists());
 
-        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(
-            TestContexts.localhostArchive()
+        final CachedEpochClock epochClock = new CachedEpochClock();
+        epochClock.advance(12345678909876L);
+        final Archive.Context ctx = TestContexts.localhostArchive()
             .aeronDirectoryName(aeronDir.getAbsolutePath())
+            .controlStreamId(42)
+            .localControlStreamId(-118)
+            .recordingEventsStreamId(85858585)
+            .errorBufferLength(4096)
+            .archiveId(46238467823468L)
             .archiveDir(archiveDir)
             .markFileDir(markFileDir)
-            .controlChannel(AeronArchive.Configuration.localControlChannel())
+            .controlChannel("aeron:udp?endpoint=localhost:55555|alias=control")
             .localControlChannel(AeronArchive.Configuration.localControlChannel())
-            .epochClock(SystemEpochClock.INSTANCE)))
+            .recordingEventsChannel("aeron:udp?endpoint=localhost:0")
+            .epochClock(epochClock);
+        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(ctx))
         {
             assertNotNull(archiveMarkFile);
+
+            assertEquals(epochClock.time(), archiveMarkFile.decoder().startTimestamp());
+            assertEquals(ctx.controlStreamId(), archiveMarkFile.decoder().controlStreamId());
+            assertEquals(ctx.localControlStreamId(), archiveMarkFile.decoder().localControlStreamId());
+            assertEquals(ctx.recordingEventsStreamId(), archiveMarkFile.decoder().eventsStreamId());
+            assertEquals(ArchiveMarkFile.HEADER_LENGTH, archiveMarkFile.decoder().headerLength());
+            assertEquals(ctx.errorBufferLength(), archiveMarkFile.decoder().errorBufferLength());
+            assertEquals(ctx.archiveId(), archiveMarkFile.decoder().archiveId());
+            assertEquals(ctx.controlChannel(), archiveMarkFile.decoder().controlChannel());
+            assertEquals(ctx.localControlChannel(), archiveMarkFile.decoder().localControlChannel());
+            assertEquals(ctx.recordingEventsChannel(), archiveMarkFile.decoder().eventsChannel());
+            assertEquals(ctx.aeronDirectoryName(), archiveMarkFile.decoder().aeronDirectory());
         }
 
         assertTrue(markFile.exists());

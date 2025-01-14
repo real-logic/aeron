@@ -223,6 +223,16 @@ public class ArchiveMarkFile implements AutoCloseable
     }
 
     /**
+     * Get archive id that is stored in the mark file.
+     *
+     * @return archive id or {@link io.aeron.Aeron#NULL_VALUE} if mark file does not contain this information.
+     */
+    public long archiveId()
+    {
+        return headerDecoder.archiveId();
+    }
+
+    /**
      * Signal the archive has concluded successfully and ready to start.
      */
     public void signalReady()

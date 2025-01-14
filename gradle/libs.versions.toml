@@ -1,7 +1,7 @@
 [versions]
 agrona = "2.0.0"
 byteBuddy = "1.15.11"
-checkstyle = "10.21.0"
+checkstyle = "10.21.1"
 junit = "5.11.4"
 gradle = "8.11.1"
 

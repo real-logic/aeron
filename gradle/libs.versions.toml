@@ -1,5 +1,5 @@
 [versions]
-agrona = "2.0.0"
+agrona = "2.0.1"
 byteBuddy = "1.15.11"
 checkstyle = "10.21.1"
 junit = "5.11.4"

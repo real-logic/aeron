@@ -330,8 +330,6 @@ class ArchiveMarkFileTest
             .recordingEventsChannel("aeron:udp?endpoint=localhost:0")
             .epochClock(epochClock);
 
-        System.out.println(ctx);
-
         try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(ctx))
         {
             archiveMarkFile.signalReady();

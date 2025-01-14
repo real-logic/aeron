@@ -21,7 +21,6 @@ import org.agrona.SystemUtil;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
-import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -145,7 +144,7 @@ public class SendSelectReceiveUdpPing
                     return;
                 }
 
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
             }
 
             final Set<SelectionKey> selectedKeys = selector.selectedKeys();

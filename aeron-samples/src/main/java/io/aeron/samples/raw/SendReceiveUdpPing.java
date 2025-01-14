@@ -21,7 +21,6 @@ import org.agrona.BitUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
-import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -119,7 +118,7 @@ public class SendReceiveUdpPing
             boolean available = false;
             while (!available)
             {
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
                 if (!running.get())
                 {
                     return;

@@ -19,7 +19,6 @@ import io.aeron.driver.Configuration;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
-import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -107,7 +106,7 @@ public class SelectReceiveSendUdpPong
                     return;
                 }
 
-                ThreadHints.onSpinWait();
+                Thread.onSpinWait();
             }
 
             final Set<SelectionKey> selectedKeys = selector.selectedKeys();

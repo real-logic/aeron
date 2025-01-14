@@ -21,7 +21,6 @@ import org.agrona.BitUtil;
 import org.agrona.SystemUtil;
 import org.agrona.concurrent.HighResolutionTimer;
 import org.agrona.concurrent.SigInt;
-import org.agrona.hints.ThreadHints;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -139,7 +138,7 @@ public class BurstSendReceiveUdpPing
                     {
                         break;
                     }
-                    ThreadHints.onSpinWait();
+                    Thread.onSpinWait();
                 }
 
                 final long receivedSequenceNumber = buffer.getLong(0);

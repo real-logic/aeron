@@ -49,6 +49,7 @@ import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
 import io.aeron.exceptions.RegistrationException;
 import io.aeron.exceptions.TimeoutException;
+import io.aeron.logbuffer.FragmentHandler;
 import io.aeron.logbuffer.Header;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
@@ -1927,43 +1928,45 @@ public final class TestCluster implements AutoCloseable
                 100001);
 
             final MutableLong position = new MutableLong();
-
             final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
             final NewLeadershipTermEventDecoder newLeadershipTermEventDecoder = new NewLeadershipTermEventDecoder();
+            final FragmentHandler fragmentHandler =
+                (buffer, offset, length, header) ->
+                {
+                    messageHeaderDecoder.wrap(buffer, offset);
+
+                    if (NewLeadershipTermEventDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
+                    {
+                        newLeadershipTermEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
+
+                        final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
+                            newLeadershipTermEventDecoder.leadershipTermId());
+
+                        assertNotNull(termEntry);
+                        assertEquals(
+                            newLeadershipTermEventDecoder.termBaseLogPosition(), termEntry.termBaseLogPosition);
+
+                        if (0 < newLeadershipTermEventDecoder.leadershipTermId())
+                        {
+                            final RecordingLog.Entry previousTermEntry = recordingLog.findTermEntry(
+                                newLeadershipTermEventDecoder.leadershipTermId() - 1);
+                            assertNotNull(previousTermEntry);
+                            assertEquals(
+                                newLeadershipTermEventDecoder.termBaseLogPosition(),
+                                previousTermEntry.logPosition,
+                                previousTermEntry.toString());
+                        }
+                    }
+
+                    position.set(header.position());
+                };
 
             while (position.get() < recordingPosition)
             {
-                replay.poll(
-                    (buffer, offset, length, header) ->
-                    {
-                        messageHeaderDecoder.wrap(buffer, offset);
-
-                        if (NewLeadershipTermEventDecoder.TEMPLATE_ID == messageHeaderDecoder.templateId())
-                        {
-                            newLeadershipTermEventDecoder.wrapAndApplyHeader(buffer, offset, messageHeaderDecoder);
-
-                            final RecordingLog.Entry termEntry = recordingLog.findTermEntry(
-                                newLeadershipTermEventDecoder.leadershipTermId());
-
-                            assertNotNull(termEntry);
-                            assertEquals(
-                                newLeadershipTermEventDecoder.termBaseLogPosition(), termEntry.termBaseLogPosition);
-
-                            if (0 < newLeadershipTermEventDecoder.leadershipTermId())
-                            {
-                                final RecordingLog.Entry previousTermEntry = recordingLog.findTermEntry(
-                                    newLeadershipTermEventDecoder.leadershipTermId() - 1);
-                                assertNotNull(previousTermEntry);
-                                assertEquals(
-                                    newLeadershipTermEventDecoder.termBaseLogPosition(),
-                                    previousTermEntry.logPosition,
-                                    previousTermEntry.toString());
-                            }
-                        }
-
-                        position.set(header.position());
-                    },
-                    10);
+                if (0 == replay.poll(fragmentHandler,10))
+                {
+                    Tests.yield();
+                }
             }
         }
     }

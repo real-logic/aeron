@@ -176,7 +176,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
      * @param fragmentLimit   number of message fragments to limit when polling across multiple {@link Image}s.
-     * @return the number of fragments received
+     * @return the number of fragments received.
      */
     public int poll(final FragmentHandler fragmentHandler, final int fragmentLimit)
     {
@@ -215,7 +215,7 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
      *
      * @param fragmentHandler callback for handling each message fragment as it is read.
      * @param fragmentLimit   number of message fragments to limit when polling across multiple {@link Image}s.
-     * @return the number of fragments received
+     * @return the number of fragments received.
      * @see ControlledFragmentHandler
      */
     public int controlledPoll(final ControlledFragmentHandler fragmentHandler, final int fragmentLimit)
@@ -346,8 +346,8 @@ public final class Subscription extends SubscriptionFields implements AutoClosea
     /**
      * Get the {@link Image} at the given index from the images array.
      *
-     * @param index in the array
-     * @return image at given index
+     * @param index in the array.
+     * @return image at given index.
      * @throws ArrayIndexOutOfBoundsException if the index is not valid.
      */
     public Image imageAtIndex(final int index)

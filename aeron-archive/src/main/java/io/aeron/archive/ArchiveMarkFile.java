@@ -209,7 +209,12 @@ public class ArchiveMarkFile implements AutoCloseable
         headerEncoder.wrap(buffer, 0);
         headerDecoder.wrap(buffer, 0, MarkFileHeaderDecoder.BLOCK_LENGTH, MarkFileHeaderDecoder.SCHEMA_VERSION);
 
-        errorBuffer = headerDecoder.errorBufferLength() > 0 ?
+        final int schemaVersion = 0 != headerDecoder.codecSchemaVersion() ? headerDecoder.codecSchemaVersion() :
+            (headerDecoder.headerLength() > 0 ? 1 : 0);
+        final int blockLength = 0 != headerDecoder.codecBlockLength() ? headerDecoder.codecBlockLength() : 128;
+        headerDecoder.wrap(buffer, 0, blockLength, schemaVersion);
+
+        errorBuffer = schemaVersion >= MarkFileHeaderDecoder.headerLengthSinceVersion() ?
             new UnsafeBuffer(buffer, headerDecoder.headerLength(), headerDecoder.errorBufferLength()) :
             new UnsafeBuffer(buffer, 0, 0);
     }
@@ -226,6 +231,7 @@ public class ArchiveMarkFile implements AutoCloseable
      * Get archive id that is stored in the mark file.
      *
      * @return archive id or {@link io.aeron.Aeron#NULL_VALUE} if mark file does not contain this information.
+     * @since 1.47.0
      */
     public long archiveId()
     {
@@ -331,6 +337,7 @@ public class ArchiveMarkFile implements AutoCloseable
     /**
      * Forces any changes made to the mark file's content to be written to the storage device containing the mapped
      * file.
+     *
      * @since 1.44.0
      */
     public void force()
@@ -372,6 +379,8 @@ public class ArchiveMarkFile implements AutoCloseable
     private void encode(final Archive.Context ctx)
     {
         headerEncoder
+            .codecSchemaVersion(headerEncoder.sbeSchemaVersion())
+            .codecBlockLength(headerEncoder.sbeBlockLength())
             .startTimestamp(ctx.epochClock().time())
             .controlStreamId(ctx.controlStreamId())
             .localControlStreamId(ctx.localControlStreamId())

@@ -15,12 +15,18 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
+import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
+import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.test.TestContexts;
+import org.agrona.IoUtil;
 import org.agrona.MarkFile;
+import org.agrona.SemanticVersion;
+import org.agrona.SystemUtil;
 import org.agrona.concurrent.CachedEpochClock;
 import org.agrona.concurrent.SystemEpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
@@ -31,7 +37,11 @@ import org.junit.jupiter.api.io.TempDir;
 import org.mockito.InOrder;
 
 import java.io.File;
+import java.io.IOException;
 import java.nio.MappedByteBuffer;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardOpenOption;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -48,37 +58,11 @@ class ArchiveMarkFileTest
         assertTrue(markFileDir.mkdirs());
         assertFalse(markFile.exists());
 
-        final CachedEpochClock epochClock = new CachedEpochClock();
-        epochClock.advance(12345678909876L);
-        final Archive.Context ctx = TestContexts.localhostArchive()
-            .aeronDirectoryName(aeronDir.getAbsolutePath())
-            .controlStreamId(42)
-            .localControlStreamId(-118)
-            .recordingEventsStreamId(85858585)
-            .errorBufferLength(4096)
-            .archiveId(46238467823468L)
+        final Archive.Context context = TestContexts.localhostArchive()
             .archiveDir(archiveDir)
             .markFileDir(markFileDir)
-            .controlChannel("aeron:udp?endpoint=localhost:55555|alias=control")
-            .localControlChannel(AeronArchive.Configuration.localControlChannel())
-            .recordingEventsChannel("aeron:udp?endpoint=localhost:0")
-            .epochClock(epochClock);
-        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(ctx))
-        {
-            assertNotNull(archiveMarkFile);
-
-            assertEquals(epochClock.time(), archiveMarkFile.decoder().startTimestamp());
-            assertEquals(ctx.controlStreamId(), archiveMarkFile.decoder().controlStreamId());
-            assertEquals(ctx.localControlStreamId(), archiveMarkFile.decoder().localControlStreamId());
-            assertEquals(ctx.recordingEventsStreamId(), archiveMarkFile.decoder().eventsStreamId());
-            assertEquals(ArchiveMarkFile.HEADER_LENGTH, archiveMarkFile.decoder().headerLength());
-            assertEquals(ctx.errorBufferLength(), archiveMarkFile.decoder().errorBufferLength());
-            assertEquals(ctx.archiveId(), archiveMarkFile.decoder().archiveId());
-            assertEquals(ctx.controlChannel(), archiveMarkFile.decoder().controlChannel());
-            assertEquals(ctx.localControlChannel(), archiveMarkFile.decoder().localControlChannel());
-            assertEquals(ctx.recordingEventsChannel(), archiveMarkFile.decoder().eventsChannel());
-            assertEquals(ctx.aeronDirectoryName(), archiveMarkFile.decoder().aeronDirectory());
-        }
+            .aeronDirectoryName(aeronDir.getAbsolutePath());
+        shouldEncodeMarkFileFromArchiveContext(context);
 
         assertTrue(markFile.exists());
         assertFalse(archiveDir.exists());
@@ -199,6 +183,180 @@ class ArchiveMarkFileTest
             final InOrder inOrder = inOrder(markFile, mappedByteBuffer);
             inOrder.verify(markFile).isClosed();
             inOrder.verifyNoMoreInteractions();
+        }
+    }
+
+    @Test
+    void shouldBeAbleToReadOldMarkFileV0(final @TempDir File tempDir) throws IOException
+    {
+        final int version = SemanticVersion.compose(ArchiveMarkFile.MAJOR_VERSION, 28, 16);
+        final long activityTimestamp = 234783974944L;
+        final int pid = -55555;
+        final int controlStreamId = 1010;
+        final int localControlStreamId = -9;
+        final int eventsStreamId = 111;
+        final String controlChannel = "aeron:udp?endpoint=localhost:8010";
+        final String localControlChannel = "aeron:ipc?alias=local-control|term-length=64k";
+        final String eventsChannels = "aeron:ipc?alias=events";
+        final String aeronDirectory = tempDir.toPath().resolve("aeron/dir/path").toAbsolutePath().toString();
+
+        final Path file = Files.write(
+            tempDir.toPath().resolve(ArchiveMarkFile.FILENAME), new byte[1024], StandardOpenOption.CREATE_NEW);
+
+        final MarkFile markFile = new MarkFile(
+            IoUtil.mapExistingFile(file.toFile(), ArchiveMarkFile.FILENAME),
+            io.aeron.archive.codecs.mark.v0.MarkFileHeaderDecoder.versionEncodingOffset(),
+            io.aeron.archive.codecs.mark.v0.MarkFileHeaderDecoder.activityTimestampEncodingOffset());
+
+        final io.aeron.archive.codecs.mark.v0.MarkFileHeaderEncoder encoder =
+            new io.aeron.archive.codecs.mark.v0.MarkFileHeaderEncoder();
+        encoder.wrap(markFile.buffer(), 0);
+
+        encoder
+            .version(version)
+            .activityTimestamp(activityTimestamp)
+            .pid(pid)
+            .controlStreamId(controlStreamId)
+            .localControlStreamId(localControlStreamId)
+            .eventsStreamId(eventsStreamId)
+            .controlChannel(controlChannel)
+            .localControlChannel(localControlChannel)
+            .eventsChannel(eventsChannels)
+            .aeronDirectory(aeronDirectory);
+
+        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(markFile))
+        {
+            assertEquals(version, archiveMarkFile.decoder().version());
+            assertEquals(activityTimestamp, archiveMarkFile.decoder().activityTimestamp());
+            assertEquals(pid, archiveMarkFile.decoder().pid());
+            assertEquals(controlStreamId, archiveMarkFile.decoder().controlStreamId());
+            assertEquals(localControlStreamId, archiveMarkFile.decoder().localControlStreamId());
+            assertEquals(eventsStreamId, archiveMarkFile.decoder().eventsStreamId());
+            assertEquals(controlChannel, archiveMarkFile.decoder().controlChannel());
+            assertEquals(localControlChannel, archiveMarkFile.decoder().localControlChannel());
+            assertEquals(eventsChannels, archiveMarkFile.decoder().eventsChannel());
+            assertEquals(aeronDirectory, archiveMarkFile.decoder().aeronDirectory());
+
+            assertEquals(aeronDirectory, archiveMarkFile.aeronDirectory());
+            assertEquals(Aeron.NULL_VALUE, archiveMarkFile.archiveId());
+        }
+
+        final Archive.Context context = new Archive.Context()
+            .archiveDir(new File(tempDir, "archive"))
+            .markFileDir(file.getParent().toFile())
+            .aeronDirectoryName(aeronDirectory);
+        shouldEncodeMarkFileFromArchiveContext(context);
+    }
+
+    @Test
+    void shouldBeAbleToReadOldMarkFileV1(final @TempDir File tempDir) throws IOException
+    {
+        final int version = SemanticVersion.compose(ArchiveMarkFile.MAJOR_VERSION, 4, 4);
+        final long activityTimestamp = 234783974944L;
+        final int pid = 1;
+        final int controlStreamId = 42;
+        final int localControlStreamId = 19;
+        final int eventsStreamId = -87;
+        final int errorBufferLength = 8192;
+        final String controlChannel = "aeron:udp?endpoint=localhost:8010";
+        final String localControlChannel = "aeron:ipc?alias=local-control|term-length=64k";
+        final String eventsChannels = "aeron:ipc?alias=events";
+        final String aeronDirectory = tempDir.toPath().resolve("aeron/dir/path").toAbsolutePath().toString();
+
+        final Path file = Files.write(
+            tempDir.toPath().resolve(ArchiveMarkFile.FILENAME), new byte[32 * 1024], StandardOpenOption.CREATE_NEW);
+
+        final MarkFile markFile = new MarkFile(
+            IoUtil.mapExistingFile(file.toFile(), ArchiveMarkFile.FILENAME),
+            io.aeron.archive.codecs.mark.v1.MarkFileHeaderDecoder.versionEncodingOffset(),
+            io.aeron.archive.codecs.mark.v1.MarkFileHeaderDecoder.activityTimestampEncodingOffset());
+
+        final io.aeron.archive.codecs.mark.v1.MarkFileHeaderEncoder encoder =
+            new io.aeron.archive.codecs.mark.v1.MarkFileHeaderEncoder();
+        encoder.wrap(markFile.buffer(), 0);
+
+        encoder
+            .version(version)
+            .activityTimestamp(activityTimestamp)
+            .pid(pid)
+            .controlStreamId(controlStreamId)
+            .localControlStreamId(localControlStreamId)
+            .eventsStreamId(eventsStreamId)
+            .headerLength(ArchiveMarkFile.HEADER_LENGTH)
+            .errorBufferLength(errorBufferLength)
+            .controlChannel(controlChannel)
+            .localControlChannel(localControlChannel)
+            .eventsChannel(eventsChannels)
+            .aeronDirectory(aeronDirectory);
+
+        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(markFile))
+        {
+            assertEquals(version, archiveMarkFile.decoder().version());
+            assertEquals(activityTimestamp, archiveMarkFile.decoder().activityTimestamp());
+            assertEquals(pid, archiveMarkFile.decoder().pid());
+            assertEquals(controlStreamId, archiveMarkFile.decoder().controlStreamId());
+            assertEquals(localControlStreamId, archiveMarkFile.decoder().localControlStreamId());
+            assertEquals(eventsStreamId, archiveMarkFile.decoder().eventsStreamId());
+            assertEquals(ArchiveMarkFile.HEADER_LENGTH, archiveMarkFile.decoder().headerLength());
+            assertEquals(errorBufferLength, archiveMarkFile.decoder().errorBufferLength());
+            assertEquals(controlChannel, archiveMarkFile.decoder().controlChannel());
+            assertEquals(localControlChannel, archiveMarkFile.decoder().localControlChannel());
+            assertEquals(eventsChannels, archiveMarkFile.decoder().eventsChannel());
+            assertEquals(aeronDirectory, archiveMarkFile.decoder().aeronDirectory());
+
+            assertEquals(aeronDirectory, archiveMarkFile.aeronDirectory());
+            assertEquals(Aeron.NULL_VALUE, archiveMarkFile.archiveId());
+        }
+
+        final Archive.Context context = new Archive.Context()
+            .archiveDir(new File(tempDir, "archive"))
+            .markFileDir(file.getParent().toFile())
+            .aeronDirectoryName(aeronDirectory)
+            .errorBufferLength(errorBufferLength);
+        shouldEncodeMarkFileFromArchiveContext(context);
+    }
+
+    private static void shouldEncodeMarkFileFromArchiveContext(final Archive.Context ctx)
+    {
+        final CachedEpochClock epochClock = new CachedEpochClock();
+        epochClock.advance(12345678909876L);
+        ctx
+            .controlStreamId(42)
+            .localControlStreamId(-118)
+            .recordingEventsStreamId(85858585)
+            .archiveId(46238467823468L)
+            .controlChannel("aeron:udp?endpoint=localhost:55555|alias=control")
+            .localControlChannel(AeronArchive.Configuration.localControlChannel())
+            .recordingEventsChannel("aeron:udp?endpoint=localhost:0")
+            .epochClock(epochClock);
+
+        System.out.println(ctx);
+
+        try (ArchiveMarkFile archiveMarkFile = new ArchiveMarkFile(ctx))
+        {
+            archiveMarkFile.signalReady();
+
+            assertEquals(ArchiveMarkFile.SEMANTIC_VERSION, archiveMarkFile.decoder().version());
+            assertEquals(archiveMarkFile.encoder().sbeSchemaVersion(), archiveMarkFile.decoder().codecSchemaVersion());
+            assertEquals(archiveMarkFile.encoder().sbeBlockLength(), archiveMarkFile.decoder().codecBlockLength());
+            assertEquals(epochClock.time(), archiveMarkFile.decoder().startTimestamp());
+            assertEquals(SystemUtil.getPid(), archiveMarkFile.decoder().pid());
+            assertEquals(ctx.controlStreamId(), archiveMarkFile.decoder().controlStreamId());
+            assertEquals(ctx.localControlStreamId(), archiveMarkFile.decoder().localControlStreamId());
+            assertEquals(ctx.recordingEventsStreamId(), archiveMarkFile.decoder().eventsStreamId());
+            assertEquals(ArchiveMarkFile.HEADER_LENGTH, archiveMarkFile.decoder().headerLength());
+            assertEquals(ctx.errorBufferLength(), archiveMarkFile.decoder().errorBufferLength());
+            assertEquals(ctx.archiveId(), archiveMarkFile.decoder().archiveId());
+            assertEquals(ctx.controlChannel(), archiveMarkFile.decoder().controlChannel());
+            assertEquals(ctx.localControlChannel(), archiveMarkFile.decoder().localControlChannel());
+            assertEquals(ctx.recordingEventsChannel(), archiveMarkFile.decoder().eventsChannel());
+            assertEquals(ctx.aeronDirectoryName(), archiveMarkFile.decoder().aeronDirectory());
+
+            assertInstanceOf(MarkFileHeaderDecoder.class, archiveMarkFile.decoder());
+            assertInstanceOf(MarkFileHeaderEncoder.class, archiveMarkFile.encoder());
+            assertEquals(ctx.archiveId(), archiveMarkFile.archiveId());
+
+            assertEquals(ctx.aeronDirectoryName(), archiveMarkFile.aeronDirectory());
         }
     }
 }

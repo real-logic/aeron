@@ -644,15 +644,16 @@ project(':aeron-archive') {
         }
     }
 
-    tasks.register('generateCodecs', JavaExec) {
-        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
-        def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
-        def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
+    def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
+    def markCodecsFile = 'src/main/resources/archive/aeron-archive-mark-codecs.xml'
+    def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
 
+    tasks.register('generateCodecs', JavaExec) {
         inputs.files(codecsFile, markCodecsFile, sbeFile)
         outputs.dir generatedSrcDir
 
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
             'sbe.output.dir': generatedSrcDir,
@@ -662,27 +663,11 @@ project(':aeron-archive') {
         args = [codecsFile, markCodecsFile]
     }
 
-    tasks.register('generateV6Codecs', JavaExec) {
-        def codecsFile = 'src/main/resources/archive/aeron-archive-codecs.xml'
-        def sbeFile = 'src/main/resources/archive/fpl/sbe.xsd'
-
-        inputs.files(codecsFile, sbeFile)
-        outputs.dir generatedTestDir
-
-        mainClass.set('uk.co.real_logic.sbe.SbeTool')
-        classpath = configurations.codecGeneration
-        systemProperties(
-            'sbe.output.dir': generatedTestDir,
-            'sbe.target.language': 'Java',
-            'sbe.validation.xsd': sbeFile,
-            'sbe.validation.stop.on.error': 'true',
-            'sbe.target.namespace': 'io.aeron.archive.codecs.v6',
-            'sbe.schema.transform.version': '*:6')
-        args = [codecsFile]
-    }
-
     def generatedCppDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated")
     tasks.register('generateCppCodecs', JavaExec) {
+        inputs.files(codecsFile, sbeFile)
+        outputs.dir generatedCppDir
+
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
@@ -690,13 +675,16 @@ project(':aeron-archive') {
             'sbe.output.dir': generatedCppDir,
             'sbe.target.language': 'Cpp',
             'sbe.target.namespace': 'aeron.archive.client',
-            'sbe.validation.xsd': 'src/main/resources/archive/fpl/sbe.xsd',
+            'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/archive/aeron-archive-codecs.xml']
+        args = [codecsFile]
     }
 
     def generatedCDir = file(System.getProperty('codec.target.dir') ?: "${rootDir}/cppbuild/Release/generated/c")
     tasks.register('generateCCodecs', JavaExec) {
+        inputs.files(codecsFile, sbeFile)
+        outputs.dir generatedCDir
+
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
@@ -704,15 +692,66 @@ project(':aeron-archive') {
             'sbe.output.dir': generatedCDir,
             'sbe.target.language': 'C',
             'sbe.target.namespace': 'aeron.archive.client',
-            'sbe.validation.xsd': 'src/main/resources/archive/fpl/sbe.xsd',
+            'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
-        args = ['src/main/resources/archive/aeron-archive-codecs.xml']
+        args = [codecsFile]
+    }
+
+    tasks.register('generateTestCodecsV6', JavaExec) {
+        inputs.files(codecsFile, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.archive.codecs.v6',
+                'sbe.schema.transform.version': '*:6')
+        args = [codecsFile]
+    }
+
+    tasks.register('generateTestCodecsMarkFileV0', JavaExec) {
+        inputs.files(markCodecsFile, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v0',
+                'sbe.schema.transform.version': '*:0')
+        args = [markCodecsFile]
+    }
+
+    tasks.register('generateTestCodecsMarkFileV1', JavaExec) {
+        inputs.files(markCodecsFile, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v1',
+                'sbe.schema.transform.version': '*:1')
+        args = [markCodecsFile]
     }
 
     compileJava.dependsOn 'compileGeneratedJava'
     compileGeneratedJava.dependsOn 'generateCodecs'
     compileTestJava.dependsOn 'compileGeneratedTestJava'
-    compileGeneratedTestJava.dependsOn 'generateV6Codecs'
+    compileGeneratedTestJava.dependsOn 'generateTestCodecsV6', 'generateTestCodecsMarkFileV0', 'generateTestCodecsMarkFileV1'
 
     jar {
         from sourceSets.generated.output

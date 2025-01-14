@@ -132,7 +132,8 @@ class ArchiveSystemTests
         final long expectedRecordingId,
         final RecordingSignal expectedSignal)
     {
-        final Supplier<String> errorMessage = () -> "Expected signal: " + expectedSignal;
+        final Supplier<String> errorMessage =
+            () -> "Expected signal: " + expectedSignal + " vs " + signalConsumer.signal;
         while (expectedRecordingId != signalConsumer.recordingId || expectedSignal != signalConsumer.signal)
         {
             if (0 == aeronArchive.pollForRecordingSignals())

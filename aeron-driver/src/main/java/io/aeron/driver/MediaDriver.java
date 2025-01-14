@@ -777,7 +777,6 @@ public final class MediaDriver implements AutoCloseable
          * @return true if the configuration should be printed on start.
          * @see CommonContext#PRINT_CONFIGURATION_ON_START_PROP_NAME
          */
-        @Config
         public boolean printConfigurationOnStart()
         {
             return printConfigurationOnStart;

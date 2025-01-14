@@ -1963,7 +1963,7 @@ public final class TestCluster implements AutoCloseable
 
             while (position.get() < recordingPosition)
             {
-                if (0 == replay.poll(fragmentHandler,10))
+                if (0 == replay.poll(fragmentHandler, 10))
                 {
                     Tests.yield();
                 }

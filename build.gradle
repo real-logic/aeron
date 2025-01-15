@@ -627,7 +627,7 @@ project(':aeron-archive') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
-        testImplementation files('build/classes/java/generatedTest')
+        testImplementation files("${layout.buildDirectory.get()}/classes/java/generatedTest")
     }
 
     def generatedSrcDir = file("${layout.buildDirectory.get()}/generated-src")
@@ -850,37 +850,64 @@ project(':aeron-cluster') {
         implementation project(':aeron-annotations')
         annotationProcessor project(':aeron-annotations')
         testImplementation project(':aeron-test-support')
+        testImplementation files("${layout.buildDirectory.get()}/classes/java/generatedTest")
     }
 
-    def generatedDir = file("${layout.buildDirectory.get()}/generated-src")
+    def generatedSrcDir = file("${layout.buildDirectory.get()}/generated-src")
+    def generatedTestDir = file("${layout.buildDirectory.get()}/generated-test")
+
     sourceSets {
         generated {
-            java.srcDir generatedDir
+            java.srcDir generatedSrcDir
+            compileClasspath += configurations.codecGeneration
+        }
+        generatedTest {
+            java.srcDir generatedTestDir
             compileClasspath += configurations.codecGeneration
         }
     }
 
-    tasks.register('generateCodecs', JavaExec) {
-        def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
-        def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
-        def nodeStateCodecsFile = 'src/main/resources/cluster/aeron-cluster-node-state-codecs.xml'
-        def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
+    def codecsFile = 'src/main/resources/cluster/aeron-cluster-codecs.xml'
+    def markCodecsFile = 'src/main/resources/cluster/aeron-cluster-mark-codecs.xml'
+    def nodeStateCodecsFile = 'src/main/resources/cluster/aeron-cluster-node-state-codecs.xml'
+    def sbeFile = 'src/main/resources/cluster/fpl/sbe.xsd'
 
+    tasks.register('generateCodecs', JavaExec) {
         inputs.files(codecsFile, markCodecsFile, sbeFile)
-        outputs.dir generatedDir
+        outputs.dir generatedSrcDir
 
         mainClass.set('uk.co.real_logic.sbe.SbeTool')
         classpath = configurations.codecGeneration
         systemProperties(
-            'sbe.output.dir': generatedDir,
+            'sbe.output.dir': generatedSrcDir,
             'sbe.target.language': 'Java',
             'sbe.validation.xsd': sbeFile,
             'sbe.validation.stop.on.error': 'true')
         args = [codecsFile, markCodecsFile, nodeStateCodecsFile]
     }
 
-    compileJava.dependsOn compileGeneratedJava
-    compileGeneratedJava.dependsOn generateCodecs
+    def markCodecsFileV0 = 'src/test/resources/aeron-cluster-mark-codecs-v0.xml'
+    tasks.register('generateTestCodecsMarkFileV0', JavaExec) {
+        inputs.files(markCodecsFileV0, sbeFile)
+        outputs.dir generatedTestDir
+
+        mainClass.set('uk.co.real_logic.sbe.SbeTool')
+        jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
+        classpath = configurations.codecGeneration
+        systemProperties(
+                'sbe.output.dir': generatedTestDir,
+                'sbe.target.language': 'Java',
+                'sbe.validation.xsd': sbeFile,
+                'sbe.validation.stop.on.error': 'true',
+                'sbe.target.namespace': 'io.aeron.cluster.codecs.mark.v0',
+                'sbe.schema.transform.version': '*:0')
+        args = [markCodecsFileV0]
+    }
+
+    compileJava.dependsOn 'compileGeneratedJava'
+    compileGeneratedJava.dependsOn 'generateCodecs'
+    compileTestJava.dependsOn 'compileGeneratedTestJava'
+    compileGeneratedTestJava.dependsOn 'generateTestCodecsMarkFileV0'
 
     jar {
         from sourceSets.generated.output

@@ -2021,11 +2021,7 @@ public final class ClusterBackup implements AutoCloseable
         private void concludeMarkFile()
         {
             ClusterMarkFile.checkHeaderLength(
-                aeron.context().aeronDirectoryName(),
-                null,
-                null,
-                null,
-                null);
+                aeron.context().aeronDirectoryName(), null, null, null, null);
 
             markFile.encoder()
                 .archiveStreamId(archiveContext.controlRequestStreamId())

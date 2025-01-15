@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<sbe:messageSchema xmlns:sbe="http://fixprotocol.io/2016/sbe"
+                   package="io.aeron.cluster.codecs.mark"
+                   id="110"
+                   version="0"
+                   semanticVersion="5.3"
+                   description="Codecs for Mark file of an Aeron Cluster."
+                   byteOrder="littleEndian">
+    <types>
+        <composite name="messageHeader" description="Message identifiers and length of message root.">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="templateId"  primitiveType="uint16"/>
+            <type name="schemaId"    primitiveType="uint16"/>
+            <type name="version"     primitiveType="uint16"/>
+        </composite>
+        <composite name="groupSizeEncoding" description="Repeating group dimensions.">
+            <type name="blockLength" primitiveType="uint16"/>
+            <type name="numInGroup"  primitiveType="uint16"/>
+        </composite>
+        <composite name="varAsciiEncoding" description="Variable length ASCII string header.">
+            <type name="length"      primitiveType="uint32" maxValue="1073741824"/>
+            <type name="varData"     primitiveType="uint8" length="0" characterEncoding="US-ASCII"/>
+        </composite>
+        <type name="time_t" primitiveType="int64" description="Epoch time in milliseconds since 1 Jan 1970 UTC."/>
+        <enum name="ClusterComponentType" encodingType="int32" description="Type of Cluster Component">
+            <validValue name="NULL">0</validValue>
+            <validValue name="CONSENSUS_MODULE">1</validValue>
+            <validValue name="CONTAINER">2</validValue>
+            <validValue name="BACKUP">3</validValue>
+        </enum>
+    </types>
+
+    <sbe:message name="MarkFileHeader"
+                 id="200"
+                 blockLength="128"
+                 description="Header of Consensus Module and Container Mark file.">
+        <field name="version"                 id="1"  type="int32"/>
+        <field name="componentType"           id="2"  type="ClusterComponentType"/>
+        <field name="activityTimestamp"       id="3"  type="time_t"/>
+        <field name="startTimestamp"          id="4"  type="time_t"/>
+        <field name="pid"                     id="5"  type="int64"/>
+        <field name="candidateTermId"         id="6"  type="int64"/>
+        <field name="archiveStreamId"         id="7"  type="int32"/>
+        <field name="serviceStreamId"         id="8"  type="int32"/>
+        <field name="consensusModuleStreamId" id="9"  type="int32"/>
+        <field name="ingressStreamId"         id="10" type="int32"/>
+        <field name="memberId"                id="11" type="int32"/>
+        <field name="serviceId"               id="12" type="int32"/>
+        <field name="headerLength"            id="13" type="int32"/>
+        <field name="errorBufferLength"       id="14" type="int32"/>
+        <field name="clusterId"               id="15" type="int32"/>
+        <data  name="aeronDirectory"          id="16" type="varAsciiEncoding"/>
+        <data  name="controlChannel"          id="17" type="varAsciiEncoding"/>
+        <data  name="ingressChannel"          id="18" type="varAsciiEncoding"/>
+        <data  name="serviceName"             id="19" type="varAsciiEncoding"/>
+        <data  name="authenticator"           id="20" type="varAsciiEncoding"/>
+    </sbe:message>
+
+</sbe:messageSchema>

@@ -2032,11 +2032,7 @@ public final class ClusteredServiceContainer implements AutoCloseable
         private void concludeMarkFile()
         {
             ClusterMarkFile.checkHeaderLength(
-                aeron.context().aeronDirectoryName(),
-                controlChannel(),
-                null,
-                serviceName,
-                null);
+                aeron.context().aeronDirectoryName(), controlChannel(), null, serviceName, null);
 
             final MarkFileHeaderEncoder encoder = markFile.encoder();
 

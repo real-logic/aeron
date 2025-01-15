@@ -4301,11 +4301,7 @@ public final class ConsensusModule implements AutoCloseable
             final String aeronDirectory = aeron.context().aeronDirectoryName();
             final String authenticatorClassName = authenticatorSupplier.getClass().getName();
             ClusterMarkFile.checkHeaderLength(
-                aeronDirectory,
-                controlChannel(),
-                ingressChannel,
-                null,
-                authenticatorClassName);
+                aeronDirectory, controlChannel(), ingressChannel, null, authenticatorClassName);
 
             markFile.encoder()
                 .archiveStreamId(archiveContext.controlRequestStreamId())

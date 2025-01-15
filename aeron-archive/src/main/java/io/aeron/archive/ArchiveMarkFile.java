@@ -83,8 +83,8 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public static final String LINK_FILENAME = "archive-mark.lnk";
 
-    private final MessageHeaderEncoder messageHeaderEncoder = new MessageHeaderEncoder();
-    private final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+    private static final int HEADER_OFFSET = MessageHeaderDecoder.ENCODED_LENGTH;
+
     private final MarkFileHeaderDecoder headerDecoder = new MarkFileHeaderDecoder();
     private final MarkFileHeaderEncoder headerEncoder = new MarkFileHeaderEncoder();
     private final MarkFile markFile;
@@ -110,6 +110,8 @@ public class ArchiveMarkFile implements AutoCloseable
         final EpochClock epochClock,
         final long timeoutMs)
     {
+        final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+
         if (file.exists())
         {
             final int headerOffset = headerOffset(file);
@@ -163,8 +165,8 @@ public class ArchiveMarkFile implements AutoCloseable
                 this.markFile = new MarkFile(
                     file,
                     false,
-                    MessageHeaderDecoder.ENCODED_LENGTH + MarkFileHeaderDecoder.versionEncodingOffset(),
-                    MessageHeaderDecoder.ENCODED_LENGTH + MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
+                    HEADER_OFFSET + MarkFileHeaderDecoder.versionEncodingOffset(),
+                    HEADER_OFFSET + MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
                     totalFileLength,
                     timeoutMs,
                     epochClock,
@@ -179,8 +181,8 @@ public class ArchiveMarkFile implements AutoCloseable
             markFile = new MarkFile(
                 file,
                 false,
-                MessageHeaderDecoder.ENCODED_LENGTH + MarkFileHeaderDecoder.versionEncodingOffset(),
-                MessageHeaderDecoder.ENCODED_LENGTH + MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
+                HEADER_OFFSET + MarkFileHeaderDecoder.versionEncodingOffset(),
+                HEADER_OFFSET + MarkFileHeaderDecoder.activityTimestampEncodingOffset(),
                 totalFileLength,
                 timeoutMs,
                 epochClock,
@@ -190,7 +192,7 @@ public class ArchiveMarkFile implements AutoCloseable
         }
 
         headerEncoder
-            .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
+            .wrapAndApplyHeader(buffer, 0, new MessageHeaderEncoder())
             .pid(SystemUtil.getPid());
 
         headerDecoder.wrapAndApplyHeader(buffer, 0, messageHeaderDecoder);
@@ -219,7 +221,7 @@ public class ArchiveMarkFile implements AutoCloseable
             filename,
             epochClock,
             timeoutMs,
-            (version) -> ArchiveMarkFile.validateVersion(new File(directory, filename), version),
+            (version) -> validateVersion(new File(directory, filename), version),
             logger);
     }
 
@@ -252,8 +254,8 @@ public class ArchiveMarkFile implements AutoCloseable
 
         if (0 != headerOffset(buffer))
         {
-            headerEncoder.wrap(buffer, MessageHeaderDecoder.ENCODED_LENGTH);
-            headerDecoder.wrapAndApplyHeader(buffer, 0, messageHeaderDecoder);
+            headerEncoder.wrap(buffer, HEADER_OFFSET);
+            headerDecoder.wrapAndApplyHeader(buffer, 0, new MessageHeaderDecoder());
         }
         else
         {
@@ -403,7 +405,7 @@ public class ArchiveMarkFile implements AutoCloseable
     private static int alignedTotalFileLength(final Archive.Context ctx)
     {
         final int headerLength =
-            MessageHeaderDecoder.ENCODED_LENGTH +
+            HEADER_OFFSET +
             MarkFileHeaderEncoder.BLOCK_LENGTH +
             (4 * VarAsciiEncodingEncoder.lengthEncodingLength()) +
             (null != ctx.controlChannel() ? ctx.controlChannel().length() : 0) +
@@ -466,13 +468,21 @@ public class ArchiveMarkFile implements AutoCloseable
         try
         {
             final UnsafeBuffer unsafeBuffer =
-                new UnsafeBuffer(mappedByteBuffer, 0, MessageHeaderDecoder.ENCODED_LENGTH);
+                new UnsafeBuffer(mappedByteBuffer, 0, HEADER_OFFSET);
             return headerOffset(unsafeBuffer);
         }
         finally
         {
             IoUtil.unmap(mappedByteBuffer);
         }
+    }
+
+    private static int headerOffset(final UnsafeBuffer headerBuffer)
+    {
+        final MessageHeaderDecoder decoder = new MessageHeaderDecoder();
+        decoder.wrap(headerBuffer, 0);
+        return MarkFileHeaderDecoder.TEMPLATE_ID == decoder.templateId() &&
+            MarkFileHeaderDecoder.SCHEMA_ID == decoder.schemaId() ? HEADER_OFFSET : 0;
     }
 
     private static MarkFile openExistingMarkFile(
@@ -493,14 +503,6 @@ public class ArchiveMarkFile implements AutoCloseable
             epochClock,
             versionCheck,
             logger);
-    }
-
-    private static int headerOffset(final UnsafeBuffer headerBuffer)
-    {
-        final MessageHeaderDecoder decoder = new MessageHeaderDecoder();
-        decoder.wrap(headerBuffer, 0);
-        return MarkFileHeaderDecoder.TEMPLATE_ID == decoder.templateId() &&
-            MarkFileHeaderDecoder.SCHEMA_ID == decoder.schemaId() ? MessageHeaderDecoder.ENCODED_LENGTH : 0;
     }
 
     /**

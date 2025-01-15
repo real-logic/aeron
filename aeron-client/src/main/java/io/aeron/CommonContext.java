@@ -45,7 +45,7 @@ import java.util.function.Consumer;
 import static io.aeron.CncFileDescriptor.cncVersionOffset;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
-import static java.nio.charset.StandardCharsets.*;
+import static java.nio.charset.StandardCharsets.US_ASCII;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.

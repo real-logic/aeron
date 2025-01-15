@@ -19,6 +19,10 @@
 
 aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_encoded_credentials(aeron_archive_credentials_supplier_t *supplier)
 {
+    if (NULL == supplier->encoded_credentials) {
+        return NULL;
+    }
+
     return supplier->encoded_credentials(supplier->clientd);
 }
 
@@ -26,6 +30,10 @@ aeron_archive_encoded_credentials_t *aeron_archive_credentials_supplier_on_chall
     aeron_archive_credentials_supplier_t *supplier,
     aeron_archive_encoded_credentials_t *encoded_challenge)
 {
+    if (NULL == supplier->on_challenge) {
+        return NULL;
+    }
+
     return supplier->on_challenge(encoded_challenge, supplier->clientd);
 }
 

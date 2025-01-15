@@ -205,6 +205,7 @@ public final class ClusterMarkFile implements AutoCloseable
             }
             else
             {
+                CloseHelper.close(markFile);
                 this.markFile = new MarkFile(
                     file,
                     false,

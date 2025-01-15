@@ -31,8 +31,6 @@
                  blockLength="128"
                  description="Mark file header.">
         <field name="version"              id="1"  type="int32"/>
-        <field name="codecSchemaVersion"   id="14" type="uint16" sinceVersion="2"/>
-        <field name="codecBlockLength"     id="15" type="uint16" sinceVersion="2"/>
         <field name="activityTimestamp"    id="2"  type="time_t" offset="8"/>
         <field name="startTimestamp"       id="3"  type="time_t"/>
         <field name="pid"                  id="4"  type="int64"/>
@@ -41,7 +39,7 @@
         <field name="eventsStreamId"       id="7"  type="int32"/>
         <field name="headerLength"         id="8"  type="length_t" sinceVersion="1"/>
         <field name="errorBufferLength"    id="9"  type="length_t" sinceVersion="1"/>
-        <field name="archiveId"            id="16" type="archiveId_t" offset="56" sinceVersion="2"/>
+        <field name="archiveId"            id="14" type="archiveId_t" offset="56" sinceVersion="2"/>
         <data  name="controlChannel"       id="10" type="varAsciiEncoding"/>
         <data  name="localControlChannel"  id="11" type="varAsciiEncoding"/>
         <data  name="eventsChannel"        id="12" type="varAsciiEncoding"/>

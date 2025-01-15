@@ -20,6 +20,7 @@ import io.aeron.CommonContext;
 import io.aeron.archive.client.AeronArchive;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
 import io.aeron.archive.codecs.mark.MarkFileHeaderEncoder;
+import io.aeron.archive.codecs.mark.MessageHeaderDecoder;
 import io.aeron.driver.MediaDriver;
 import io.aeron.exceptions.DriverTimeoutException;
 import io.aeron.test.TestContexts;
@@ -109,14 +110,15 @@ class ArchiveMarkFileTest
 
         final File aeronDir = new File(tempDir, "aeron");
         final File archiveDir = new File(tempDir, "archive_dir");
-        final File archiveMarkFile = new File(archiveDir, ArchiveMarkFile.FILENAME);
+        final File markFileDir = new File(tempDir, "mark/file/dir");
+        final File archiveMarkFile = new File(markFileDir, ArchiveMarkFile.FILENAME);
 
         final MediaDriver.Context driverContext = new MediaDriver.Context()
             .aeronDirectoryName(aeronDir.getAbsolutePath());
         final Archive.Context archiveContext = TestContexts.localhostArchive()
             .aeronDirectoryName(driverContext.aeronDirectoryName())
             .archiveDir(archiveDir)
-            .markFileDir(archiveMarkFile.getParentFile())
+            .markFileDir(markFileDir)
             .epochClock(SystemEpochClock.INSTANCE);
 
         // Force an error on startup by attempting to start an archive without a media driver.
@@ -309,7 +311,7 @@ class ArchiveMarkFileTest
         }
 
         final Archive.Context context = new Archive.Context()
-            .archiveDir(new File(tempDir, "archive"))
+            .archiveDir(new File(tempDir, "archive/a/long/path/to"))
             .markFileDir(file.getParent().toFile())
             .aeronDirectoryName(aeronDirectory)
             .errorBufferLength(errorBufferLength);
@@ -334,9 +336,14 @@ class ArchiveMarkFileTest
         {
             archiveMarkFile.signalReady();
 
+            final MessageHeaderDecoder messageHeaderDecoder = new MessageHeaderDecoder();
+            messageHeaderDecoder.wrap(archiveMarkFile.buffer(), 0);
+            assertEquals(MarkFileHeaderDecoder.BLOCK_LENGTH, messageHeaderDecoder.blockLength());
+            assertEquals(MarkFileHeaderDecoder.SCHEMA_ID, messageHeaderDecoder.schemaId());
+            assertEquals(MarkFileHeaderDecoder.TEMPLATE_ID, messageHeaderDecoder.templateId());
+            assertEquals(MarkFileHeaderDecoder.SCHEMA_VERSION, messageHeaderDecoder.version());
+
             assertEquals(ArchiveMarkFile.SEMANTIC_VERSION, archiveMarkFile.decoder().version());
-            assertEquals(archiveMarkFile.encoder().sbeSchemaVersion(), archiveMarkFile.decoder().codecSchemaVersion());
-            assertEquals(archiveMarkFile.encoder().sbeBlockLength(), archiveMarkFile.decoder().codecBlockLength());
             assertEquals(epochClock.time(), archiveMarkFile.decoder().startTimestamp());
             assertEquals(SystemUtil.getPid(), archiveMarkFile.decoder().pid());
             assertEquals(ctx.controlStreamId(), archiveMarkFile.decoder().controlStreamId());

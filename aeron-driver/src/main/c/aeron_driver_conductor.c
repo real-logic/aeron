@@ -6009,7 +6009,7 @@ void aeron_driver_conductor_on_create_publication_image(void *clientd, void *ite
         &image,
         endpoint,
         destination,
-        conductor->context,
+        conductor,
         registration_id,
         command->session_id,
         command->stream_id,

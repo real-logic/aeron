@@ -222,8 +222,11 @@ protected:
             m_context,
             &m_counters_manager);
 
+        aeron_driver_conductor_t conductor; // the conductor struct is only used for its context
+        conductor.context = m_context;
+
         if (aeron_publication_image_create(
-            &image, endpoint, destination, m_context, correlation_id, session_id, stream_id, 0, 0, 0,
+            &image, endpoint, destination, &conductor, correlation_id, session_id, stream_id, 0, 0, 0,
             &hwm_position, &pos_position, congestion_control_strategy,
             &channel->remote_control, &channel->local_data,
             TERM_BUFFER_SIZE, MTU, UINT8_C(0), nullptr, true, true, false, &m_system_counters) < 0)

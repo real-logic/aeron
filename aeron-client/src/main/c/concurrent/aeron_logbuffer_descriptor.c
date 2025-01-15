@@ -266,5 +266,39 @@ extern bool aeron_logbuffer_rotate_log(
     aeron_logbuffer_metadata_t *log_meta_data, int32_t current_term_count, int32_t current_term_id);
 extern void aeron_logbuffer_fill_default_header(
     uint8_t *log_meta_data_buffer, int32_t session_id, int32_t stream_id, int32_t initial_term_id);
+extern void aeron_logbuffer_metadata_init(
+    uint8_t *log_meta_data_buffer,
+    int64_t end_of_stream_position,
+    int32_t is_connected,
+    int32_t active_transport_count,
+    int64_t correlation_id,
+    int32_t initial_term_id,
+    int32_t mtu_length,
+    int32_t term_length,
+    int32_t page_size,
+    int32_t publication_window_length,
+    int32_t receiver_window_length,
+    int32_t socket_sndbuf_length,
+    int32_t os_default_socket_sndbuf_length,
+    int32_t os_max_socket_sndbuf_length,
+    int32_t socket_rcvbuf_length,
+    int32_t os_default_socket_rcvbuf_length,
+    int32_t os_max_socket_rcvbuf_length,
+    int32_t max_resend,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t entity_tag,
+    int64_t response_correlation_id,
+    int64_t linger_timeout_ns,
+    int64_t untethered_window_limit_timeout_ns,
+    int64_t untethered_resting_timeout_ns,
+    uint8_t group,
+    uint8_t is_response,
+    uint8_t rejoin,
+    uint8_t reliable,
+    uint8_t sparse,
+    uint8_t signal_eos,
+    uint8_t spies_simulate_connection,
+    uint8_t tether);
 extern void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer);
 extern size_t aeron_logbuffer_compute_fragmented_length(size_t length, size_t max_payload_length);

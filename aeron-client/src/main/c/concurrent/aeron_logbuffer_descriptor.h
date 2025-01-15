@@ -225,6 +225,85 @@ inline void aeron_logbuffer_fill_default_header(
     data_header->reserved_value = AERON_DATA_HEADER_DEFAULT_RESERVED_VALUE;
 }
 
+/*
+ * Does NOT initialize the following fields:
+ * - term_tail_counters
+ * - active_term_count
+ */
+inline void aeron_logbuffer_metadata_init(
+    uint8_t *log_meta_data_buffer,
+    int64_t end_of_stream_position,
+    int32_t is_connected,
+    int32_t active_transport_count,
+    int64_t correlation_id,
+    int32_t initial_term_id,
+    int32_t mtu_length,
+    int32_t term_length,
+    int32_t page_size,
+    int32_t publication_window_length,
+    int32_t receiver_window_length,
+    int32_t socket_sndbuf_length,
+    int32_t os_default_socket_sndbuf_length,
+    int32_t os_max_socket_sndbuf_length,
+    int32_t socket_rcvbuf_length,
+    int32_t os_default_socket_rcvbuf_length,
+    int32_t os_max_socket_rcvbuf_length,
+    int32_t max_resend,
+    int32_t session_id,
+    int32_t stream_id,
+    int64_t entity_tag,
+    int64_t response_correlation_id,
+    int64_t linger_timeout_ns,
+    int64_t untethered_window_limit_timeout_ns,
+    int64_t untethered_resting_timeout_ns,
+    uint8_t group,
+    uint8_t is_response,
+    uint8_t rejoin,
+    uint8_t reliable,
+    uint8_t sparse,
+    uint8_t signal_eos,
+    uint8_t spies_simulate_connection,
+    uint8_t tether)
+{
+    aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;
+
+    log_meta_data->end_of_stream_position = end_of_stream_position;
+    log_meta_data->is_connected = is_connected;
+    log_meta_data->active_transport_count = active_transport_count;
+
+    log_meta_data->correlation_id = correlation_id;
+    log_meta_data->initial_term_id = initial_term_id;
+    log_meta_data->mtu_length = mtu_length;
+    log_meta_data->term_length = term_length;
+    log_meta_data->page_size = page_size;
+
+    log_meta_data->publication_window_length = publication_window_length;
+    log_meta_data->receiver_window_length = receiver_window_length;
+    log_meta_data->socket_sndbuf_length = socket_sndbuf_length;
+    log_meta_data->os_default_socket_sndbuf_length = os_default_socket_sndbuf_length;
+    log_meta_data->os_max_socket_sndbuf_length = os_max_socket_sndbuf_length;
+    log_meta_data->socket_rcvbuf_length = socket_rcvbuf_length;
+    log_meta_data->os_default_socket_rcvbuf_length = os_default_socket_rcvbuf_length;
+    log_meta_data->os_max_socket_rcvbuf_length = os_max_socket_rcvbuf_length;
+    log_meta_data->max_resend = max_resend;
+
+    aeron_logbuffer_fill_default_header(log_meta_data_buffer, session_id, stream_id, initial_term_id);
+
+    log_meta_data->entity_tag = entity_tag;
+    log_meta_data->response_correlation_id = response_correlation_id;
+    log_meta_data->linger_timeout_ns = linger_timeout_ns;
+    log_meta_data->untethered_window_limit_timeout_ns = untethered_window_limit_timeout_ns;
+    log_meta_data->untethered_resting_timeout_ns = untethered_resting_timeout_ns;
+    log_meta_data->group = group;
+    log_meta_data->is_response = is_response;
+    log_meta_data->rejoin = rejoin;
+    log_meta_data->reliable = reliable;
+    log_meta_data->sparse = sparse;
+    log_meta_data->signal_eos = signal_eos;
+    log_meta_data->spies_simulate_connection = spies_simulate_connection;
+    log_meta_data->tether = tether;
+}
+
 inline void aeron_logbuffer_apply_default_header(uint8_t *log_meta_data_buffer, uint8_t *buffer)
 {
     aeron_logbuffer_metadata_t *log_meta_data = (aeron_logbuffer_metadata_t *)log_meta_data_buffer;

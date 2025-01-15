@@ -160,7 +160,7 @@ int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination,
-    aeron_driver_context_t *context,
+    aeron_driver_conductor_t *conductor,
     int64_t correlation_id,
     int32_t session_id,
     int32_t stream_id,

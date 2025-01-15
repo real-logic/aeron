@@ -107,6 +107,13 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_
     return 0;
 }
 
+int aeron_uri_get_publication_window_length_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
+{
+    params->publication_window_length = 0; // TODO
+
+    return 0;
+}
+
 int aeron_uri_linger_timeout_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
 {
     return aeron_uri_get_timeout(uri_params, AERON_URI_LINGER_TIMEOUT_KEY, &params->linger_timeout_ns);
@@ -236,6 +243,11 @@ int aeron_diver_uri_publication_params(
     }
 
     if (aeron_uri_get_mtu_length_param(uri_params, params) < 0)
+    {
+        return -1;
+    }
+
+    if (aeron_uri_get_publication_window_length_param(uri_params, params) < 0)
     {
         return -1;
     }

@@ -226,16 +226,36 @@ int aeron_network_publication_create(
     // Called from conductor thread...
     int64_t now_ns = aeron_clock_cached_nano_time(context->cached_clock);
 
-    _pub->log_meta_data->initial_term_id = initial_term_id;
-    _pub->log_meta_data->mtu_length = (int32_t)params->mtu_length;
-    _pub->log_meta_data->term_length = (int32_t)params->term_length;
-    _pub->log_meta_data->page_size = (int32_t)context->file_page_size;
-    _pub->log_meta_data->correlation_id = registration_id;
-    _pub->log_meta_data->is_connected = 0;
-    _pub->log_meta_data->active_transport_count = 0;
-    _pub->log_meta_data->end_of_stream_position = INT64_MAX;
-    aeron_logbuffer_fill_default_header(
-        _pub->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
+    aeron_logbuffer_metadata_init(
+        _pub->mapped_raw_log.log_meta_data.addr,
+        INT64_MAX,
+        0,
+        0,
+        registration_id,
+        initial_term_id,
+        (int32_t)params->mtu_length,
+        (int32_t)params->term_length,
+        (int32_t)context->file_page_size,
+        (int32_t)params->publication_window_length,
+        0,
+        (int32_t)endpoint->conductor_fields.udp_channel->socket_sndbuf_length,
+        (int32_t)context->os_buffer_lengths.default_so_sndbuf,
+        (int32_t)context->os_buffer_lengths.max_so_sndbuf,
+        (int32_t)endpoint->conductor_fields.udp_channel->socket_rcvbuf_length,
+        (int32_t)context->os_buffer_lengths.default_so_rcvbuf,
+        (int32_t)context->os_buffer_lengths.max_so_rcvbuf,
+        (int32_t)params->max_resend,
+        session_id,
+        stream_id,
+        (int64_t)params->linger_timeout_ns,
+        (int64_t)params->untethered_window_limit_timeout_ns,
+        (int64_t)params->untethered_resting_timeout_ns,
+        (uint8_t)false,
+        (uint8_t)false,
+        (uint8_t)params->is_sparse,
+        (uint8_t)params->signal_eos,
+        (uint8_t)params->spies_simulate_connection,
+        (uint8_t)false);
 
     _pub->endpoint = endpoint;
     _pub->flow_control = flow_control_strategy;

@@ -110,7 +110,7 @@ int aeron_publication_image_create(
     aeron_publication_image_t **image,
     aeron_receive_channel_endpoint_t *endpoint,
     aeron_receive_destination_t *destination,
-    aeron_driver_context_t *context,
+    aeron_driver_conductor_t *conductor,
     int64_t correlation_id,
     int32_t session_id,
     int32_t stream_id,
@@ -131,6 +131,8 @@ int aeron_publication_image_create(
     bool treat_as_multicast,
     aeron_system_counters_t *system_counters)
 {
+    aeron_driver_context_t *context = conductor->context;
+
     aeron_publication_image_t *_image = NULL;
     const uint64_t log_length = aeron_logbuffer_compute_log_length(
         (uint64_t)term_buffer_length, context->file_page_size);
@@ -216,16 +218,43 @@ int aeron_publication_image_create(
     _image->log_file_name_length = (size_t)path_length;
     _image->log_meta_data = (aeron_logbuffer_metadata_t *)(_image->mapped_raw_log.log_meta_data.addr);
 
-    _image->log_meta_data->initial_term_id = initial_term_id;
-    _image->log_meta_data->mtu_length = sender_mtu_length;
-    _image->log_meta_data->term_length = term_buffer_length;
-    _image->log_meta_data->page_size = (int32_t)context->file_page_size;
-    _image->log_meta_data->correlation_id = correlation_id;
-    _image->log_meta_data->is_connected = 0;
-    _image->log_meta_data->active_transport_count = 0;
-    _image->log_meta_data->end_of_stream_position = INT64_MAX;
-    aeron_logbuffer_fill_default_header(
-        _image->mapped_raw_log.log_meta_data.addr, session_id, stream_id, initial_term_id);
+    aeron_driver_uri_subscription_params_t params;
+    if (aeron_driver_uri_subscription_params(&endpoint->conductor_fields.udp_channel->uri, &params, conductor) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        goto error;
+    }
+
+    aeron_logbuffer_metadata_init(
+        _image->mapped_raw_log.log_meta_data.addr,
+        INT64_MAX,
+        0,
+        0,
+        correlation_id,
+        initial_term_id,
+        sender_mtu_length,
+        term_buffer_length,
+        (int32_t)context->file_page_size,
+        0,
+        (int32_t)params.initial_window_length,
+        (int32_t)endpoint->conductor_fields.udp_channel->socket_sndbuf_length,
+        (int32_t)context->os_buffer_lengths.default_so_sndbuf,
+        (int32_t)context->os_buffer_lengths.max_so_sndbuf,
+        (int32_t)endpoint->conductor_fields.udp_channel->socket_rcvbuf_length,
+        (int32_t)context->os_buffer_lengths.default_so_rcvbuf,
+        (int32_t)context->os_buffer_lengths.max_so_rcvbuf,
+        0,
+        session_id,
+        stream_id,
+        0,
+        0,
+        0,
+        (uint8_t)params.is_rejoin,
+        (uint8_t)params.is_reliable,
+        (uint8_t)params.is_sparse,
+        (uint8_t)false,
+        (uint8_t)false,
+        (uint8_t)params.is_tether);
 
     _image->endpoint = endpoint;
     _image->conductor_fields.endpoint = endpoint;

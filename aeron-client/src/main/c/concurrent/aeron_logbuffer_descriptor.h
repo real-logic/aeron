@@ -251,13 +251,13 @@ inline void aeron_logbuffer_metadata_init(
     int32_t max_resend,
     int32_t session_id,
     int32_t stream_id,
-    //int64_t entity_tag,
-    //int64_t response_correlation_id,
+    int64_t entity_tag,
+    int64_t response_correlation_id,
     int64_t linger_timeout_ns,
     int64_t untethered_window_limit_timeout_ns,
     int64_t untethered_resting_timeout_ns,
-    //uint8_t group,
-    //uint8_t is_response,
+    uint8_t group,
+    uint8_t is_response,
     uint8_t rejoin,
     uint8_t reliable,
     uint8_t sparse,
@@ -289,13 +289,13 @@ inline void aeron_logbuffer_metadata_init(
 
     aeron_logbuffer_fill_default_header(log_meta_data_buffer, session_id, stream_id, initial_term_id);
 
-    log_meta_data->entity_tag = 0; // TODO not used?
-    log_meta_data->response_correlation_id = 0; // TODO not used?
+    log_meta_data->entity_tag = entity_tag;
+    log_meta_data->response_correlation_id = response_correlation_id;
     log_meta_data->linger_timeout_ns = linger_timeout_ns;
     log_meta_data->untethered_window_limit_timeout_ns = untethered_window_limit_timeout_ns;
     log_meta_data->untethered_resting_timeout_ns = untethered_resting_timeout_ns;
-    log_meta_data->group = 0; // TODO not used?
-    log_meta_data->is_response = 0; // TODO not used?
+    log_meta_data->group = group;
+    log_meta_data->is_response = is_response;
     log_meta_data->rejoin = rejoin;
     log_meta_data->reliable = reliable;
     log_meta_data->sparse = sparse;

@@ -152,12 +152,14 @@ int aeron_network_publication_create(
     int64_t *retransmit_overflow_counter = aeron_system_counter_addr(
         system_counters, AERON_SYSTEM_COUNTER_RETRANSMIT_OVERFLOW);
 
+    bool has_group_semantics = aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel);
+
     if (aeron_retransmit_handler_init(
         &_pub->retransmit_handler,
         aeron_system_counter_addr(system_counters, AERON_SYSTEM_COUNTER_INVALID_PACKETS),
         context->retransmit_unicast_delay_ns,
         context->retransmit_unicast_linger_ns,
-        aeron_udp_channel_has_group_semantics(endpoint->conductor_fields.udp_channel),
+        has_group_semantics,
         params->has_max_resend ? params->max_resend : context->max_resend,
         retransmit_overflow_counter) < 0)
     {
@@ -247,9 +249,13 @@ int aeron_network_publication_create(
         (int32_t)params->max_resend,
         session_id,
         stream_id,
+        (int64_t)params->entity_tag,
+        (int64_t)params->response_correlation_id,
         (int64_t)params->linger_timeout_ns,
         (int64_t)params->untethered_window_limit_timeout_ns,
         (int64_t)params->untethered_resting_timeout_ns,
+        (uint8_t)has_group_semantics,
+        (uint8_t)params->is_response,
         (uint8_t)false,
         (uint8_t)false,
         (uint8_t)params->is_sparse,

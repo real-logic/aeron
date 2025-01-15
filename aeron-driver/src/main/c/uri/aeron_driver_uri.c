@@ -241,6 +241,10 @@ int aeron_diver_uri_publication_params(
     params->response_correlation_id = AERON_NULL_VALUE;
     params->has_max_resend = false;
     params->max_resend = 0;
+    params->is_response =
+        (AERON_URI_UDP == uri->type &&
+        NULL != uri->params.udp.control_mode &&
+        strcmp(uri->params.udp.control_mode, AERON_UDP_CHANNEL_CONTROL_MODE_RESPONSE_VALUE) == 0);
 
     aeron_uri_params_t *uri_params = AERON_URI_IPC == uri->type ?
         &uri->params.ipc.additional_params : &uri->params.udp.additional_params;

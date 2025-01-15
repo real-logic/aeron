@@ -45,6 +45,7 @@ typedef struct aeron_driver_uri_publication_params_stct
     uint32_t max_resend;
     bool has_publication_window_length;
     int32_t publication_window_length;
+    bool is_response;
 }
 aeron_driver_uri_publication_params_t;
 

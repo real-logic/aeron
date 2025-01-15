@@ -634,6 +634,17 @@ public class SendChannelEndpoint extends UdpChannelTransport
             }
         }
     }
+
+    /**
+     * Does the channel have a matching tag?
+     *
+     * @param udpChannel with tag to match against.
+     * @return true if the channel matches on tag identity.
+     */
+    public boolean matchesTag(final UdpChannel udpChannel)
+    {
+        return super.udpChannel.matchesTag(udpChannel);
+    }
 }
 
 abstract class MultiSndDestinationLhsPadding

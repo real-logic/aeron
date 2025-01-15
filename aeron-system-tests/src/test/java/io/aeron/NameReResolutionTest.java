@@ -579,6 +579,54 @@ class NameReResolutionTest
         }
     }
 
+    @Test
+    @SlowTest
+    @InterruptAfter(10)
+    void shouldHandleTaggedSubscriptionsAddressWithReResolutionToMdcPublications()
+    {
+        final String taggedUri = SUBSCRIPTION_DYNAMIC_MDC_URI + "|tags=22701";
+
+        subscription = client.addSubscription(taggedUri, STREAM_ID);
+        assertFalse(subscription.isConnected());
+
+        assertTrue(updateNameResolutionStatus(countersReader, CONTROL_NAME, USE_RE_RESOLUTION_HOST));
+
+        publication = client.addPublication(SECOND_PUBLICATION_DYNAMIC_MDC_URI, STREAM_ID);
+
+        Tests.awaitConnected(subscription);
+
+        try (Subscription taggedSub1 = client.addSubscription("aeron:udp?tags=22701", STREAM_ID);
+            Subscription taggedSub2 = client.addSubscription(taggedUri, STREAM_ID))
+        {
+            Tests.awaitConnected(taggedSub1);
+            Tests.awaitConnected(taggedSub2);
+        }
+    }
+
+    @Test
+    @SlowTest
+    @InterruptAfter(10)
+    void shouldHandleTaggedPublication()
+    {
+        final String taggedUri = PUBLICATION_URI + "|tags=22701";
+
+        publication = client.addPublication(taggedUri, STREAM_ID);
+        assertFalse(publication.isConnected());
+
+        assertTrue(updateNameResolutionStatus(countersReader, ENDPOINT_NAME, USE_RE_RESOLUTION_HOST));
+
+        subscription = client.addSubscription(SECOND_SUBSCRIPTION_URI, STREAM_ID);
+
+        Tests.awaitConnected(publication);
+
+        try (Publication taggedPub1 = client.addPublication("aeron:udp?tags=22701", STREAM_ID);
+            Publication taggedPub2 = client.addPublication(taggedUri, STREAM_ID))
+        {
+            Tests.awaitConnected(taggedPub1);
+            Tests.awaitConnected(taggedPub2);
+        }
+    }
+
     private static void assumeBindAddressAvailable(final String address)
     {
         final String message = NetworkTestingUtil.isBindAddressAvailable(address);

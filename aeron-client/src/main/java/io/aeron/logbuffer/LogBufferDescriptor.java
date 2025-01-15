@@ -1100,6 +1100,51 @@ public class LogBufferDescriptor
     }
 
     /**
+     * Get whether the log is group from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is group, otherwise false.
+     */
+    public static boolean group(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getByte(LOG_GROUP_OFFSET) == 1;
+    }
+
+    /**
+     * Set whether the log is group in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is group, otherwise false.
+     */
+    public static void group(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
+        metadataBuffer.putByte(LOG_GROUP_OFFSET, (byte)(value ? 1 : 0));
+    }
+
+    /**
+     * Get whether the log is response from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return true if the log is group, otherwise false.
+     */
+    public static boolean isResponse(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getByte(LOG_IS_RESPONSE_OFFSET) == 1;
+    }
+
+    /**
+     * Set whether the log is response in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          true if the log is group, otherwise false.
+     */
+    public static void isResponse(final UnsafeBuffer metadataBuffer, final boolean value)
+    {
+        metadataBuffer.putByte(LOG_IS_RESPONSE_OFFSET, (byte)(value ? 1 : 0));
+    }
+
+
+    /**
      * Get whether the log is rejoining from the metadata.
      *
      * @param metadataBuffer containing the meta data.
@@ -1405,6 +1450,50 @@ public class LogBufferDescriptor
     public static void lingerTimeoutNs(final UnsafeBuffer metadataBuffer, final long value)
     {
         metadataBuffer.putLong(LOG_LINGER_TIMEOUT_NS_OFFSET, value);
+    }
+
+    /**
+     * Get the entity tag  from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the entity tag in nanoseconds.
+     */
+    public static long entityTag(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getLong(LOG_ENTITY_TAG_OFFSET);
+    }
+
+    /**
+     * Set the entity tag in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the entity tag to set.
+     */
+    public static void entityTag(final UnsafeBuffer metadataBuffer, final long value)
+    {
+        metadataBuffer.putLong(LOG_ENTITY_TAG_OFFSET, value);
+    }
+
+    /**
+     * Get the response correlation id  from the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @return the entity tag in nanoseconds.
+     */
+    public static long responseCorrelationId(final UnsafeBuffer metadataBuffer)
+    {
+        return metadataBuffer.getLong(LOG_RESPONSE_CORRELATION_ID_OFFSET);
+    }
+
+    /**
+     * Set the response correlation id in the metadata.
+     *
+     * @param metadataBuffer containing the meta data.
+     * @param value          the resonse correlation id to set.
+     */
+    public static void responseCorrelationId(final UnsafeBuffer metadataBuffer, final long value)
+    {
+        metadataBuffer.putLong(LOG_RESPONSE_CORRELATION_ID_OFFSET, value);
     }
 
     /**

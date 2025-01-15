@@ -1835,6 +1835,8 @@ public final class DriverConductor implements Agent
             rejoin,
             reliable,
             params.isSparse,
+            false,//todo
+            params.isResponse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,
             params.untetheredRestingTimeoutNs,
@@ -1842,6 +1844,8 @@ public final class DriverConductor implements Agent
             params.lingerTimeoutNs,
             params.signalEos,
             params.spiesSimulateConnection,
+            params.entityTag,
+            params.responseCorrelationId,
             rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
@@ -1878,6 +1882,8 @@ public final class DriverConductor implements Agent
             rejoin,
             reliable,
             params.isSparse,
+            false,// todo: group is missing
+            params.isResponse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,
             params.untetheredRestingTimeoutNs,
@@ -1885,6 +1891,8 @@ public final class DriverConductor implements Agent
             params.lingerTimeoutNs,
             params.signalEos,
             params.spiesSimulateConnection,
+            params.entityTag,
+            params.responseCorrelationId,
             rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
@@ -1905,6 +1913,8 @@ public final class DriverConductor implements Agent
         final boolean rejoin,
         final boolean reliable,
         final boolean sparse,
+        final boolean group,
+        final boolean isResponse,
         final int publicationWindowLength,
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
@@ -1912,6 +1922,8 @@ public final class DriverConductor implements Agent
         final long lingerTimeoutNs,
         final boolean signalEos,
         final boolean spiesSimulateConnection,
+        final long entityTag,
+        final long responseCorrelationId,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1945,7 +1957,11 @@ public final class DriverConductor implements Agent
         signalEos(logMetaData, signalEos);
         spiesSimulateConnection(logMetaData, spiesSimulateConnection);
         tether(logMetaData, tether);
+        group(logMetaData, group);
+        isResponse(logMetaData, isResponse);
 
+        entityTag(logMetaData, entityTag);
+        responseCorrelationId(logMetaData, responseCorrelationId);
         untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
         untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);
         lingerTimeoutNs(logMetaData, lingerTimeoutNs);
@@ -2022,6 +2038,8 @@ public final class DriverConductor implements Agent
             params.isRejoin,
             params.isReliable,
             params.isSparse,
+            false,// todo: group is missing
+            params.isResponse,
             publicationWindowLength,
             untetheredWindowLimitTimeoutNs,
             untetheredRestingTimeoutNs,
@@ -2029,6 +2047,8 @@ public final class DriverConductor implements Agent
             lingerTimeoutNs,
             signalEos,
             spiesSimulateConnection,
+            0, // todo: entity tag is missing
+            0, // todo: responseCorrelationId is missing
             rawLog);
 
         return rawLog;

@@ -76,6 +76,8 @@ int aeron_archive_context_init(aeron_archive_context_t **ctx)
     _ctx->idle_strategy_state = NULL;
     _ctx->owns_idle_strategy = false;
 
+    aeron_archive_context_set_credentials_supplier(_ctx, NULL, NULL, NULL, NULL);
+
     _ctx->error_handler = NULL;
     _ctx->error_handler_clientd = NULL;
 

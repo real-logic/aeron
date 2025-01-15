@@ -109,7 +109,45 @@ int aeron_uri_get_mtu_length_param(aeron_uri_params_t *uri_params, aeron_driver_
 
 int aeron_uri_get_publication_window_length_param(aeron_uri_params_t *uri_params, aeron_driver_uri_publication_params_t *params)
 {
-    params->publication_window_length = 0; // TODO
+    const char *value_str;
+
+    if ((value_str = aeron_uri_find_param_value(uri_params, AERON_URI_PUBLICATION_WINDOW_KEY)) != NULL)
+    {
+        uint64_t value;
+
+        if (-1 == aeron_parse_size64(value_str, &value))
+        {
+            AERON_SET_ERR(EINVAL, "could not parse %s=%s in URI", AERON_URI_PUBLICATION_WINDOW_KEY, value_str);
+            return -1;
+        }
+
+        if (value < params->mtu_length)
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "%s=" PRIu64 " cannot be less than the %s=" PRIu64,
+                AERON_URI_PUBLICATION_WINDOW_KEY,
+                value,
+                AERON_URI_MTU_LENGTH_KEY,
+                params->mtu_length);
+            return -1;
+        }
+
+        if (value > (params->term_length >> 1))
+        {
+            AERON_SET_ERR(
+                EINVAL,
+                "%s=" PRIu64 " must not exceed half the %s=" PRIu64,
+                AERON_URI_PUBLICATION_WINDOW_KEY,
+                value,
+                AERON_URI_TERM_LENGTH_KEY,
+                params->term_length);
+            return -1;
+        }
+
+        params->publication_window_length = (int32_t)value;
+        params->has_publication_window_length = true;
+    }
 
     return 0;
 }
@@ -246,6 +284,11 @@ int aeron_diver_uri_publication_params(
     {
         return -1;
     }
+
+    params->publication_window_length = (int32_t)aeron_producer_window_length(
+        AERON_URI_IPC == uri->type ? context->ipc_publication_window_length : context->publication_window_length,
+        params->term_length);
+    params->has_publication_window_length = false;
 
     if (aeron_uri_get_publication_window_length_param(uri_params, params) < 0)
     {

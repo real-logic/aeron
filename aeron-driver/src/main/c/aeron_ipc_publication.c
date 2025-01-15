@@ -194,8 +194,7 @@ int aeron_ipc_publication_create(
     _pub->starting_term_id = params->has_position ? params->term_id : initial_term_id;
     _pub->starting_term_offset = params->has_position ? params->term_offset : 0;
     _pub->position_bits_to_shift = (size_t)aeron_number_of_trailing_zeroes((int32_t)params->term_length);
-    _pub->term_window_length = (int64_t)aeron_producer_window_length(
-        context->ipc_publication_window_length, params->term_length);
+    _pub->term_window_length = params->publication_window_length;
     _pub->trip_gain = _pub->term_window_length / 8;
     _pub->unblock_timeout_ns = (int64_t)context->publication_unblock_timeout_ns;
     _pub->untethered_window_limit_timeout_ns = (int64_t)params->untethered_window_limit_timeout_ns;

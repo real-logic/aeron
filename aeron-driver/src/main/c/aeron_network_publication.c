@@ -299,8 +299,7 @@ int aeron_network_publication_create(
     _pub->mtu_length = params->mtu_length;
     _pub->max_messages_per_send = context->network_publication_max_messages_per_send;
     _pub->current_messages_per_send = _pub->max_messages_per_send;
-    _pub->term_window_length = (int64_t)aeron_producer_window_length(
-        context->publication_window_length, params->term_length);
+    _pub->term_window_length = params->publication_window_length;
     _pub->linger_timeout_ns = (int64_t)params->linger_timeout_ns;
     _pub->untethered_window_limit_timeout_ns = (int64_t)params->untethered_window_limit_timeout_ns;
     _pub->untethered_resting_timeout_ns = (int64_t)params->untethered_resting_timeout_ns;

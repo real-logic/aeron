@@ -313,7 +313,8 @@ public final class DriverConductor implements Agent
                     channelEndpoint.socketSndbufLength(),
                     termOffset,
                     subscriptionParams,
-                    registrationId);
+                    registrationId,
+                    isMulticastSemantics(subscriptionChannel, subscriptionParams.group, flags));
 
                 congestionControl = ctx.congestionControlSupplier().newInstance(
                     registrationId,
@@ -1731,7 +1732,8 @@ public final class DriverConductor implements Agent
         final int termOffset = params.termOffset;
 
         final RawLog rawLog = newNetworkPublicationLog(params.sessionId, streamId, params.initialTermId, registrationId,
-            channelEndpoint.socketRcvbufLength(), channelEndpoint.socketSndbufLength(), termOffset, params);
+            channelEndpoint.socketRcvbufLength(), channelEndpoint.socketSndbufLength(), termOffset, params,
+            udpChannel.hasGroupSemantics());
         UnsafeBufferPosition publisherPos = null;
         UnsafeBufferPosition publisherLmt = null;
         UnsafeBufferPosition senderPos = null;
@@ -1814,7 +1816,8 @@ public final class DriverConductor implements Agent
         final int socketRcvBufLength,
         final int socketSndBufLength,
         final int termOffset,
-        final PublicationParams params)
+        final PublicationParams params,
+        final boolean hasGroupSemantics)
     {
         final RawLog rawLog = logFactory.newPublication(registrationId, params.termLength, params.isSparse);
         final int receiverWindowLength = 0;
@@ -1835,6 +1838,8 @@ public final class DriverConductor implements Agent
             rejoin,
             reliable,
             params.isSparse,
+            hasGroupSemantics,
+            params.isResponse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,
             params.untetheredRestingTimeoutNs,
@@ -1842,6 +1847,8 @@ public final class DriverConductor implements Agent
             params.lingerTimeoutNs,
             params.signalEos,
             params.spiesSimulateConnection,
+            params.entityTag,
+            params.responseCorrelationId,
             rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
@@ -1864,6 +1871,7 @@ public final class DriverConductor implements Agent
         final boolean tether = false;
         final boolean rejoin = false;
         final boolean reliable = false;
+        final boolean group = false;
         initLogMetadata(
             sessionId,
             streamId,
@@ -1878,6 +1886,8 @@ public final class DriverConductor implements Agent
             rejoin,
             reliable,
             params.isSparse,
+            group,
+            params.isResponse,
             params.publicationWindowLength,
             params.untetheredWindowLimitTimeoutNs,
             params.untetheredRestingTimeoutNs,
@@ -1885,6 +1895,8 @@ public final class DriverConductor implements Agent
             params.lingerTimeoutNs,
             params.signalEos,
             params.spiesSimulateConnection,
+            params.entityTag,
+            params.responseCorrelationId,
             rawLog);
         initialisePositionCounters(initialTermId, params, rawLog.metaData());
 
@@ -1905,6 +1917,8 @@ public final class DriverConductor implements Agent
         final boolean rejoin,
         final boolean reliable,
         final boolean sparse,
+        final boolean group,
+        final boolean isResponse,
         final int publicationWindowLength,
         final long untetheredWindowLimitTimeoutNs,
         final long untetheredRestingTimeoutNs,
@@ -1912,6 +1926,8 @@ public final class DriverConductor implements Agent
         final long lingerTimeoutNs,
         final boolean signalEos,
         final boolean spiesSimulateConnection,
+        final long entityTag,
+        final long responseCorrelationId,
         final RawLog rawLog)
     {
         final UnsafeBuffer logMetaData = rawLog.metaData();
@@ -1945,7 +1961,11 @@ public final class DriverConductor implements Agent
         signalEos(logMetaData, signalEos);
         spiesSimulateConnection(logMetaData, spiesSimulateConnection);
         tether(logMetaData, tether);
+        group(logMetaData, group);
+        isResponse(logMetaData, isResponse);
 
+        entityTag(logMetaData, entityTag);
+        responseCorrelationId(logMetaData, responseCorrelationId);
         untetheredWindowLimitTimeoutNs(logMetaData, untetheredWindowLimitTimeoutNs);
         untetheredRestingTimeoutNs(logMetaData, untetheredRestingTimeoutNs);
         lingerTimeoutNs(logMetaData, lingerTimeoutNs);
@@ -1997,7 +2017,8 @@ public final class DriverConductor implements Agent
         final int socketSndBufLength,
         final int termOffset,
         final SubscriptionParams params,
-        final long correlationId)
+        final long correlationId,
+        final boolean hasGroupSemantics)
     {
         final RawLog rawLog = logFactory.newImage(correlationId, termBufferLength, isSparse);
 
@@ -2008,6 +2029,8 @@ public final class DriverConductor implements Agent
         final long lingerTimeoutNs = 0;
         final boolean signalEos = false;
         final boolean spiesSimulateConnection = false;
+        final long entityTag = 0;
+        final long responseCorrelationId = 0;
         initLogMetadata(
             sessionId,
             streamId,
@@ -2022,6 +2045,8 @@ public final class DriverConductor implements Agent
             params.isRejoin,
             params.isReliable,
             params.isSparse,
+            hasGroupSemantics,
+            params.isResponse,
             publicationWindowLength,
             untetheredWindowLimitTimeoutNs,
             untetheredRestingTimeoutNs,
@@ -2029,6 +2054,8 @@ public final class DriverConductor implements Agent
             lingerTimeoutNs,
             signalEos,
             spiesSimulateConnection,
+            entityTag,
+            responseCorrelationId,
             rawLog);
 
         return rawLog;
@@ -2843,11 +2870,19 @@ public final class DriverConductor implements Agent
         final InferableBoolean receiverGroupConsideration,
         final short flags)
     {
-        final boolean isGroupFromFlag = (flags & SetupFlyweight.GROUP_FLAG) == SetupFlyweight.GROUP_FLAG;
-        final boolean isMulticastSemantics = receiverGroupConsideration == INFER ?
-            channel.isMulticast() || isGroupFromFlag : receiverGroupConsideration == FORCE_TRUE;
+        return resolveDelayGenerator(ctx, channel, isMulticastSemantics(channel, receiverGroupConsideration, flags));
+    }
 
-        return resolveDelayGenerator(ctx, channel, isMulticastSemantics);
+    static boolean isMulticastSemantics(
+        final UdpChannel channel,
+        final InferableBoolean receiverGroupConsideration,
+        final short flags)
+    {
+        final boolean isGroupFromFlag = (flags & SetupFlyweight.GROUP_FLAG) == SetupFlyweight.GROUP_FLAG;
+
+        return receiverGroupConsideration == INFER ?
+            channel.isMulticast() || isGroupFromFlag :
+            receiverGroupConsideration == FORCE_TRUE;
     }
 
     private interface AsyncResult<T> extends Supplier<T>

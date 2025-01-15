@@ -45,6 +45,7 @@ import java.util.function.Consumer;
 import static io.aeron.CncFileDescriptor.cncVersionOffset;
 import static java.lang.Long.getLong;
 import static java.lang.System.getProperty;
+import static java.nio.charset.StandardCharsets.*;
 
 /**
  * This class provides the Media Driver and client with common configuration for the Aeron directory.
@@ -1151,7 +1152,7 @@ public class CommonContext implements Cloneable
         try
         {
             final ByteArrayOutputStream baos = new ByteArrayOutputStream();
-            final int observations = printErrorLog(errorBuffer, new PrintStream(baos, false, "US-ASCII"));
+            final int observations = printErrorLog(errorBuffer, new PrintStream(baos, false, US_ASCII));
             if (observations > 0)
             {
                 final SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSSZ");

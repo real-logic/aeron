@@ -619,7 +619,18 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
      */
     public boolean matchesTag(final UdpChannel udpChannel)
     {
-        return super.udpChannel.matchesTag(udpChannel);
+        final boolean udpChannelMatches = super.udpChannel.matchesTag(udpChannel);
+
+        final InetSocketAddress thisRemoteData = super.udpChannel.remoteData();
+        final InetSocketAddress thatRemoteData = udpChannel.remoteData();
+        final InetSocketAddress thatLocalData = udpChannel.localData();
+
+        final boolean addressMatches = thatRemoteData.getAddress().equals(thisRemoteData.getAddress()) &&
+            thatRemoteData.getPort() == thisRemoteData.getPort() &&
+            thatLocalData.getAddress().equals(currentControlAddress.getAddress()) &&
+            thatLocalData.getPort() == currentControlAddress.getPort();
+
+        return udpChannelMatches && (udpChannel.isWildcard() || addressMatches);
     }
 
     /**

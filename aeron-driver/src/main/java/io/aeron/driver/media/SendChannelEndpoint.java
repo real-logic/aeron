@@ -643,7 +643,23 @@ public class SendChannelEndpoint extends UdpChannelTransport
      */
     public boolean matchesTag(final UdpChannel udpChannel)
     {
-        return super.udpChannel.matchesTag(udpChannel);
+        final boolean udpChannelMatches = super.udpChannel.matchesTag(udpChannel);
+
+        final InetSocketAddress thatRemoteData = udpChannel.remoteData();
+        final InetSocketAddress thisLocalData = super.udpChannel.localData();
+        final InetSocketAddress thatLocalData = udpChannel.localData();
+
+        final boolean wildcardMatches = thatRemoteData.getAddress().isAnyLocalAddress() &&
+            thatRemoteData.getPort() == 0 &&
+            thatLocalData.getAddress().isAnyLocalAddress() &&
+            thatLocalData.getPort() == 0;
+
+        final boolean addressMatches = thatRemoteData.getAddress().equals(connectAddress.getAddress()) &&
+            thatRemoteData.getPort() == connectAddress.getPort() &&
+            thatLocalData.getAddress().equals(thisLocalData.getAddress()) &&
+            thatLocalData.getPort() == thisLocalData.getPort();
+
+        return udpChannelMatches && (wildcardMatches || addressMatches);
     }
 }
 

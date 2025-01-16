@@ -81,7 +81,6 @@ class Issue1719Test
     @FieldSource("channels")
     void shouldAddWildcardSpyBeforePublication(final String channel)
     {
-        TestMediaDriver.notSupportedOnCMediaDriver("spy bug");
         final String subUri = CommonContext.SPY_PREFIX + channel;
         final String pubUri = channel + "|ssc=true";
         final int streamId1 = 333;

@@ -15,6 +15,7 @@ concurrency:
 env:
   GRADLE_OPTS: '-Dorg.gradle.daemon=false -Dorg.gradle.java.installations.auto-detect=false -Dorg.gradle.warning.mode=fail'
   INSTALL_COMPILER_RETRIES: '5'
+  JAVA_VERSION: '17'
 
 permissions:
   contents: read
@@ -67,11 +68,11 @@ jobs:
         run: |
           sudo sed -i bak "s/localhost/localhost $(hostname)/" /etc/hosts
           dscacheutil -flushcache
-      - name: Setup java
+      - name: Setup java to run Gradle
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Build and Run Slow Tests with Gradle
         run: ./gradlew slowTest
         env:
@@ -125,11 +126,11 @@ jobs:
           java -Xinternalversion
           echo "BUILD_JAVA_HOME=${JAVA_HOME}" >> $GITHUB_ENV
           echo "BUILD_JAVA_VERSION=${{ matrix.java }}" >> $GITHUB_ENV
-      - name: Setup java
+      - name: Setup java to run Gradle
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Build and Run Javadoc
         run: ./gradlew javadoc
         env:
@@ -166,7 +167,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -219,7 +220,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -270,7 +271,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Build
         run: cppbuild/cppbuild.ps1 --slow-system-tests --no-system-tests --no-unit-tests --cxx-hide-deprecation-message
       - name: Copy test logs
@@ -317,7 +318,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries
@@ -370,7 +371,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
       - name: Install compiler
         run: |
           echo 'Acquire::Retries "${INSTALL_COMPILER_RETRIES}";' | sudo tee -a /etc/apt/apt.conf.d/99retries

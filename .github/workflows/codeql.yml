@@ -19,6 +19,9 @@ concurrency:
   group: codeql-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  JAVA_VERSION: '17'
+
 jobs:
   analyze:
     name: Analyze
@@ -57,7 +60,7 @@ jobs:
         uses: actions/setup-java@v4
         with:
           distribution: 'zulu'
-          java-version: 17
+          java-version: ${{ env.JAVA_VERSION }}
 
       - name: Install compiler
         run: sudo apt-get install -y g++-14

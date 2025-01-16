@@ -19,13 +19,9 @@ import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
-import io.aeron.archive.Archive;
-import io.aeron.archive.ArchiveThreadingMode;
-import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.test.EventLogExtension;
 import io.aeron.test.InterruptingTestCallback;
 import io.aeron.test.SystemTestWatcher;
-import io.aeron.test.TestContexts;
 import io.aeron.test.Tests;
 import io.aeron.test.driver.TestMediaDriver;
 import org.agrona.CloseHelper;
@@ -68,14 +64,6 @@ class Issue1719Test
             .threadingMode(ThreadingMode.SHARED)
             .spiesSimulateConnection(false)
             .dirDeleteOnStart(true);
-
-        final Archive.Context archiveCtx = TestContexts.localhostArchive()
-            .aeronDirectoryName(aeronDirectoryName)
-            .deleteArchiveOnStart(true)
-            .archiveDir(tempDir.resolve("archive").toFile())
-            .segmentFileLength(LogBufferDescriptor.TERM_MIN_LENGTH * 2)
-            .fileSyncLevel(0)
-            .threadingMode(ArchiveThreadingMode.SHARED);
 
         driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
         systemTestWatcher.dataCollector().add(driverCtx.aeronDirectory());

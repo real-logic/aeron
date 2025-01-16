@@ -1371,6 +1371,7 @@ tasks.register('copyTestLogs', Copy) {
     include '**/build/test-output/**'
     include '**/*.hprof'
     include '**/*.mdmp'
+    include '/var/coredump/core*'
     include '**/*.log'
     include '**/*.tlog'
     include '**/build/reports/tests/**'

@@ -94,6 +94,23 @@ jobs:
           Resize-Partition -DiskNumber 1 -PartitionNumber 1 -Size ($new_size)
           New-Partition -DiskNumber 1 -Size 30MB -DriveLetter T | Format-Volume -FileSystem NTFS -Confirm:$false
           mkdir T:/tmp_aeron_dir
+      - name: Enable core dumps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ulimit -c unlimited
+          sudo systemctl stop apport.service
+          sudo systemctl disable apport.service
+          sudo mkdir /var/coredump
+          sudo chmod a+rw /var/coredump
+          sudo sysctl -w kernel.core_pattern="/var/coredump/core_%e.%p"
+      - name: Enable core dumps (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          ulimit -c unlimited
+          sudo mkdir /var/coredump
+          sudo chmod a+rw /var/coredump
+          sudo sysctl -w kern.coredump=1
+          sudo sysctl -w kern.corefile="/var/coredump/core.%P"
       - name: Build with Gradle
         run: ./gradlew -x javadoc --console=plain
       - name: Remove small temp file system (Linux)

@@ -78,6 +78,23 @@ jobs:
         with:
           distribution: 'zulu'
           java-version: ${{ env.JAVA_VERSION }}
+      - name: Enable core dumps (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          ulimit -c unlimited
+          sudo systemctl stop apport.service
+          sudo systemctl disable apport.service
+          sudo mkdir /var/coredump
+          sudo chmod a+rw /var/coredump
+          sudo sysctl -w kernel.core_pattern="/var/coredump/core_%e.%p"
+      - name: Enable core dumps (MacOS)
+        if: runner.os == 'macOS'
+        run: |
+          ulimit -c unlimited
+          sudo mkdir /var/coredump
+          sudo chmod a+rw /var/coredump
+          sudo sysctl -w kern.coredump=1
+          sudo sysctl -w kern.corefile="/var/coredump/core.%P"
       - name: Build and Run Slow Tests with Gradle
         run: ./gradlew slowTest
         env:

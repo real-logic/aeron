@@ -60,7 +60,7 @@ final class PendingServiceMessageTracker
         this.logPublisher = logPublisher;
         this.clusterClock = clusterClock;
 
-        logServiceSessionId = ((long)serviceId << 56) | Long.MIN_VALUE;
+        logServiceSessionId = serviceSessionId(serviceId, Long.MIN_VALUE);
         nextServiceSessionId = logServiceSessionId + 1;
     }
 
@@ -279,5 +279,10 @@ final class PendingServiceMessageTracker
     static int serviceId(final long clusterSessionId)
     {
         return ((int)(clusterSessionId >>> 56)) & 0x7F;
+    }
+
+    static long serviceSessionId(final int serviceId, final long sessionId)
+    {
+        return ((long)serviceId << 56) | sessionId;
     }
 }

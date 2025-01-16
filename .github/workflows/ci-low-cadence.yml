@@ -7,6 +7,11 @@ on:
     types: run-slow-tests
   schedule:
     - cron: '0 0,12 * * *'
+  pull_request:
+    types: [opened, synchronize]
+    branches:
+      - master
+      - release/**
 
 concurrency:
   group: ci-low-cadence-${{ github.workflow }}-${{ github.ref }}

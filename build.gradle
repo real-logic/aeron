@@ -221,6 +221,7 @@ subprojects {
         classpath = testing.suites.test.sources.runtimeClasspath
         maxHeapSize("1g")
         jvmArgs("-XX:MaxDirectMemorySize=1g",
+                "-XX:+CreateCoredumpOnCrash",
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-XX:+CrashOnOutOfMemoryError",
                 "-XX:HeapDumpPath=" + project.rootDir + "/heap.hprof")
@@ -1369,6 +1370,7 @@ tasks.register('copyTestLogs', Copy) {
     from '.'
     include '**/build/test-output/**'
     include '**/*.hprof'
+    include '**/*.mdmp'
     include '**/*.log'
     include '**/*.tlog'
     include '**/build/reports/tests/**'

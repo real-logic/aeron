@@ -775,31 +775,36 @@ public final class UdpChannel
      * Does this channel have a tag match to another channel having INADDR_ANY endpoints.
      *
      * @param udpChannel to match against.
+     * @param localAddress local address override to use for this channel.
+     * @param remoteAddress remote address override to use for this channel.
      * @return true if there is a match otherwise false.
      */
-    public boolean matchesTag(final UdpChannel udpChannel)
+    public boolean matchesTag(
+        final UdpChannel udpChannel,
+        final InetSocketAddress localAddress,
+        final InetSocketAddress remoteAddress)
     {
         if (!hasTag || !udpChannel.hasTag() || tag != udpChannel.tag())
         {
             return false;
         }
 
-        if (!matchesControlMode(udpChannel))
+        if (!hasMatchingControlMode(udpChannel))
         {
             throw new IllegalArgumentException(
                 "matching tag=" + tag + " has mismatched control-mode: " + uriStr + " <> " + udpChannel.uriStr);
         }
 
+        if (!hasMatchingAddress(udpChannel, localAddress, remoteAddress))
+        {
+            throw new IllegalArgumentException(
+                "matching tag=" + tag + " has mismatched endpoint or control: " + uriStr + " <> " + udpChannel.uriStr);
+        }
+
         return true;
     }
 
-    /**
-     * Is this channel a fill wildcard, i.e. no addresses specified.
-     *
-     * @return <code>true</code> if all the address/port pairs of this channel are set to wildcard values,
-     * <code>false</code> otherwise.
-     */
-    public boolean isWildcard()
+    private boolean isWildcard()
     {
         return remoteData.getAddress().isAnyLocalAddress() &&
             remoteData.getPort() == 0 &&
@@ -807,9 +812,23 @@ public final class UdpChannel
             localData.getPort() == 0;
     }
 
-    private boolean matchesControlMode(final UdpChannel udpChannel)
+    private boolean hasMatchingControlMode(final UdpChannel udpChannel)
     {
-        return udpChannel.controlMode() == ControlMode.NONE || controlMode() == udpChannel.controlMode();
+        return controlMode() == ControlMode.NONE || controlMode() == udpChannel.controlMode();
+    }
+
+    private boolean hasMatchingAddress(
+        final UdpChannel udpChannel,
+        final InetSocketAddress localAddress,
+        final InetSocketAddress remoteAddress)
+    {
+        final InetSocketAddress otherLocalData = localAddress != null ? localAddress : udpChannel.localData();
+        final InetSocketAddress otherRemoteData = remoteAddress != null ? remoteAddress : udpChannel.remoteData();
+
+        return isWildcard() || remoteData().getAddress().equals(otherRemoteData.getAddress()) &&
+            remoteData().getPort() == otherRemoteData.getPort() &&
+            localData().getAddress().equals(otherLocalData.getAddress()) &&
+            localData().getPort() == otherLocalData.getPort();
     }
 
     /**

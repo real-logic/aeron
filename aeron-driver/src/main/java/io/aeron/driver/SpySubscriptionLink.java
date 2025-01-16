@@ -38,8 +38,9 @@ class SpySubscriptionLink extends SubscriptionLink
         final UdpChannel publicationChannel = publication.channelEndpoint().udpChannel();
         final boolean isSameChannelTag = udpChannel.hasTag() && udpChannel.tag() == publicationChannel.tag();
 
-        return streamId == publication.streamId() && (isSameChannelTag ||
-            (isWildcardOrSessionIdMatch(publication.sessionId()) &&
-                udpChannel.canonicalForm().equals(publicationChannel.canonicalForm())));
+        return publication.streamId() == streamId &&
+            (isSameChannelTag ||
+            isWildcardOrSessionIdMatch(publication.sessionId()) &&
+            udpChannel.canonicalForm().equals(publicationChannel.canonicalForm()));
     }
 }

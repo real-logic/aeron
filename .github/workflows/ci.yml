@@ -100,14 +100,14 @@ jobs:
           ulimit -c unlimited
           sudo systemctl stop apport.service || true
           sudo systemctl disable apport.service || true
-          sudo mkdir /var/coredump
+          sudo mkdir -p /var/coredump
           sudo chmod a+rw /var/coredump
           sudo sysctl -w kernel.core_pattern="/var/coredump/core_%e.%p"
       - name: Enable core dumps (MacOS)
         if: runner.os == 'macOS'
         run: |
           ulimit -c unlimited
-          sudo mkdir /var/coredump
+          sudo mkdir -p /var/coredump
           sudo chmod a+rw /var/coredump
           sudo sysctl -w kern.coredump=1
           sudo sysctl -w kern.corefile="/var/coredump/core.%P"

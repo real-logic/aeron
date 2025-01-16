@@ -76,18 +76,30 @@ jobs:
         run: ./gradlew slowTest
         env:
           BUILD_JAVA_VERSION: ${{ matrix.java }}
-      - name: Copy test logs
+      - name: Copy test logs (Unix)
         id: copy_test_logs
-        if: failure()
+        if: failure() && runner.os != 'Windows'
         run: |
           echo "file=build/distributions/test_logs.tbz2" >> $GITHUB_OUTPUT
           ./gradlew tarTestLogs
-      - name: Upload crash logs
+      - name: Upload crash logs (Unix)
         if: always() && steps.copy_test_logs.outputs.file == 'build/distributions/test_logs.tbz2'
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
           path: ${{ steps.copy_test_logs.outputs.file }}
+      - name: Copy test logs (Windows)
+        id: copy_test_logs_windows
+        if: runner.os == 'Windows' && failure()
+        run: |
+          echo "file=build/distributions/test_logs.tbz2" | Out-File $env:GITHUB_OUTPUT -Encoding utf8 -Append
+          ./gradlew tarTestLogs
+      - name: Upload crash logs (Windows)
+        if: runner.os == 'Windows' && always() && steps.copy_test_logs_windows.outputs.file == 'build/distributions/test_logs.tbz2'
+        uses: actions/upload-artifact@v4
+        with:
+          name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
+          path: ${{ steps.copy_test_logs_windows.outputs.file }}
 
   java-javadoc:
     name: JavaDoc (JDK ${{ matrix.java }}, ${{ matrix.os }})

@@ -129,7 +129,7 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: crash-logs-${{ matrix.os }}-java-${{ matrix.java }}
-          path: ${{ steps.copy_test_logs.outputs.file }}
+          path: ${{ steps.copy_test_logs_windows.outputs.file }}
 
   java-topology-build:
     name: Java Topology Tests (JDK ${{ matrix.java }}, ${{ matrix.os }})

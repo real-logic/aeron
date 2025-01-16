@@ -619,7 +619,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
      */
     public boolean matchesTag(final UdpChannel udpChannel)
     {
-        return super.udpChannel.matchesTag(udpChannel);
+        return udpChannel.matchesTag(super.udpChannel, currentControlAddress, null);
     }
 
     /**

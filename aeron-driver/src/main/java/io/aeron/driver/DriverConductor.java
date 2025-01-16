@@ -2154,8 +2154,7 @@ public final class DriverConductor implements Agent
         {
             for (final SendChannelEndpoint endpoint : sendChannelEndpointByChannelMap.values())
             {
-                final UdpChannel endpointUdpChannel = endpoint.udpChannel();
-                if (endpointUdpChannel.matchesTag(udpChannel))
+                if (endpoint.matchesTag(udpChannel))
                 {
                     return endpoint;
                 }

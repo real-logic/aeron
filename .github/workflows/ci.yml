@@ -98,8 +98,8 @@ jobs:
         if: runner.os == 'Linux'
         run: |
           ulimit -c unlimited
-          sudo systemctl stop apport.service
-          sudo systemctl disable apport.service
+          sudo systemctl stop apport.service || true
+          sudo systemctl disable apport.service || true
           sudo mkdir /var/coredump
           sudo chmod a+rw /var/coredump
           sudo sysctl -w kernel.core_pattern="/var/coredump/core_%e.%p"

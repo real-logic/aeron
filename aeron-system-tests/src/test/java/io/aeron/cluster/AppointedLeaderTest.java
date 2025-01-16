@@ -27,7 +27,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import static io.aeron.test.cluster.TestCluster.aCluster;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class AppointedLeaderTest
@@ -50,8 +51,6 @@ class AppointedLeaderTest
 
         cluster.connectClient();
         assertTrue(cluster.client().sendKeepAlive());
-
-        fail();
     }
 
     @Test

@@ -145,13 +145,13 @@ allprojects {
             failOnVersionConflict()
 
             force libs.agrona,
-                  libs.byteBuddy,
-                  libs.byteBuddy.agent,
-                  // patching conflicting Checkstyle dependencies
-                  "org.codehaus.plexus:plexus-utils:3.3.0",
-                  "org.apache.commons:commons-lang3:3.8.1",
-                  "org.apache.httpcomponents:httpcore:4.4.14",
-                  "commons-codec:commons-codec:1.15"
+                libs.byteBuddy,
+                libs.byteBuddy.agent,
+                // patching conflicting Checkstyle dependencies
+                "org.codehaus.plexus:plexus-utils:3.3.0",
+                "org.apache.commons:commons-lang3:3.8.1",
+                "org.apache.httpcomponents:httpcore:4.4.14",
+                "commons-codec:commons-codec:1.15"
         }
     }
 
@@ -706,12 +706,12 @@ project(':aeron-archive') {
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedTestDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': sbeFile,
-                'sbe.validation.stop.on.error': 'true',
-                'sbe.target.namespace': 'io.aeron.archive.codecs.v6',
-                'sbe.schema.transform.version': '*:6')
+            'sbe.output.dir': generatedTestDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': sbeFile,
+            'sbe.validation.stop.on.error': 'true',
+            'sbe.target.namespace': 'io.aeron.archive.codecs.v6',
+            'sbe.schema.transform.version': '*:6')
         args = [codecsFile]
     }
 
@@ -723,12 +723,12 @@ project(':aeron-archive') {
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedTestDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': sbeFile,
-                'sbe.validation.stop.on.error': 'true',
-                'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v0',
-                'sbe.schema.transform.version': '*:0')
+            'sbe.output.dir': generatedTestDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': sbeFile,
+            'sbe.validation.stop.on.error': 'true',
+            'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v0',
+            'sbe.schema.transform.version': '*:0')
         args = [markCodecsFile]
     }
 
@@ -740,12 +740,12 @@ project(':aeron-archive') {
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedTestDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': sbeFile,
-                'sbe.validation.stop.on.error': 'true',
-                'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v1',
-                'sbe.schema.transform.version': '*:1')
+            'sbe.output.dir': generatedTestDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': sbeFile,
+            'sbe.validation.stop.on.error': 'true',
+            'sbe.target.namespace': 'io.aeron.archive.codecs.mark.v1',
+            'sbe.schema.transform.version': '*:1')
         args = [markCodecsFile]
     }
 
@@ -896,12 +896,12 @@ project(':aeron-cluster') {
         jvmArgs('--add-opens', 'java.base/jdk.internal.misc=ALL-UNNAMED')
         classpath = configurations.codecGeneration
         systemProperties(
-                'sbe.output.dir': generatedTestDir,
-                'sbe.target.language': 'Java',
-                'sbe.validation.xsd': sbeFile,
-                'sbe.validation.stop.on.error': 'true',
-                'sbe.target.namespace': 'io.aeron.cluster.codecs.mark.v0',
-                'sbe.schema.transform.version': '*:0')
+            'sbe.output.dir': generatedTestDir,
+            'sbe.target.language': 'Java',
+            'sbe.validation.xsd': sbeFile,
+            'sbe.validation.stop.on.error': 'true',
+            'sbe.target.namespace': 'io.aeron.cluster.codecs.mark.v0',
+            'sbe.schema.transform.version': '*:0')
         args = [markCodecsFileV0]
     }
 

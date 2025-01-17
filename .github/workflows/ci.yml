@@ -8,12 +8,12 @@ on:
   push:
     branches:
       - master
-      - release/**
+      - 'release/**'
   pull_request:
     types: [opened, synchronize]
     branches:
       - master
-      - release/**
+      - 'release/**'
 
 concurrency:
   group: ci-${{ github.workflow }}-${{ github.ref }}

@@ -721,6 +721,7 @@ static int aeron_archive_replay_merge_handle_async_destination(aeron_archive_rep
         }
         else if (rc < 0)
         {
+            replay_merge->async_destination = NULL;
             AERON_APPEND_ERR("%s", "");
             return -1;
         }

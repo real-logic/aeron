@@ -9,8 +9,6 @@ on:
     branches:
       - master
       - 'release/**'
-    paths-ignore:
-      - '.github/workflows/**'
   pull_request:
     types: [opened, synchronize]
     branches:

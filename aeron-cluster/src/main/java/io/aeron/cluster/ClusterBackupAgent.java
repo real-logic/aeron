@@ -389,8 +389,7 @@ public final class ClusterBackupAgent implements Agent
         {
             if (null != eventsListener)
             {
-                eventsListener.onPossibleFailure(new ClusterException(
-                    "log recording counter unexpectedly unavailable", Category.WARN));
+                eventsListener.onPossibleFailure(new ClusterEvent("log recording counter unexpectedly unavailable"));
             }
 
             state(RESET_BACKUP, epochClock.time());
@@ -637,8 +636,7 @@ public final class ClusterBackupAgent implements Agent
             final String errorResponse = clusterArchive.pollForErrorResponse();
             if (null != errorResponse)
             {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "cluster archive - " + errorResponse, Category.WARN));
+                ctx.countedErrorHandler().onError(new ClusterEvent("cluster archive error: " + errorResponse));
                 state(RESET_BACKUP, nowMs);
             }
         }
@@ -1083,7 +1081,7 @@ public final class ClusterBackupAgent implements Agent
             }
             else if (0 == workCount && !poller.subscription().isConnected())
             {
-                ctx.countedErrorHandler().onError(new ClusterException("local archive not connected", Category.WARN));
+                ctx.countedErrorHandler().onError(new ClusterEvent("local archive not connected"));
                 throw new AgentTerminationException();
             }
         }

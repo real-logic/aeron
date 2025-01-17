@@ -199,21 +199,8 @@ public final class ClusterBackupAgent implements Agent
         {
             aeron.removeUnavailableCounterHandler(unavailableCounterHandlerRegistrationId);
 
-            if (NULL_VALUE != liveLogRecordingSubscriptionId)
-            {
-                backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
-            }
-
-            if (NULL_VALUE != liveLogReplaySessionId)
-            {
-                try
-                {
-                    clusterArchive.stopReplay(liveLogReplaySessionId);
-                }
-                catch (final Exception ignore)
-                {
-                }
-            }
+            stopRecording();
+            stopReplay();
 
             CloseHelper.close(snapshotReplication);
 
@@ -346,32 +333,8 @@ public final class ClusterBackupAgent implements Agent
         CloseHelper.close(snapshotReplication);
         snapshotReplication = null;
 
-        if (NULL_VALUE != liveLogRecordingSubscriptionId)
-        {
-            try
-            {
-                backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
-            }
-            catch (final Exception ex)
-            {
-                ctx.countedErrorHandler().onError(new ClusterException(
-                    "failed to stop log recording", ex, Category.WARN));
-            }
-            liveLogRecordingSubscriptionId = NULL_VALUE;
-        }
-
-        if (NULL_VALUE != liveLogReplaySessionId)
-        {
-            try
-            {
-                clusterArchive.stopReplay(liveLogReplaySessionId);
-            }
-            catch (final Exception ex)
-            {
-                ctx.countedErrorHandler().onError(new ClusterException("failed to stop log replay", ex, Category.WARN));
-            }
-            liveLogReplaySessionId = NULL_VALUE;
-        }
+        stopRecording();
+        stopReplay();
 
         CloseHelper.closeAll(
             (ErrorHandler)ctx.countedErrorHandler(),
@@ -383,6 +346,41 @@ public final class ClusterBackupAgent implements Agent
         clusterArchive = null;
         clusterArchiveAsyncConnect = null;
         recordingSubscription = null;
+    }
+
+    private void stopReplay()
+    {
+        if (NULL_VALUE != liveLogReplaySessionId)
+        {
+            if (null != clusterArchive)
+            {
+                try
+                {
+                    clusterArchive.stopReplay(liveLogReplaySessionId);
+                }
+                catch (final Exception ex)
+                {
+                    ctx.countedErrorHandler().onError(new ClusterEvent("failed to stop log replay: " + ex));
+                }
+            }
+            liveLogReplaySessionId = NULL_VALUE;
+        }
+    }
+
+    private void stopRecording()
+    {
+        if (NULL_VALUE != liveLogRecordingSubscriptionId)
+        {
+            try
+            {
+                backupArchive.tryStopRecording(liveLogRecordingSubscriptionId);
+            }
+            catch (final Exception ex)
+            {
+                ctx.countedErrorHandler().onError(new ClusterEvent("failed to stop log recording: " + ex));
+            }
+            liveLogRecordingSubscriptionId = NULL_VALUE;
+        }
     }
 
     private void onUnavailableCounter(final CountersReader counters, final long registrationId, final int counterId)

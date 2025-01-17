@@ -40,8 +40,6 @@ import java.nio.file.Path;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.function.Consumer;
 
-import static io.aeron.Aeron.NULL_VALUE;
-
 /**
  * Used to indicate if a cluster service is running and what configuration it is using. Errors encountered by
  * the service are recorded within this file by a {@link org.agrona.concurrent.errors.DistinctErrorLog}.
@@ -233,7 +231,7 @@ public final class ClusterMarkFile implements AutoCloseable
                 null,
                 null);
             buffer = markFile.buffer();
-            candidateTermId = NULL_VALUE;
+            candidateTermId = Aeron.NULL_VALUE;
         }
 
         headerOffset = HEADER_OFFSET;
@@ -332,7 +330,14 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void close()
     {
-        CloseHelper.close(markFile);
+        if (!markFile.isClosed())
+        {
+            CloseHelper.close(markFile);
+            final UnsafeBuffer emptyBuffer = new UnsafeBuffer();
+            headerEncoder.wrap(emptyBuffer, 0);
+            headerDecoder.wrap(emptyBuffer, 0, 0, 0);
+            errorBuffer.wrap(emptyBuffer, 0, 0);
+        }
     }
 
     /**
@@ -353,7 +358,8 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public long candidateTermId()
     {
-        return buffer.getLongVolatile(headerOffset + MarkFileHeaderDecoder.candidateTermIdEncodingOffset());
+        return markFile.isClosed() ? Aeron.NULL_VALUE :
+            buffer.getLongVolatile(headerOffset + MarkFileHeaderDecoder.candidateTermIdEncodingOffset());
     }
 
     /**
@@ -363,7 +369,7 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public int memberId()
     {
-        return headerDecoder.memberId();
+        return markFile.isClosed() ? Aeron.NULL_VALUE : headerDecoder.memberId();
     }
 
     /**
@@ -373,7 +379,10 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void memberId(final int memberId)
     {
-        headerEncoder.memberId(memberId);
+        if (!markFile.isClosed())
+        {
+            headerEncoder.memberId(memberId);
+        }
     }
 
     /**
@@ -383,7 +392,7 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public int clusterId()
     {
-        return headerDecoder.clusterId();
+        return markFile.isClosed() ? Aeron.NULL_VALUE : headerDecoder.clusterId();
     }
 
     /**
@@ -393,7 +402,10 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void clusterId(final int clusterId)
     {
-        headerEncoder.clusterId(clusterId);
+        if (!markFile.isClosed())
+        {
+            headerEncoder.clusterId(clusterId);
+        }
     }
 
     /**
@@ -401,7 +413,10 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void signalReady()
     {
-        markFile.signalReady(SEMANTIC_VERSION);
+        if (!markFile.isClosed())
+        {
+            markFile.signalReady(SEMANTIC_VERSION);
+        }
     }
 
     /**
@@ -409,7 +424,10 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public void signalFailedStart()
     {
-        markFile.signalReady(VERSION_FAILED);
+        if (!markFile.isClosed())
+        {
+            markFile.signalReady(VERSION_FAILED);
+        }
     }
 
     /**
@@ -432,7 +450,7 @@ public final class ClusterMarkFile implements AutoCloseable
      */
     public long activityTimestampVolatile()
     {
-        return markFile.timestampVolatile();
+        return markFile.isClosed() ? Aeron.NULL_VALUE : markFile.timestampVolatile();
     }
 
     /**

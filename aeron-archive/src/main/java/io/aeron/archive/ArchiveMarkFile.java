@@ -15,6 +15,7 @@
  */
 package io.aeron.archive;
 
+import io.aeron.Aeron;
 import io.aeron.CommonContext;
 import io.aeron.archive.client.ArchiveException;
 import io.aeron.archive.codecs.mark.MarkFileHeaderDecoder;
@@ -278,7 +279,14 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public void close()
     {
-        CloseHelper.close(markFile);
+        if (!markFile.isClosed())
+        {
+            CloseHelper.close(markFile);
+            final UnsafeBuffer emptyBuffer = new UnsafeBuffer();
+            headerEncoder.wrap(emptyBuffer, 0);
+            headerDecoder.wrap(emptyBuffer, 0, 0, 0);
+            errorBuffer.wrap(emptyBuffer, 0, 0);
+        }
     }
 
     /**
@@ -289,7 +297,7 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public long archiveId()
     {
-        return headerDecoder.archiveId();
+        return markFile.isClosed() ? Aeron.NULL_VALUE : headerDecoder.archiveId();
     }
 
     /**
@@ -297,7 +305,10 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public void signalReady()
     {
-        markFile.signalReady(SEMANTIC_VERSION);
+        if (!markFile.isClosed())
+        {
+            markFile.signalReady(SEMANTIC_VERSION);
+        }
     }
 
     /**
@@ -320,7 +331,7 @@ public class ArchiveMarkFile implements AutoCloseable
      */
     public long activityTimestampVolatile()
     {
-        return markFile.timestampVolatile();
+        return markFile.isClosed() ? Aeron.NULL_VALUE : markFile.timestampVolatile();
     }
 
     /**

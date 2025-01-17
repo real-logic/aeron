@@ -475,7 +475,16 @@ public final class ClusterBackupAgent implements Agent
         else if (!logSourceValidator.isAcceptable(leaderMemberId, memberId))
         {
             consensusPublicationGroup.closeAndExcludeCurrent();
-            state(RESET_BACKUP, epochClock.time());
+            if (null != logSupplierMember && logSupplierMember.id() == memberId)
+            {
+                // we can no longer replay from the current node due to the role change
+                state(RESET_BACKUP, epochClock.time());
+            }
+            else
+            {
+                // just query another node
+                timeOfLastBackupQueryMs = 0;
+            }
             return;
         }
 
@@ -668,15 +677,9 @@ public final class ClusterBackupAgent implements Agent
     {
         if (null == consensusPublicationGroup.current() || nowMs > (timeOfLastBackupQueryMs + backupResponseTimeoutMs))
         {
-            CloseHelper.close(ctx.countedErrorHandler(), clusterArchiveAsyncConnect);
-            CloseHelper.close(ctx.countedErrorHandler(), clusterArchive);
-            clusterArchiveAsyncConnect = null;
-            clusterArchive = null;
-
             consensusPublicationGroup.next(aeron);
             correlationId = NULL_VALUE;
             timeOfLastBackupQueryMs = nowMs;
-
             return 1;
         }
         else if (NULL_VALUE == correlationId && consensusPublicationGroup.isConnected())

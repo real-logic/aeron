@@ -152,6 +152,11 @@ int aeron_send_channel_endpoint_resolution_change(
     const char *endpoint_name,
     struct sockaddr_storage *new_addr);
 
+int aeron_send_channel_endpoint_matches_tag(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel,
+    bool *has_match);
+
 inline void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint)
 {
     AERON_SET_RELEASE(endpoint->has_sender_released, true);

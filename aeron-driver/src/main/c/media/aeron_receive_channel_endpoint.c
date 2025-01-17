@@ -636,6 +636,29 @@ int aeron_receive_channel_endpoint_on_rttm(
     return result;
 }
 
+int aeron_receive_channel_endpoint_matches_tag(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel,
+    bool *has_match)
+{
+    struct sockaddr_storage* current_control_addr = NULL;
+    if (1 == endpoint->destinations.length &&
+        endpoint->destinations.array[0].destination->conductor_fields.udp_channel == endpoint->conductor_fields.udp_channel &&
+        endpoint->destinations.array[0].destination->conductor_fields.udp_channel->has_explicit_control)
+    {
+        current_control_addr = &endpoint->destinations.array[0].destination->current_control_addr;
+    }
+
+    if (aeron_udp_channel_matches_tag(
+        channel, endpoint->conductor_fields.udp_channel, current_control_addr, NULL, has_match) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
 void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint)
 {
     if (0 == endpoint->stream_id_to_refcnt_map.size &&

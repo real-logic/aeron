@@ -197,6 +197,11 @@ int aeron_receive_channel_endpoint_on_unconnected_stream(
     size_t length,
     struct sockaddr_storage *addr);
 
+int aeron_receive_channel_endpoint_matches_tag(
+    aeron_receive_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel,
+    bool *has_match);
+
 void aeron_receive_channel_endpoint_try_remove_endpoint(aeron_receive_channel_endpoint_t *endpoint);
 
 int aeron_receive_channel_endpoint_incref_to_stream(aeron_receive_channel_endpoint_t *endpoint, int32_t stream_id);

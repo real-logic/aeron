@@ -212,44 +212,6 @@ static bool aeron_driver_conductor_receive_endpoint_has_clashing_timestamp_offse
     return false;
 }
 
-static int aeron_driver_conductor_tagged_channels_match(aeron_udp_channel_t *existing, aeron_udp_channel_t *other)
-{
-    if (!aeron_udp_channel_control_modes_match(existing, other))
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "matching tag %" PRId64 " has mismatched control-mode: %.*s <> %.*s",
-            other->tag_id,
-            (int)existing->uri_length,
-            existing->original_uri,
-            (int)other->uri_length,
-            other->original_uri);
-        return -1;
-    }
-
-    bool has_matching_endpoints = false;
-    if (aeron_udp_channel_endpoints_match(existing, other, &has_matching_endpoints) < 0)
-    {
-        AERON_APPEND_ERR("%s", "");
-        return -1;
-    }
-
-    if (!has_matching_endpoints)
-    {
-        AERON_SET_ERR(
-            EINVAL,
-            "matching tag %" PRId64 " has mismatched endpoint or control: %.*s <> %.*s",
-            other->tag_id,
-            (int)existing->uri_length,
-            existing->original_uri,
-            (int)other->uri_length,
-            other->original_uri);
-        return -1;
-    }
-
-    return 0;
-}
-
 static int aeron_driver_conductor_find_existing_receive_channel_endpoint(
     aeron_driver_conductor_t *conductor,
     aeron_udp_channel_t *channel,
@@ -262,13 +224,15 @@ static int aeron_driver_conductor_find_existing_receive_channel_endpoint(
         {
             endpoint = conductor->receive_channel_endpoints.array[i].endpoint;
 
-            if (channel->tag_id == endpoint->conductor_fields.udp_channel->tag_id)
+            bool has_match = false;
+            if (aeron_receive_channel_endpoint_matches_tag(endpoint, channel, &has_match) < 0)
             {
-                if (aeron_driver_conductor_tagged_channels_match(endpoint->conductor_fields.udp_channel, channel) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "");
-                    return -1;
-                }
+                AERON_APPEND_ERR("%s", "");
+                return -1;
+            }
+
+            if (has_match)
+            {
                 *result_endpoint = endpoint;
                 return 0;
             }
@@ -298,14 +262,16 @@ static int aeron_driver_conductor_find_existing_send_channel_endpoint(
         for (size_t i = 0, size = conductor->send_channel_endpoints.length; i < size; i++)
         {
             aeron_send_channel_endpoint_t *endpoint = conductor->send_channel_endpoints.array[i].endpoint;
-            if (channel->tag_id == endpoint->conductor_fields.udp_channel->tag_id)
-            {
-                if (aeron_driver_conductor_tagged_channels_match(endpoint->conductor_fields.udp_channel, channel) < 0)
-                {
-                    AERON_APPEND_ERR("%s", "");
-                    return -1;
-                }
 
+            bool has_match = false;
+            if (aeron_send_channel_endpoint_matches_tag(endpoint, channel, &has_match) < 0)
+            {
+                AERON_APPEND_ERR("%s", "");
+                return -1;
+            }
+
+            if (has_match)
+            {
                 *result_endpoint = endpoint;
                 return 0;
             }

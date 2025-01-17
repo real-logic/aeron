@@ -654,6 +654,21 @@ int aeron_send_channel_endpoint_resolution_change(
     return 0;
 }
 
+int aeron_send_channel_endpoint_matches_tag(
+    aeron_send_channel_endpoint_t *endpoint,
+    aeron_udp_channel_t *channel,
+    bool *has_match)
+{
+    if (aeron_udp_channel_matches_tag(
+        channel, endpoint->conductor_fields.udp_channel, NULL, &endpoint->current_data_addr, has_match) < 0)
+    {
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    return 0;
+}
+
 extern void aeron_send_channel_endpoint_sender_release(aeron_send_channel_endpoint_t *endpoint);
 
 extern bool aeron_send_channel_endpoint_has_sender_released(aeron_send_channel_endpoint_t *endpoint);

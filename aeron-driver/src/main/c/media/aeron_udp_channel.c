@@ -28,6 +28,51 @@
 #include "media/aeron_udp_channel.h"
 #include "command/aeron_control_protocol.h"
 
+static int aeron_udp_channel_endpoints_match_with_override(
+    aeron_udp_channel_t *channel,
+    aeron_udp_channel_t *endpoint_channel,
+    struct sockaddr_storage *local_address,
+    struct sockaddr_storage *remote_address,
+    bool *result)
+{
+    bool cmp = false;
+    int rc = 0;
+
+    if (aeron_udp_channel_is_wildcard(channel))
+    {
+        *result = true;
+        return rc;
+    }
+
+    struct sockaddr_storage *endpoint_remote_data = NULL != remote_address ? remote_address :
+        &endpoint_channel->remote_data;
+    struct sockaddr_storage *endpoint_local_data = NULL != local_address ? local_address :
+        &endpoint_channel->local_data;
+
+    rc = aeron_sockaddr_storage_cmp(&channel->remote_data, endpoint_remote_data, &cmp);
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "remote_data");
+        return rc;
+    }
+
+    if (!cmp)
+    {
+        *result = cmp;
+        return 0;
+    }
+
+    rc = aeron_sockaddr_storage_cmp(&channel->local_data, endpoint_local_data, &cmp);
+    if (rc < 0)
+    {
+        AERON_APPEND_ERR("%s", "local_data");
+        return rc;
+    }
+
+    *result = cmp;
+    return 0;
+}
+
 int aeron_ipv4_multicast_control_address(struct sockaddr_in *data_addr, struct sockaddr_in *control_addr)
 {
     uint8_t bytes[sizeof(struct in_addr)];
@@ -515,9 +560,66 @@ void aeron_udp_channel_delete(aeron_udp_channel_t *channel)
     }
 }
 
-extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
+int aeron_udp_channel_matches_tag(
+    aeron_udp_channel_t *channel,
+    aeron_udp_channel_t *endpoint_channel,
+    struct sockaddr_storage *local_address,
+    struct sockaddr_storage *remote_address,
+    bool *has_match)
+{
+    if (AERON_URI_INVALID_TAG == channel->tag_id ||
+        AERON_URI_INVALID_TAG == endpoint_channel->tag_id ||
+        channel->tag_id != endpoint_channel->tag_id)
+    {
+        *has_match = false;
+        return 0;
+    }
 
-extern int aeron_udp_channel_endpoints_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other, bool *result);
+    if (!aeron_udp_channel_control_modes_match(channel, endpoint_channel))
+    {
+        *has_match = false;
+
+        AERON_SET_ERR(
+            EINVAL,
+            "matching tag %" PRId64 " has mismatched control-mode: %.*s <> %.*s",
+            channel->tag_id,
+            (int)channel->uri_length,
+            channel->original_uri,
+            (int)endpoint_channel->uri_length,
+            endpoint_channel->original_uri);
+
+        return -1;
+    }
+
+    bool addresses_match = false;
+    if (aeron_udp_channel_endpoints_match_with_override(
+        channel, endpoint_channel, local_address, remote_address, &addresses_match) < 0)
+    {
+        *has_match = false;
+
+        AERON_APPEND_ERR("%s", "");
+        return -1;
+    }
+
+    if (!addresses_match)
+    {
+        AERON_SET_ERR(
+            EINVAL,
+            "matching tag %" PRId64 " has mismatched endpoint or control: %.*s <> %.*s",
+            channel->tag_id,
+            (int)channel->uri_length,
+            channel->original_uri,
+            (int)endpoint_channel->uri_length,
+            endpoint_channel->original_uri);
+        return -1;
+    }
+
+    *has_match = true;
+    return 0;
+}
+
+
+extern bool aeron_udp_channel_is_wildcard(aeron_udp_channel_t *channel);
 
 extern bool aeron_udp_channel_control_modes_match(aeron_udp_channel_t *channel, aeron_udp_channel_t *other);
 

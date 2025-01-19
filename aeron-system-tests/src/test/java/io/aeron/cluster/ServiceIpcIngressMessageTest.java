@@ -150,28 +150,21 @@ class ServiceIpcIngressMessageTest
         final TestNode oldLeader = cluster.awaitLeaderAndClosedElection();
         cluster.connectClient();
 
+        final int ingressMessageCount = 50;
+        final int expectedServiceMessageCount = computeExpectedMessageCount(
+            oldLeader.services().length, ingressMessageCount);
+
         final ExpandableArrayBuffer msgBuffer = cluster.msgBuffer();
-        int messageCount = 0;
-        for (int i = 0; i < 50; i++)
+        for (int i = 0; i < ingressMessageCount; i++)
         {
-            msgBuffer.putInt(0, ++messageCount, LITTLE_ENDIAN);
+            msgBuffer.putInt(0, i + i, LITTLE_ENDIAN);
             cluster.pollUntilMessageSent(SIZE_OF_INT);
         }
 
-        // wait for at least one message but don't wait for all messages to be processed as
-        // we want uncommitted messages in flight
-        cluster.awaitResponseMessageCount(1);
-        cluster.stopNode(oldLeader);
+        stopLeaderWithMessagesInFlight(cluster, oldLeader);
 
-        final TestNode newLeader = cluster.awaitLeader();
-        final int leaderMessageCount = newLeader.services()[0].messageCount();
-
-        final TestNode follower = cluster.node(3 - oldLeader.index() - newLeader.index());
-
-        for (final TestNode.TestService service : follower.services())
-        {
-            service.awaitServiceMessageCount(leaderMessageCount, () -> {}, follower);
-        }
+        cluster.awaitLeader();
+        cluster.awaitServicesMessageCount(expectedServiceMessageCount);
 
         for (int i = 0; i < 3; i++)
         {
@@ -525,5 +518,19 @@ class ServiceIpcIngressMessageTest
             fail("memberId=" + node.index() + ", role=" + node.role() + ": Duplicate messages found: " +
                 duplicateMessageIds);
         }
+    }
+
+    private static int computeExpectedMessageCount(final int serviceCount, final int ingressMessageCount)
+    {
+        final int echoMessageCount = 1;
+        final int totalMessagesPerIngress =
+            serviceCount * TestNode.MessageTrackingService.SERVICE_MESSAGES_PER_INGRESS + echoMessageCount;
+        return ingressMessageCount * totalMessagesPerIngress;
+    }
+
+    private static void stopLeaderWithMessagesInFlight(final TestCluster cluster, final TestNode oldLeader)
+    {
+        cluster.awaitResponseMessageCount(1);
+        cluster.stopNode(oldLeader);
     }
 }

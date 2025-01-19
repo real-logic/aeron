@@ -800,6 +800,9 @@ public final class TestNode implements AutoCloseable
 
     public static class MessageTrackingService extends TestNode.TestService
     {
+        public static final int TIMER_MESSAGES_PER_INGRESS = 2;
+        public static final int SERVICE_MESSAGES_PER_INGRESS = 3;
+
         private static volatile boolean delaySessionMessageProcessing;
         private static final byte SNAPSHOT_COUNTERS = (byte)1;
         private static final byte SNAPSHOT_CLIENT_MESSAGES = (byte)2;
@@ -958,7 +961,7 @@ public final class TestNode implements AutoCloseable
                 clientMessages.addInt(messageId);
 
                 // Send 3 service messages
-                for (int i = 0; i < 3; i++)
+                for (int i = 0; i < SERVICE_MESSAGES_PER_INGRESS; i++)
                 {
                     messageBuffer.putInt(0, ++nextServiceMessageNumber, LITTLE_ENDIAN);
 
@@ -970,7 +973,7 @@ public final class TestNode implements AutoCloseable
                 }
 
                 // Schedule two timers
-                for (int i = 0; i < 2; i++)
+                for (int i = 0; i < TIMER_MESSAGES_PER_INGRESS; i++)
                 {
                     final long timerId = --nextTimerCorrelationId;
                     idleStrategy.reset();

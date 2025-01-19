@@ -528,9 +528,9 @@ class ServiceIpcIngressMessageTest
         return ingressMessageCount * totalMessagesPerIngress;
     }
 
-    private static void stopLeaderWithMessagesInFlight(final TestCluster cluster, final TestNode oldLeader)
+    private static void stopLeaderWithMessagesInFlight(final TestCluster cluster, final TestNode leader)
     {
         cluster.awaitResponseMessageCount(1);
-        cluster.stopNode(oldLeader);
+        cluster.stopNode(leader);
     }
 }

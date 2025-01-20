@@ -375,7 +375,7 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
         public void onLoadPendingMessage(
             final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
         {
-            final int serviceId = PendingServiceMessageTracker.serviceId(clusterSessionId);
+            final int serviceId = PendingServiceMessageTracker.serviceIdFromLogMessage(clusterSessionId);
             final PendingMessageTrackerState trackerState = tracker(serviceId);
             trackerState.pendingServiceMessageCount++;
             trackerState.minClusterSessionId = min(trackerState.minClusterSessionId, clusterSessionId);
@@ -489,7 +489,8 @@ public class ConsensusModuleSnapshotPendingServiceMessagesPatch
             final int offset,
             final int length)
         {
-            final TargetState targetState = targetStates[PendingServiceMessageTracker.serviceId(clusterSessionId)];
+            final int serviceId = PendingServiceMessageTracker.serviceIdFromLogMessage(clusterSessionId);
+            final TargetState targetState = targetStates[serviceId];
 
             tempBuffer.putBytes(0, buffer, offset, length);
             sessionMessageHeaderEncoder

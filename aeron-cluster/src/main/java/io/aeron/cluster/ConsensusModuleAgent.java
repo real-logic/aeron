@@ -640,8 +640,8 @@ final class ConsensusModuleAgent
     public void onLoadPendingMessage(
         final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
-        final int serviceTrackerIndex = PendingServiceMessageTracker.serviceId(clusterSessionId);
-        pendingServiceMessageTrackers[serviceTrackerIndex].appendMessage(buffer, offset, length);
+        final int serviceId = PendingServiceMessageTracker.serviceIdFromLogMessage(clusterSessionId);
+        pendingServiceMessageTrackers[serviceId].appendMessage(buffer, offset, length);
     }
 
     public void onLoadTimer(
@@ -1388,8 +1388,8 @@ final class ConsensusModuleAgent
 
     void onServiceMessage(final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
     {
-        final int i = (int)clusterSessionId;
-        pendingServiceMessageTrackers[i].enqueueMessage((MutableDirectBuffer)buffer, offset, length);
+        final int serviceId = PendingServiceMessageTracker.serviceIdFromServiceMessage(clusterSessionId);
+        pendingServiceMessageTrackers[serviceId].enqueueMessage((MutableDirectBuffer)buffer, offset, length);
     }
 
     void onScheduleTimer(final long correlationId, final long deadline)
@@ -1447,8 +1447,8 @@ final class ConsensusModuleAgent
         }
         else if (clusterSessionId < 0)
         {
-            final int i = PendingServiceMessageTracker.serviceId(clusterSessionId);
-            pendingServiceMessageTrackers[i].sweepFollowerMessages(clusterSessionId);
+            final int serviceId = PendingServiceMessageTracker.serviceIdFromLogMessage(clusterSessionId);
+            pendingServiceMessageTrackers[serviceId].sweepFollowerMessages(clusterSessionId);
         }
     }
 

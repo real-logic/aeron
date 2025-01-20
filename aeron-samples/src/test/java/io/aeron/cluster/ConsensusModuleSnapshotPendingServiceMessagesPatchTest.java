@@ -338,7 +338,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                 public void onLoadPendingMessage(
                     final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
                 {
-                    final int serviceId = serviceId(clusterSessionId);
+                    final int serviceId = serviceIdFromLogMessage(clusterSessionId);
                     pendingMessageOffsets[serviceId].addInt(offset);
                     assertEquals(
                         MessageHeaderDecoder.ENCODED_LENGTH + SessionMessageHeaderDecoder.BLOCK_LENGTH + SIZE_OF_INT,
@@ -445,7 +445,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                 public void onLoadPendingMessage(
                     final long clusterSessionId, final DirectBuffer buffer, final int offset, final int length)
                 {
-                    final int serviceId = serviceId(clusterSessionId);
+                    final int serviceId = serviceIdFromLogMessage(clusterSessionId);
                     onLoadPendingMessageCounters[serviceId].increment();
                     assertEquals(
                         nextClusterSessionIds[serviceId]++, clusterSessionId, "Invalid pending message header!");
@@ -594,7 +594,7 @@ class ConsensusModuleSnapshotPendingServiceMessagesPatchTest
                         final long originalClusterSessionId = sessionMessageHeaderDecoder
                             .wrapAndApplyHeader(snapshotBuffer, offset, messageHeaderDecoder)
                             .clusterSessionId();
-                        final int serviceId = serviceId(originalClusterSessionId);
+                        final int serviceId = serviceIdFromLogMessage(originalClusterSessionId);
                         final long newClusterSessionId = serviceSessionId(serviceId, clusterSessionId);
 
                         sessionMessageHeaderEncoder

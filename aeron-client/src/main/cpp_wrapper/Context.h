@@ -283,7 +283,7 @@ public:
      *
      * @return aeron directory
      */
-    inline std::string aeronDir()
+    inline std::string aeronDir() const
     {
         return std::string(aeron_context_get_dir(m_context));
     }

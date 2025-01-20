@@ -125,7 +125,7 @@ int aeron_uri_get_publication_window_length_param(aeron_uri_params_t *uri_params
         {
             AERON_SET_ERR(
                 EINVAL,
-                "%s=" PRIu64 " cannot be less than the %s=" PRIu64,
+                "%s=%" PRIu64 " cannot be less than the %s=%" PRIu64,
                 AERON_URI_PUBLICATION_WINDOW_KEY,
                 value,
                 AERON_URI_MTU_LENGTH_KEY,
@@ -137,7 +137,7 @@ int aeron_uri_get_publication_window_length_param(aeron_uri_params_t *uri_params
         {
             AERON_SET_ERR(
                 EINVAL,
-                "%s=" PRIu64 " must not exceed half the %s=" PRIu64,
+                "%s=%" PRIu64 " must not exceed half the %s=%" PRIu64,
                 AERON_URI_PUBLICATION_WINDOW_KEY,
                 value,
                 AERON_URI_TERM_LENGTH_KEY,

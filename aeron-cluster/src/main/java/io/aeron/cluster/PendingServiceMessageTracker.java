@@ -16,14 +16,12 @@
 package io.aeron.cluster;
 
 import io.aeron.Counter;
-import io.aeron.DirectBufferVector;
 import io.aeron.cluster.client.ClusterException;
 import io.aeron.cluster.codecs.MessageHeaderDecoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderDecoder;
 import io.aeron.cluster.codecs.SessionMessageHeaderEncoder;
 import io.aeron.cluster.service.ClusterClock;
 import io.aeron.exceptions.AeronException;
-import io.aeron.logbuffer.BufferClaim;
 import org.agrona.DirectBuffer;
 import org.agrona.ExpandableRingBuffer;
 import org.agrona.MutableDirectBuffer;

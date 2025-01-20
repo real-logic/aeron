@@ -100,6 +100,6 @@ class StalledLeaderLogReplicationClusterTest
         awaitElectionClosed(cluster.node(leader1.index()));
 
         cluster.connectClient();
-        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 3);
     }
 }

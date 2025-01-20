@@ -279,7 +279,7 @@ public:
     }
 
     /**
-     * get the directory that the Aeron client will use to communicate with the media driver.
+     * Get the directory that the Aeron client will use to communicate with the media driver.
      *
      * @return aeron directory
      */
@@ -320,7 +320,7 @@ public:
      */
     inline std::string cncFileName() const
     {
-        const std::string dir = aeronDir();
+        const std::string dir = std::string(aeron_context_get_dir(m_context));
         return dir + std::string(1, AERON_FILE_SEP) + CncFileDescriptor::CNC_FILE;
     }
 

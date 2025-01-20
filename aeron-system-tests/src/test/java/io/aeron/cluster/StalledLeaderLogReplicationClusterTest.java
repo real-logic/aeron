@@ -81,11 +81,9 @@ class StalledLeaderLogReplicationClusterTest
 
         final TestNode leader0 = cluster.awaitLeader();
 
-        final int numMessages = 3;
+        final int messageCount = 3;
         cluster.connectClient();
-        cluster.sendMessages(numMessages);
-        cluster.awaitResponseMessageCount(numMessages);
-        cluster.awaitServicesMessageCount(numMessages);
+        cluster.sendAndAwaitMessages(messageCount, messageCount);
 
         cluster.stopNode(leader0);
         final TestNode leader1 = cluster.awaitLeader(leader0.index());
@@ -94,9 +92,7 @@ class StalledLeaderLogReplicationClusterTest
         awaitElectionClosed(cluster.node(leader0.index()));
 
         cluster.connectClient();
-        cluster.sendMessages(numMessages);
-        cluster.awaitResponseMessageCount(numMessages * 2);
-        cluster.awaitServicesMessageCount(numMessages * 2);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
 
         cluster.stopNode(leader1);
         cluster.awaitLeader(leader1.index());
@@ -104,8 +100,6 @@ class StalledLeaderLogReplicationClusterTest
         awaitElectionClosed(cluster.node(leader1.index()));
 
         cluster.connectClient();
-        cluster.sendMessages(numMessages);
-        cluster.awaitResponseMessageCount(numMessages * 3);
-        cluster.awaitServicesMessageCount(numMessages * 3);
+        cluster.sendAndAwaitMessages(messageCount, messageCount * 2);
     }
 }

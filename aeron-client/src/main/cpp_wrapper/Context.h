@@ -279,6 +279,16 @@ public:
     }
 
     /**
+     * Get the directory that the Aeron client will use to communicate with the media driver.
+     *
+     * @return aeron directory
+     */
+    inline std::string aeronDir()
+    {
+        return std::string(aeron_context_get_dir(m_context));
+    }
+
+    /**
      * Set the name for this Aeron client.
      *
      * @param clientName to set.

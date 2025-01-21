@@ -3717,6 +3717,7 @@ public final class Archive implements AutoCloseable
             if (NULL_VALUE == archiveId)
             {
                 archiveId = aeron.clientId();
+                markFile.encoder().archiveId(archiveId);
             }
         }
 

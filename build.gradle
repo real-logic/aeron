@@ -145,13 +145,13 @@ allprojects {
             failOnVersionConflict()
 
             force libs.agrona,
-                libs.byteBuddy,
-                libs.byteBuddy.agent,
-                // patching conflicting Checkstyle dependencies
-                libs.commons.codec,
-                libs.commons.lang3,
-                libs.httpcore,
-                libs.plexus.utils
+                  libs.byteBuddy,
+                  libs.byteBuddy.agent,
+                  // patching conflicting Checkstyle dependencies
+                  libs.commons.codec,
+                  libs.commons.lang3,
+                  libs.httpcore,
+                  libs.plexus.utils
         }
     }
 

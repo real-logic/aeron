@@ -22,6 +22,7 @@
 #include <memory>
 #include <string>
 #include <vector>
+#include <mutex>
 
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/BufferClaim.h"

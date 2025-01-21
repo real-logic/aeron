@@ -23,6 +23,7 @@
 #include <atomic>
 #include <cassert>
 #include <functional>
+#include <memory>
 
 #include "concurrent/AtomicBuffer.h"
 #include "concurrent/logbuffer/Header.h"

@@ -1007,8 +1007,8 @@ project(':aeron-agent') {
         implementation aeronClusterProject
         implementation libs.byteBuddy
         implementation libs.byteBuddy.agent
-        compileOnly libs.findbugs
-        testCompileOnly libs.findbugs
+        compileOnly libs.findbugs.annotations
+        testCompileOnly libs.findbugs.annotations
         testImplementation project(':aeron-test-support')
     }
 
@@ -1189,7 +1189,7 @@ project(':aeron-system-tests') {
         testImplementation project(path: ':aeron-cluster')
         testImplementation libs.byteBuddy
         testImplementation libs.byteBuddy.agent
-        testCompileOnly libs.findbugs
+        testCompileOnly libs.findbugs.annotations
     }
 
     tasks.named('test').configure {

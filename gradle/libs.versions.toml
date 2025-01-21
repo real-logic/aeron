@@ -32,7 +32,7 @@ byteBuddy = { group = "net.bytebuddy", name = "byte-buddy", version.ref = "byteB
 byteBuddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.ref = "byteBuddy" }
 commons-codec = { group = "commons-codec", name = "commons-codec", version.ref = "commons-codec" }
 commons-lang3 = { group = "org.apache.commons", name = "commons-lang3", version.ref = "commons-lang3" }
-findbugs = { group = "com.google.code.findbugs", name = "findbugs-annotations", version.ref= "findbugs" }
+findbugs-annotations = { group = "com.google.code.findbugs", name = "findbugs-annotations", version.ref= "findbugs" }
 hamcrest = { group = "org.hamcrest", name = "hamcrest", version.ref = "hamcrest" }
 hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version.ref = "hdrHistogram" }
 httpcore = { group = "org.apache.httpcomponents", name = "httpcore", version.ref = "httpcore" }

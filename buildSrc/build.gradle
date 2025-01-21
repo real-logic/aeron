@@ -2,6 +2,18 @@ repositories {
     mavenCentral()
 }
 
+configurations.configureEach {
+    resolutionStrategy {
+        failOnVersionConflict()
+
+        force libs.asm,
+            libs.asm.analysis,
+            libs.asm.commons,
+            libs.asm.tree,
+            libs.asm.util
+    }
+}
+
 dependencies {
     implementation libs.asciidoctorj
     implementation libs.jgit

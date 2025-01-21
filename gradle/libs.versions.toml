@@ -1,5 +1,6 @@
 [versions]
 agrona = "2.0.1"
+asm = "9.7.1"
 byteBuddy = "1.16.1"
 checkstyle = "10.21.1"
 junit = "5.11.4"
@@ -16,6 +17,11 @@ byteBuddy-agent = { group = "net.bytebuddy", name = "byte-buddy-agent", version.
 hdrHistogram = { group = "org.hdrhistogram", name = "HdrHistogram", version = "2.2.2" }
 asciidoctorj = { group = "org.asciidoctor", name = "asciidoctorj", version = "2.5.13" }
 jgit = { group = "org.eclipse.jgit", name = "org.eclipse.jgit", version = "6.10.0.202406032230-r" }
+asm = { group = "org.ow2.asm", name = "asm", version.ref = "asm" }
+asm-analysis = { group = "org.ow2.asm", name = "asm-analysis", version.ref = "asm" }
+asm-commons = { group = "org.ow2.asm", name = "asm-commons", version.ref = "asm" }
+asm-tree = { group = "org.ow2.asm", name = "asm-tree", version.ref = "asm" }
+asm-util = { group = "org.ow2.asm", name = "asm-util", version.ref = "asm" }
 
 [plugins]
 versions = { id = "com.github.ben-manes.versions", version = "0.51.0" }

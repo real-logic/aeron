@@ -962,6 +962,31 @@ class ArchiveTest
         }
     }
 
+    @Test
+    void archiveMarkFileShouldContainArchiveIdSetOnContextConclude()
+    {
+        final MediaDriver.Context driverCtx = new MediaDriver.Context()
+            .errorHandler(Tests::onError)
+            .dirDeleteOnStart(true)
+            .threadingMode(ThreadingMode.SHARED);
+        final Archive.Context archiveCtx = TestContexts.localhostArchive().threadingMode(SHARED);
+
+        assertEquals(Aeron.NULL_VALUE, archiveCtx.archiveId()); // <-- Should not have been set yet.
+        try (ArchivingMediaDriver ignored = ArchivingMediaDriver.launch(driverCtx, archiveCtx);
+            AeronArchive archiveClient = AeronArchive.connect(TestContexts.localhostAeronArchive()))
+        {
+            final long archiveId = archiveCtx.archiveId(); // <-- Should have been set now as the context is concluded.
+            assertNotEquals(Aeron.NULL_VALUE, archiveId);
+            assertEquals(archiveId, archiveClient.archiveId());
+            assertEquals(archiveId, archiveCtx.archiveMarkFile().archiveId());
+        }
+        finally
+        {
+            archiveCtx.deleteDirectory();
+            driverCtx.deleteDirectory();
+        }
+    }
+
     private static Catalog openCatalog(final String archiveDirectoryName)
     {
         final IntConsumer intConsumer = (version) ->

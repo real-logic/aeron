@@ -111,7 +111,11 @@ abstract class AbstractListRecordingsSession implements Session
 
             if (acceptDescriptor(descriptorBuffer))
             {
-                controlSession.sendDescriptor(correlationId, descriptorBuffer);
+                if (!controlSession.sendDescriptor(correlationId, descriptorBuffer))
+                {
+                    isDone = controlSession.isDone();
+                    break;
+                }
                 ++sent;
             }
 

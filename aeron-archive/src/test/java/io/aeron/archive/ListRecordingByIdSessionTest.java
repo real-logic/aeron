@@ -19,7 +19,6 @@ import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
-import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.EpochClock;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.junit.jupiter.api.AfterEach;
@@ -29,10 +28,9 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-class ListRecordingsSessionTest
+class ListRecordingByIdSessionTest
 {
     private static final long CAPACITY = 1024 * 1024;
     private static final int SEGMENT_FILE_SIZE = 128 * 1024 * 1024;
@@ -42,7 +40,6 @@ class ListRecordingsSessionTest
     private final EpochClock clock = mock(EpochClock.class);
 
     private Catalog catalog;
-    private final long correlationId = 1;
     private final ControlSession controlSession = mock(ControlSession.class);
     private final UnsafeBuffer descriptorBuffer = new UnsafeBuffer();
 
@@ -66,87 +63,36 @@ class ListRecordingsSessionTest
     }
 
     @Test
-    void shouldSendAllDescriptors()
+    void shouldSendDescriptor()
     {
-        final ListRecordingsSession session = new ListRecordingsSession(
-            correlationId,
-            0,
-            3,
-            catalog,
-            controlSession,
-            descriptorBuffer
-        );
+        final long correlationId = -53465834;
+        final ListRecordingByIdSession session =
+            new ListRecordingByIdSession(correlationId, recordingIds[1], catalog, controlSession, descriptorBuffer);
 
-        final MutableLong counter = new MutableLong(0);
-        doAnswer(verifySendDescriptor(counter))
+        doAnswer(verifySendDescriptor())
             .when(controlSession)
             .sendDescriptor(eq(correlationId), any());
 
         session.doWork();
-        verify(controlSession, times(3)).sendDescriptor(eq(correlationId), any());
-    }
-
-    @Test
-    void shouldSend2Descriptors()
-    {
-        final int fromId = 1;
-        final ListRecordingsSession session = new ListRecordingsSession(
-            correlationId,
-            fromId,
-            2,
-            catalog,
-            controlSession,
-            descriptorBuffer);
-
-        final MutableLong counter = new MutableLong(fromId);
-        doAnswer(verifySendDescriptor(counter))
-            .when(controlSession)
-            .sendDescriptor(eq(correlationId), any());
-
-        session.doWork();
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
-    }
-
-    @Test
-    void shouldSendTwoDescriptorsThenRecordingUnknown()
-    {
-        final ListRecordingsSession session = new ListRecordingsSession(
-            correlationId,
-            1,
-            3,
-            catalog,
-            controlSession,
-            descriptorBuffer);
-
-        final MutableLong counter = new MutableLong(1);
-        doAnswer(verifySendDescriptor(counter))
-            .when(controlSession)
-            .sendDescriptor(eq(correlationId), any());
-
-        session.doWork();
-
-        verify(controlSession, times(2)).sendDescriptor(eq(correlationId), any());
-        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L));
+        verify(controlSession).sendDescriptor(eq(correlationId), any());
+        verifyNoMoreInteractions(controlSession);
     }
 
     @Test
     void shouldSendRecordingUnknownOnFirst()
     {
-        final ListRecordingsSession session = new ListRecordingsSession(
-            correlationId,
-            3,
-            3,
-            catalog,
-            controlSession,
-            descriptorBuffer);
+        final long correlationId = 42;
+        final long unknownRecordingId = 17777;
+        final ListRecordingByIdSession session =
+            new ListRecordingByIdSession(correlationId, unknownRecordingId, catalog, controlSession, descriptorBuffer);
 
         session.doWork();
 
-        verify(controlSession, never()).sendDescriptor(eq(correlationId), any());
-        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(3L));
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(unknownRecordingId));
+        verifyNoMoreInteractions(controlSession);
     }
 
-    private Answer<Object> verifySendDescriptor(final MutableLong counter)
+    private Answer<Object> verifySendDescriptor()
     {
         return (invocation) ->
         {
@@ -157,10 +103,6 @@ class ListRecordingsSessionTest
                 RecordingDescriptorHeaderDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.BLOCK_LENGTH,
                 RecordingDescriptorDecoder.SCHEMA_VERSION);
-
-            final int i = counter.intValue();
-            assertEquals(recordingIds[i], recordingDescriptorDecoder.recordingId());
-            counter.set(i + 1);
 
             return true;
         };

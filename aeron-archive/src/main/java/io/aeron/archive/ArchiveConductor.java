@@ -609,13 +609,12 @@ abstract class ArchiveConductor
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg);
         }
-        else if (catalog.wrapDescriptor(recordingId, descriptorBuffer))
-        {
-            controlSession.sendDescriptor(correlationId, descriptorBuffer);
-        }
         else
         {
-            controlSession.sendRecordingUnknown(correlationId, recordingId);
+            final ListRecordingByIdSession session =
+                new ListRecordingByIdSession(correlationId, recordingId, catalog, controlSession, descriptorBuffer);
+            addSession(session);
+            controlSession.activeListing(session);
         }
     }
 

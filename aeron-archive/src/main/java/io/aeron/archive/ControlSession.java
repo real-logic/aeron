@@ -710,36 +710,28 @@ final class ControlSession implements Session
         }
     }
 
-    void sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
+    boolean sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
     {
         assertCalledOnConductorThread();
-        if (!syncResponseQueue.isEmpty() ||
-            !controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this))
-        {
-            updateActivityDeadline(cachedEpochClock.time());
-            syncResponseQueue.offer(() -> controlResponseProxy.sendDescriptor(
-                controlSessionId, correlationId, descriptorBuffer, this));
-        }
-        else
+        final boolean sent =
+            controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this);
+        if (sent)
         {
             activityDeadlineMs = Aeron.NULL_VALUE;
         }
+        return sent;
     }
 
-    void sendSubscriptionDescriptor(final long correlationId, final Subscription subscription)
+    boolean sendSubscriptionDescriptor(final long correlationId, final Subscription subscription)
     {
         assertCalledOnConductorThread();
-        if (!syncResponseQueue.isEmpty() ||
-            !controlResponseProxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this))
-        {
-            updateActivityDeadline(cachedEpochClock.time());
-            syncResponseQueue.offer(() -> controlResponseProxy.sendSubscriptionDescriptor(
-                controlSessionId, correlationId, subscription, this));
-        }
-        else
+        final boolean sent =
+            controlResponseProxy.sendSubscriptionDescriptor(controlSessionId, correlationId, subscription, this);
+        if (sent)
         {
             activityDeadlineMs = Aeron.NULL_VALUE;
         }
+        return sent;
     }
 
     void sendSignal(

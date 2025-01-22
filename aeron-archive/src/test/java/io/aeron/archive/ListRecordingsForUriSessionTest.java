@@ -199,7 +199,7 @@ class ListRecordingsForUriSessionTest
             assertEquals(matchingRecordingIds[i], recordingDescriptorDecoder.recordingId());
             counter.set(i + 1);
 
-            return buffer.getInt(0);
+            return true;
         };
     }
 }

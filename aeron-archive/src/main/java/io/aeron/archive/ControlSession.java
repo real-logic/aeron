@@ -20,8 +20,6 @@ import io.aeron.ExclusivePublication;
 import io.aeron.Subscription;
 import io.aeron.archive.client.ArchiveEvent;
 import io.aeron.archive.codecs.ControlResponseCode;
-import io.aeron.archive.codecs.RecordingDescriptorDecoder;
-import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
 import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.codecs.SourceLocation;
 import io.aeron.security.Authenticator;
@@ -715,20 +713,12 @@ final class ControlSession implements Session
     void sendDescriptor(final long correlationId, final UnsafeBuffer descriptorBuffer)
     {
         assertCalledOnConductorThread();
-        final int descriptorOffset =
-            RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + RecordingDescriptorDecoder.recordingIdEncodingOffset();
-        final int descriptorLength =
-            Catalog.descriptorLength(descriptorBuffer) - RecordingDescriptorDecoder.recordingIdEncodingOffset();
         if (!syncResponseQueue.isEmpty() ||
-            !controlResponseProxy.sendDescriptor(
-            controlSessionId, correlationId, descriptorBuffer, descriptorOffset, descriptorLength, this))
+            !controlResponseProxy.sendDescriptor(controlSessionId, correlationId, descriptorBuffer, this))
         {
-            final UnsafeBuffer tmpBuffer = new UnsafeBuffer(new byte[descriptorLength]);
-            tmpBuffer.putBytes(0, descriptorBuffer, descriptorOffset, descriptorLength);
-
             updateActivityDeadline(cachedEpochClock.time());
             syncResponseQueue.offer(() -> controlResponseProxy.sendDescriptor(
-                controlSessionId, correlationId, tmpBuffer, 0, tmpBuffer.capacity(), this));
+                controlSessionId, correlationId, descriptorBuffer, this));
         }
         else
         {

@@ -27,10 +27,16 @@ import org.agrona.ExpandableArrayBuffer;
 import org.agrona.MutableDirectBuffer;
 import org.agrona.concurrent.UnsafeBuffer;
 
+import static io.aeron.archive.codecs.RecordingDescriptorEncoder.recordingIdEncodingOffset;
+import static org.agrona.BitUtil.SIZE_OF_LONG;
+
 class ControlResponseProxy
 {
     private static final int SEND_ATTEMPTS = 3;
     private static final int MESSAGE_HEADER_LENGTH = MessageHeaderEncoder.ENCODED_LENGTH;
+    private static final int DESCRIPTOR_PREFIX_LENGTH = MESSAGE_HEADER_LENGTH + 2 * SIZE_OF_LONG;
+    private static final int DESCRIPTOR_CONTENT_OFFSET =
+        RecordingDescriptorHeaderDecoder.BLOCK_LENGTH + recordingIdEncodingOffset();
 
     private final ExpandableArrayBuffer buffer = new ExpandableArrayBuffer(1024);
     private final BufferClaim bufferClaim = new BufferClaim();
@@ -47,10 +53,11 @@ class ControlResponseProxy
         final long controlSessionId,
         final long correlationId,
         final UnsafeBuffer descriptorBuffer,
-        final int descriptorOffset,
-        final int descriptorLength,
         final ControlSession session)
     {
+        final int messageLength = Catalog.descriptorLength(descriptorBuffer) + MESSAGE_HEADER_LENGTH;
+        final int contentLength = messageLength - recordingIdEncodingOffset() - MESSAGE_HEADER_LENGTH;
+
         recordingDescriptorEncoder
             .wrapAndApplyHeader(buffer, 0, messageHeaderEncoder)
             .controlSessionId(controlSessionId)
@@ -63,10 +70,10 @@ class ControlResponseProxy
             final long position = publication.offer(
                 buffer,
                 0,
-                MESSAGE_HEADER_LENGTH + RecordingDescriptorDecoder.recordingIdEncodingOffset(),
+                DESCRIPTOR_PREFIX_LENGTH,
                 descriptorBuffer,
-                descriptorOffset,
-                descriptorLength);
+                DESCRIPTOR_CONTENT_OFFSET,
+                contentLength);
             if (position > 0)
             {
                 return true;

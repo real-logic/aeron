@@ -540,7 +540,6 @@ public final class PublicationImage
 
         if (isRebuilding)
         {
-            final long hwmPosition = this.hwmPosition.getVolatile();
             long minSubscriberPosition = Long.MAX_VALUE;
             long maxSubscriberPosition = 0;
 
@@ -552,6 +551,7 @@ public final class PublicationImage
             }
 
             final long rebuildPosition = Math.max(this.rebuildPosition.get(), maxSubscriberPosition);
+            final long hwmPosition = this.hwmPosition.getVolatile();
             final long scanOutcome = lossDetector.scan(
                 termBuffers[indexByPosition(rebuildPosition, positionBitsToShift)],
                 rebuildPosition,

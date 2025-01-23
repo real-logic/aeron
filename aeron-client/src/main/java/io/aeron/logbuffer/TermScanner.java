@@ -46,7 +46,7 @@ public final class TermScanner
         int available = 0;
         int padding = 0;
 
-        do
+        while (0 == padding && available < limit)
         {
             final int termOffset = offset + available;
             final int frameLength = frameLengthVolatile(termBuffer, termOffset);
@@ -71,7 +71,6 @@ public final class TermScanner
                 break;
             }
         }
-        while (0 == padding && available < limit);
 
         return pack(padding, available);
     }

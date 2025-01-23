@@ -91,7 +91,9 @@ public class LossDetector implements TermGapScanner.GapHandler
             rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, limitOffset, this);
             if (rebuildOffset < limitOffset)
             {
-                if (scannedTermOffset != activeTermOffset || scannedTermId != activeTermId)
+                if (scannedTermOffset != activeTermOffset ||
+                    scannedTermId != activeTermId ||
+                    scannedLength != activeLength)
                 {
                     activateGap(nowNs);
                     lossFound = true;

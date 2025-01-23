@@ -27,6 +27,9 @@ import org.agrona.concurrent.UnsafeBuffer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 
+import static io.aeron.driver.LossDetector.lossFound;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 import static io.aeron.logbuffer.LogBufferDescriptor.TERM_MIN_LENGTH;
 import static io.aeron.logbuffer.LogBufferDescriptor.computePosition;
@@ -67,7 +70,7 @@ class LossDetectorTest
 
     private final LossHandler lossHandler = mock(LossHandler.class);
     private LossDetector lossDetector = new LossDetector(DELAY_GENERATOR, lossHandler);
-    private long currentTime = 0;
+    private long currentTimeNs = 0;
 
     {
         dataHeader.wrap(rcvBuffer);
@@ -79,9 +82,11 @@ class LossDetectorTest
         final long rebuildPosition = ACTIVE_TERM_POSITION;
         final long hwmPosition = ACTIVE_TERM_POSITION;
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(100);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyNoInteractions(lossHandler);
     }
@@ -96,9 +101,11 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(1));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyNoInteractions(lossHandler);
     }
@@ -112,11 +119,13 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -128,13 +137,16 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(30);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(60);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(30);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(60);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler, atLeast(2)).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(lossHandler, atLeast(2)).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -146,13 +158,16 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(20);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(20);
         insertDataFrame(offsetOfMessage(1));
         rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(100);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyNoInteractions(lossHandler);
     }
@@ -168,19 +183,23 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(6));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         insertDataFrame(offsetOfMessage(1));
         rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(80);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(80);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         final InOrder inOrder = inOrder(lossHandler);
-        inOrder.verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
-        inOrder.verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(3), gapLength());
-        inOrder.verify(lossHandler, never()).onGapDetected(TERM_ID, offsetOfMessage(5), gapLength());
+        inOrder.verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(3), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(lossHandler, never()).onGapDetected(TERM_ID, offsetOfMessage(5), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -192,20 +211,24 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(20);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(20);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         insertDataFrame(offsetOfMessage(4));
         insertDataFrame(offsetOfMessage(1));
         rebuildPosition += (ALIGNED_FRAME_LENGTH * 3L);
         hwmPosition = (ALIGNED_FRAME_LENGTH * 5L);
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(100);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(100);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(lossHandler, atLeast(1)).onGapDetected(TERM_ID, offsetOfMessage(3), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -219,23 +242,27 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
         verifyNoInteractions(lossHandler);
 
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
 
-        currentTime = TimeUnit.MILLISECONDS.toNanos(80);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(80);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyNoMoreInteractions(lossHandler);
 
-        currentTime = TimeUnit.MILLISECONDS.toNanos(240);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(240);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler, times(2)).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(lossHandler, times(2)).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -247,7 +274,8 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verifyNoInteractions(lossHandler);
     }
@@ -263,12 +291,15 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         insertDataFrame(offsetOfMessage(2));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), gapLength());
+        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), ALIGNED_FRAME_LENGTH);
     }
 
     @Test
@@ -282,9 +313,11 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(0));
         rebuildPosition += ALIGNED_FRAME_LENGTH;
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
         verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(1), TERM_BUFFER_LENGTH - (int)rebuildPosition);
     }
@@ -300,12 +333,103 @@ class LossDetectorTest
         insertDataFrame(offsetOfMessage(2));
         insertDataFrame(offsetOfMessage(4));
 
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
-        currentTime = TimeUnit.MILLISECONDS.toNanos(40);
-        lossDetector.scan(termBuffer, rebuildPosition, hwmPosition, currentTime, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(40);
+        lossDetector.scan(
+            termBuffer, rebuildPosition, hwmPosition, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID);
 
-        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), gapLength());
+        verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), ALIGNED_FRAME_LENGTH);
         verifyNoMoreInteractions(lossHandler);
+    }
+
+    @Test
+    void shouldDetectChangesInTheGapLength()
+    {
+        lossDetector = getLossHandlerWithLongRetry();
+
+        final long rebuildPosition = ACTIVE_TERM_POSITION + (ALIGNED_FRAME_LENGTH * 3L);
+
+        insertDataFrame(offsetOfMessage(2));
+        insertDataFrame(offsetOfMessage(5));
+
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 32, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(100);
+        assertFalse(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 32, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 64, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(200);
+        assertFalse(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 64, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(300);
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer,
+            rebuildPosition,
+            rebuildPosition + ALIGNED_FRAME_LENGTH,
+            currentTimeNs,
+            MASK,
+            POSITION_BITS_TO_SHIFT,
+            TERM_ID)));
+
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer,
+            rebuildPosition,
+            rebuildPosition + ALIGNED_FRAME_LENGTH * 2L,
+            currentTimeNs,
+            MASK,
+            POSITION_BITS_TO_SHIFT,
+            TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(400);
+        assertFalse(lossFound(lossDetector.scan(
+            termBuffer,
+            rebuildPosition,
+            rebuildPosition + ALIGNED_FRAME_LENGTH * 2L,
+            currentTimeNs,
+            MASK,
+            POSITION_BITS_TO_SHIFT,
+            TERM_ID)));
+
+        insertDataFrame(offsetOfMessage(4));
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer,
+            rebuildPosition,
+            rebuildPosition + ALIGNED_FRAME_LENGTH * 2L,
+            currentTimeNs,
+            MASK,
+            POSITION_BITS_TO_SHIFT,
+            TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(500);
+        assertFalse(lossFound(lossDetector.scan(
+            termBuffer,
+            rebuildPosition,
+            rebuildPosition + ALIGNED_FRAME_LENGTH * 2L,
+            currentTimeNs,
+            MASK,
+            POSITION_BITS_TO_SHIFT,
+            TERM_ID)));
+
+        assertTrue(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 64, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        currentTimeNs = TimeUnit.MILLISECONDS.toNanos(600);
+        assertFalse(lossFound(lossDetector.scan(
+            termBuffer, rebuildPosition, rebuildPosition + 64, currentTimeNs, MASK, POSITION_BITS_TO_SHIFT, TERM_ID)));
+
+        final InOrder inOrder = inOrder(lossHandler);
+        inOrder.verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), 32);
+        inOrder.verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), 64);
+        inOrder.verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), ALIGNED_FRAME_LENGTH * 2);
+        inOrder.verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), ALIGNED_FRAME_LENGTH);
+        inOrder.verify(lossHandler).onGapDetected(TERM_ID, offsetOfMessage(3), 64);
+        inOrder.verifyNoMoreInteractions();
     }
 
     private LossDetector getLossHandlerWithLongRetry()
@@ -338,10 +462,5 @@ class LossDetectorTest
     private int offsetOfMessage(final int index)
     {
         return index * ALIGNED_FRAME_LENGTH;
-    }
-
-    private int gapLength()
-    {
-        return ALIGNED_FRAME_LENGTH;
     }
 }

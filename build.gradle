@@ -253,6 +253,7 @@ subprojects {
             'aeron.dir.delete.on.start': 'true',
             'aeron.term.buffer.sparse.file': 'true',
             'aeron.perform.storage.checks': 'false',
+            'agrona.disable.bounds.checks': 'false',
             'agrona.strict.alignment.checks': 'true',
             'net.bytebuddy.experimental': 'true',
             'io.aeron.shadow.net.bytebuddy.experimental': 'true',

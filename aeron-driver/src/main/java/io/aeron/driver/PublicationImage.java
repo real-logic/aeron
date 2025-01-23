@@ -561,7 +561,7 @@ public final class PublicationImage
                 positionBitsToShift,
                 initialTermId);
 
-            final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
+            final int rebuildTermOffset = (int)(rebuildPosition & termLengthMask);
             final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
             this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 

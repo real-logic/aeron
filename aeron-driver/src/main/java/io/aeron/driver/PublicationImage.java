@@ -21,11 +21,13 @@ import io.aeron.driver.media.ReceiveChannelEndpoint;
 import io.aeron.driver.media.ReceiveDestinationTransport;
 import io.aeron.driver.reports.LossReport;
 import io.aeron.driver.status.SystemCounters;
+import io.aeron.logbuffer.FrameDescriptor;
 import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.logbuffer.TermRebuilder;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.protocol.RttMeasurementFlyweight;
 import io.aeron.protocol.StatusMessageFlyweight;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.ErrorHandler;
 import org.agrona.SystemUtil;
@@ -117,6 +119,7 @@ public final class PublicationImage
     private static final VarHandle END_SM_CHANGE_VH;
     private static final VarHandle BEGIN_LOSS_CHANGE_VH;
     private static final VarHandle END_LOSS_CHANGE_VH;
+
     static
     {
         try
@@ -618,7 +621,15 @@ public final class PublicationImage
 
         final boolean isHeartbeat = DataHeaderFlyweight.isHeartbeat(buffer, length);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, initialTermId);
-        final long proposedPosition = isHeartbeat ? packetPosition : packetPosition + length;
+        final long proposedPosition;
+        if (isHeartbeat)
+        {
+            proposedPosition = packetPosition;
+        }
+        else
+        {
+            proposedPosition = packetPosition + computeFullPacketLength(buffer, length);
+        }
 
         if (!isFlowControlOverRun(proposedPosition))
         {
@@ -950,6 +961,21 @@ public final class PublicationImage
         {
             smEnabled = false;
         }
+    }
+
+    private static int computeFullPacketLength(final UnsafeBuffer buffer, final int packetLength)
+    {
+        int offset = 0;
+        while (offset < packetLength)
+        {
+            final int frameLength = FrameDescriptor.frameLength(buffer, offset);
+            if (frameLength <= 0)
+            {
+                break;
+            }
+            offset += BitUtil.align(frameLength, FrameDescriptor.FRAME_ALIGNMENT);
+        }
+        return offset;
     }
 
     private void state(final State state)

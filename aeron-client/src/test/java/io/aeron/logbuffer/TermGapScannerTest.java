@@ -24,6 +24,7 @@ import static io.aeron.logbuffer.FrameDescriptor.FRAME_ALIGNMENT;
 import static org.agrona.BitUtil.align;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 class TermGapScannerTest
 {
@@ -51,6 +52,7 @@ class TermGapScannerTest
         assertEquals(0, TermGapScanner.scanForGap(termBuffer, TERM_ID, 0, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, 0, frameOffset);
+        verifyNoMoreInteractions(gapHandler);
     }
 
     @Test
@@ -67,6 +69,7 @@ class TermGapScannerTest
         assertEquals(tail, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
+        verifyNoMoreInteractions(gapHandler);
     }
 
     @Test
@@ -83,6 +86,7 @@ class TermGapScannerTest
         assertEquals(tail, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verify(gapHandler).onGap(TERM_ID, tail, align(HEADER_LENGTH, FRAME_ALIGNMENT));
+        verifyNoMoreInteractions(gapHandler);
     }
 
     @Test
@@ -99,5 +103,38 @@ class TermGapScannerTest
             LOG_BUFFER_CAPACITY, TermGapScanner.scanForGap(termBuffer, TERM_ID, tail, highWaterMark, gapHandler));
 
         verifyNoInteractions(gapHandler);
+    }
+
+    @Test
+    void shouldReportSingleHeaderGap()
+    {
+        final int offset = 8192 + 384;
+        when(termBuffer.getIntVolatile(offset)).thenReturn(0);
+        when(termBuffer.getIntVolatile(offset + HEADER_LENGTH)).thenReturn(128);
+
+        assertEquals(
+            offset, TermGapScanner.scanForGap(termBuffer, TERM_ID, offset, LOG_BUFFER_CAPACITY, gapHandler));
+
+        verify(termBuffer).getIntVolatile(offset);
+        verify(termBuffer).getIntVolatile(offset + HEADER_LENGTH);
+        verify(gapHandler).onGap(TERM_ID, offset, HEADER_LENGTH);
+        verifyNoMoreInteractions(gapHandler, termBuffer);
+    }
+
+    @Test
+    void shouldReportGapAtTheEndOfTheBuffer()
+    {
+        final int offset = LOG_BUFFER_CAPACITY - 128;
+        when(termBuffer.getIntVolatile(offset)).thenReturn(0);
+
+        assertEquals(
+            offset, TermGapScanner.scanForGap(termBuffer, TERM_ID, offset, LOG_BUFFER_CAPACITY, gapHandler));
+
+        verify(termBuffer).getIntVolatile(offset);
+        verify(termBuffer).getIntVolatile(offset + HEADER_LENGTH);
+        verify(termBuffer).getIntVolatile(offset + 2 * HEADER_LENGTH);
+        verify(termBuffer).getIntVolatile(offset + 3 * HEADER_LENGTH);
+        verify(gapHandler).onGap(TERM_ID, offset, 128);
+        verifyNoMoreInteractions(gapHandler, termBuffer);
     }
 }

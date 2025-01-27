@@ -628,7 +628,7 @@ public final class PublicationImage
         }
         else
         {
-            proposedPosition = packetPosition + computeFullPacketLength(buffer, length);
+            proposedPosition = packetPosition + computeActualFrameLength(buffer, length);
         }
 
         if (!isFlowControlOverRun(proposedPosition))
@@ -642,12 +642,12 @@ public final class PublicationImage
                 {
                     final long nowNs = cachedNanoClock.nanoTime();
                     timeOfLastPacketNs = nowNs;
-                    trackConnection(transportIndex, srcAddress, nowNs);
+                    final ImageConnection imageConnection = trackConnection(transportIndex, srcAddress, nowNs);
 
                     if (isEndOfStream)
                     {
-                        imageConnections[transportIndex].eosPosition = packetPosition;
-                        imageConnections[transportIndex].isEos = true;
+                        imageConnection.eosPosition = packetPosition;
+                        imageConnection.isEos = true;
 
                         if (!this.isEndOfStream && isAllConnectedEos())
                         {
@@ -963,7 +963,7 @@ public final class PublicationImage
         }
     }
 
-    private static int computeFullPacketLength(final UnsafeBuffer buffer, final int packetLength)
+    private static int computeActualFrameLength(final UnsafeBuffer buffer, final int packetLength)
     {
         int offset = 0;
         while (offset < packetLength)
@@ -1043,7 +1043,8 @@ public final class PublicationImage
         }
     }
 
-    private void trackConnection(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
+    private ImageConnection trackConnection(
+        final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
     {
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
         ImageConnection imageConnection = imageConnections[transportIndex];
@@ -1056,6 +1057,7 @@ public final class PublicationImage
 
         imageConnection.timeOfLastActivityNs = nowNs;
         imageConnection.timeOfLastFrameNs = nowNs;
+        return imageConnection;
     }
 
     private boolean isAllConnectedEos()

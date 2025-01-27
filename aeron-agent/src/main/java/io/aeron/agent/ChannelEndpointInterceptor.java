@@ -176,7 +176,7 @@ class ChannelEndpointInterceptor
                     msg.streamId(),
                     msg.termId(),
                     msg.termOffset(),
-                    length,
+                    msg.length(),
                     channel);
             }
         }

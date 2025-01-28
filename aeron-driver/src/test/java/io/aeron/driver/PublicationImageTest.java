@@ -163,7 +163,7 @@ class PublicationImageTest
     }
 
     @Test
-    void shouldTakeIntoAccountTrailingPaddingFrameWhenIncrementingHighWaterMarkPosition()
+    void shouldAdvanceHighWaterMarkByPacketLengthWhenItContainsPaddingFrame()
     {
         final int totalLength = 512;
         final int packetLength = 288;
@@ -181,7 +181,7 @@ class PublicationImageTest
         assertEquals(packetLength, bytes);
         final int positionBitsToShift = positionBitsToShift(TERM_LENGTH);
         final long packetPosition = computePosition(termId, termOffset, positionBitsToShift, INITIAL_TERM_ID);
-        assertEquals(packetPosition + totalLength, hwmPosition.get());
+        assertEquals(packetPosition + packetLength, hwmPosition.get());
         final UnsafeBuffer activeTermBuffer =
             rawLog.termBuffers()[indexByPosition(packetPosition, positionBitsToShift)];
         for (int i = 0; i < packetLength; i++)

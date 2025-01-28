@@ -805,7 +805,7 @@ public final class NetworkPublication
                 shortSends.increment();
             }
         }
-        else if (available < 0 && trackSenderLimits)
+        else if (trackSenderLimits)
         {
             trackSenderLimits = false;
             senderBpe.incrementOrdered();

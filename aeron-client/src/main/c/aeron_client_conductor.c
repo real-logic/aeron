@@ -505,9 +505,10 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
      * Currently, only images are lingered and only until refcnt is 0. Even in the case of client timeout,
      * etc. we let the application call aeron_close to clean up and shutdown the thread, etc.
      */
-    for (size_t i = 0, size = conductor->lingering_resources.length, last_index = size - 1; i < size; i++)
+    for (size_t size = conductor->lingering_resources.length, last_index = size - 1, i = size; i > 0; i--)
     {
-        aeron_client_managed_resource_t *resource = &conductor->lingering_resources.array[i];
+        size_t index = i - 1;
+        aeron_client_managed_resource_t *resource = &conductor->lingering_resources.array[index];
 
         if (AERON_CLIENT_TYPE_IMAGE == resource->type)
         {
@@ -532,9 +533,10 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
                 aeron_array_fast_unordered_remove(
                     (uint8_t *)conductor->lingering_resources.array,
                     sizeof(aeron_client_managed_resource_t),
-                    i,
+                    index,
                     last_index);
                 conductor->lingering_resources.length--;
+                last_index--;
                 work_count += 1;
             }
         }
@@ -547,18 +549,20 @@ int aeron_client_conductor_check_registering_resources(aeron_client_conductor_t 
 {
     int work_count = 0;
 
-    for (size_t i = 0, size = conductor->registering_resources.length, last_index = size - 1; i < size; i++)
+    for (size_t size = conductor->registering_resources.length, last_index = size - 1, i = size; i > 0; i--)
     {
-        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[i].resource;
+        size_t index = i - 1;
+        aeron_client_registering_resource_t *resource = conductor->registering_resources.array[index].resource;
 
         if (now_ns > resource->registration_deadline_ns)
         {
             aeron_array_fast_unordered_remove(
                 (uint8_t *)conductor->registering_resources.array,
                 sizeof(aeron_client_registering_resource_entry_t),
-                i,
+                index,
                 last_index);
             conductor->registering_resources.length--;
+            last_index--;
 
             AERON_SET_RELEASE(resource->registration_status, AERON_CLIENT_TIMEOUT_MEDIA_DRIVER);
 
@@ -1442,6 +1446,7 @@ void aeron_client_conductor_on_cmd_handler(void *clientd, void *item)
                         i,
                         last_index);
                     conductor->available_counter_handlers.length--;
+                    break;
                 }
             }
             break;
@@ -1476,6 +1481,7 @@ void aeron_client_conductor_on_cmd_handler(void *clientd, void *item)
                         i,
                         last_index);
                     conductor->unavailable_counter_handlers.length--;
+                    break;
                 }
             }
             break;
@@ -1508,6 +1514,7 @@ void aeron_client_conductor_on_cmd_handler(void *clientd, void *item)
                         i,
                         last_index);
                     conductor->close_handlers.length--;
+                    break;
                 }
             }
             break;

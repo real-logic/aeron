@@ -38,6 +38,7 @@ import org.agrona.collections.MutableInteger;
 import org.agrona.collections.MutableLong;
 import org.agrona.concurrent.UnsafeBuffer;
 import org.agrona.concurrent.status.CountersReader;
+import org.hamcrest.Matcher;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledOnOs;
@@ -55,6 +56,7 @@ import java.util.function.Supplier;
 import static io.aeron.AeronCounters.DRIVER_RECEIVE_CHANNEL_STATUS_TYPE_ID;
 import static io.aeron.ChannelUri.SPY_QUALIFIER;
 import static org.agrona.concurrent.status.CountersReader.NULL_COUNTER_ID;
+import static org.hamcrest.CoreMatchers.anyOf;
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.*;
@@ -781,9 +783,10 @@ class MultiDestinationSubscriptionTest
         "aeron:udp?endpoint=localhost:8889" })
     void shouldNotReuseEndpointAcrossMultipleSubscriptionsIfAtLeastOneIsMds(final String channel)
     {
-        final String errorMsg = SystemUtil.isWindows() && TestMediaDriver.shouldRunCMediaDriver() ?
-            "failed to bind to address" : "Address already in use";
-        testWatcher.ignoreErrorsMatching((err) -> err.contains(errorMsg));
+        final Matcher<String> errorMatcher = SystemUtil.isWindows() && TestMediaDriver.shouldRunCMediaDriver() ?
+            containsString("failed to bind to address") :
+            anyOf(containsString("Address already in use"), containsString("Address in use"));
+        testWatcher.ignoreErrorsMatching((err) -> errorMatcher.matches(err));
         launch(mock(ErrorHandler.class));
 
         try (Subscription sub1 = clientA.addSubscription(channel, STREAM_ID);
@@ -791,7 +794,7 @@ class MultiDestinationSubscriptionTest
         {
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> mdsSubscription.addDestination(sub1.channel()));
-            assertThat(exception.getMessage(), containsString(errorMsg));
+            assertThat(exception.getMessage(), errorMatcher);
 
             Tests.await(() -> 1 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }
@@ -802,7 +805,7 @@ class MultiDestinationSubscriptionTest
 
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> clientA.addSubscription(channel, STREAM_ID));
-            assertThat(exception.getMessage(), containsString(errorMsg));
+            assertThat(exception.getMessage(), errorMatcher);
 
             Tests.await(() -> 2 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }
@@ -813,7 +816,7 @@ class MultiDestinationSubscriptionTest
             mdsSubscription1.addDestination(channel);
             final RegistrationException exception =
                 assertThrowsExactly(RegistrationException.class, () -> mdsSubscription2.addDestination(channel));
-            assertThat(exception.getMessage(), containsString(errorMsg));
+            assertThat(exception.getMessage(), errorMatcher);
 
             Tests.await(() -> 3 == clientA.countersReader().getCounterValue(SystemCounterDescriptor.ERRORS.id()));
         }

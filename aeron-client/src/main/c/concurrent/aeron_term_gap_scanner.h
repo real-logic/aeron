@@ -23,8 +23,6 @@
 
 typedef void (*aeron_term_gap_scanner_on_gap_detected_func_t)(void *clientd, int32_t term_id, int32_t term_offset, size_t length);
 
-#define AERON_ALIGNED_HEADER_LENGTH (AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT))
-
 inline int32_t aeron_term_gap_scanner_scan_for_gap(
     const uint8_t *buffer,
     int32_t term_id,
@@ -53,23 +51,21 @@ inline int32_t aeron_term_gap_scanner_scan_for_gap(
     const int32_t gap_begin_offset = offset;
     if (offset < limit_offset)
     {
-        const int32_t limit = limit_offset - AERON_ALIGNED_HEADER_LENGTH;
-        while (offset < limit)
+        offset += AERON_DATA_HEADER_LENGTH;
+        while (offset < limit_offset)
         {
-            offset += AERON_LOGBUFFER_FRAME_ALIGNMENT;
-
             aeron_frame_header_t *hdr = (aeron_frame_header_t *)(buffer + offset);
             int32_t frame_length;
             AERON_GET_ACQUIRE(frame_length, hdr->frame_length);
 
             if (0 != frame_length)
             {
-                offset -= AERON_ALIGNED_HEADER_LENGTH;
                 break;
             }
+            offset += AERON_DATA_HEADER_LENGTH;
         }
 
-        const size_t gap_length = (offset - gap_begin_offset) + AERON_ALIGNED_HEADER_LENGTH;
+        const size_t gap_length = offset - gap_begin_offset;
         on_gap_detected(clientd, term_id, gap_begin_offset, gap_length);
     }
 

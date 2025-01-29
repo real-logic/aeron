@@ -25,7 +25,6 @@ extern "C"
 }
 
 #define CAPACITY (AERON_LOGBUFFER_TERM_MIN_LENGTH)
-#define HEADER_LENGTH (AERON_DATA_HEADER_LENGTH)
 #define POSITION_BITS_TO_SHIFT (aeron_number_of_trailing_zeroes(CAPACITY))
 #define MASK (CAPACITY - 1)
 
@@ -59,11 +58,11 @@ protected:
 
 TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 {
-    const int32_t frame_offset = AERON_ALIGN((HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT);
-    const int32_t high_water_mark = frame_offset + AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t frame_offset = AERON_ALIGN((AERON_DATA_HEADER_LENGTH * 3), AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t high_water_mark = frame_offset + AERON_DATA_HEADER_LENGTH;
     auto *hdr = (aeron_frame_header_t *)(m_ptr + frame_offset);
 
-    hdr->frame_length = HEADER_LENGTH;
+    hdr->frame_length = AERON_DATA_HEADER_LENGTH;
 
     bool on_gap_detected_called = false;
     m_on_gap_detected =
@@ -83,19 +82,19 @@ TEST_F(TermGapScannerTest, shouldReportGapAtBeginningOfBuffer)
 
 TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
 {
-    const int32_t tail = AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT);
+    const int32_t tail = AERON_DATA_HEADER_LENGTH;
     const int32_t high_water_mark = AERON_LOGBUFFER_FRAME_ALIGNMENT * 3;
 
     aeron_frame_header_t *hdr;
 
-    hdr = (aeron_frame_header_t *)(m_ptr + tail - (AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
-    hdr->frame_length = HEADER_LENGTH;
+    hdr = (aeron_frame_header_t *)(m_ptr + tail - (AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
+    hdr->frame_length = AERON_DATA_HEADER_LENGTH;
 
     hdr = (aeron_frame_header_t *)(m_ptr + tail);
     hdr->frame_length = 0;
 
-    hdr = (aeron_frame_header_t *)(m_ptr + high_water_mark - (AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
-    hdr->frame_length = HEADER_LENGTH;
+    hdr = (aeron_frame_header_t *)(m_ptr + high_water_mark - (AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
+    hdr->frame_length = AERON_DATA_HEADER_LENGTH;
 
     bool on_gap_detected_called = false;
     m_on_gap_detected =
@@ -103,7 +102,7 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
         {
             EXPECT_EQ(term_id, TERM_ID);
             EXPECT_EQ(term_offset, tail);
-            EXPECT_EQ(length, (size_t)AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
+            EXPECT_EQ(length, (size_t)AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
             on_gap_detected_called = true;
         };
 
@@ -115,19 +114,19 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferNotFull)
 
 TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
 {
-    const int32_t tail = CAPACITY - (AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) * 2);
+    const int32_t tail = CAPACITY - (AERON_DATA_HEADER_LENGTH * 2);
     const int32_t high_water_mark = CAPACITY;
 
     aeron_frame_header_t *hdr;
 
-    hdr = (aeron_frame_header_t *)(m_ptr + tail - (AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
-    hdr->frame_length = HEADER_LENGTH;
+    hdr = (aeron_frame_header_t *)(m_ptr + tail - (AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
+    hdr->frame_length = AERON_DATA_HEADER_LENGTH;
 
     hdr = (aeron_frame_header_t *)(m_ptr + tail);
     hdr->frame_length = 0;
 
-    hdr = (aeron_frame_header_t *)(m_ptr + high_water_mark - (AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
-    hdr->frame_length = HEADER_LENGTH;
+    hdr = (aeron_frame_header_t *)(m_ptr + high_water_mark - (AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT)));
+    hdr->frame_length = AERON_DATA_HEADER_LENGTH;
 
     bool on_gap_detected_called = false;
     m_on_gap_detected =
@@ -135,7 +134,7 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
         {
             EXPECT_EQ(term_id, TERM_ID);
             EXPECT_EQ(term_offset, tail);
-            EXPECT_EQ(length, (size_t)AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
+            EXPECT_EQ(length, (size_t)AERON_ALIGN(AERON_DATA_HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT));
             on_gap_detected_called = true;
         };
 
@@ -147,16 +146,16 @@ TEST_F(TermGapScannerTest, shouldReportSingleGapWhenBufferIsFull)
 
 TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
 {
-    const int32_t padding_length = AERON_ALIGN(HEADER_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT) * 2;
+    const int32_t padding_length = AERON_DATA_HEADER_LENGTH * 2;
     const int32_t tail = CAPACITY - padding_length;
-    const int32_t high_water_mark = CAPACITY - padding_length + HEADER_LENGTH;
+    const int32_t high_water_mark = CAPACITY - padding_length + AERON_DATA_HEADER_LENGTH;
 
     aeron_frame_header_t *hdr;
 
     hdr = (aeron_frame_header_t *)(m_ptr + tail);
     hdr->frame_length = padding_length;
 
-    hdr = (aeron_frame_header_t *)(m_ptr + tail + HEADER_LENGTH);
+    hdr = (aeron_frame_header_t *)(m_ptr + tail + AERON_DATA_HEADER_LENGTH);
     hdr->frame_length = 0;
 
     bool on_gap_detected_called = false;
@@ -173,7 +172,7 @@ TEST_F(TermGapScannerTest, shouldReportNoGapWhenHwmIsInPadding)
 }
 
 #define DATA_LENGTH (36)
-#define MESSAGE_LENGTH (DATA_LENGTH + HEADER_LENGTH)
+#define MESSAGE_LENGTH (DATA_LENGTH + AERON_DATA_HEADER_LENGTH)
 #define ALIGNED_FRAME_LENGTH (AERON_ALIGN(MESSAGE_LENGTH, AERON_LOGBUFFER_FRAME_ALIGNMENT))
 
 class LossDetectorTest : public testing::Test

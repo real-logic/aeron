@@ -783,29 +783,43 @@ public final class NetworkPublication
     private int sendData(final long nowNs, final long senderPosition, final int termOffset)
     {
         int bytesSent = 0;
-
-        final int scanLimit = Math.min((int)(senderLimit.get() - senderPosition), mtuLength);
-        final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
-        final long scanOutcome = scanForAvailability(termBuffers[activeIndex], termOffset, scanLimit);
-        final int available = available(scanOutcome);
-        if (available > 0)
+        final int availableWindow = (int)(senderLimit.get() - senderPosition);
+        if (availableWindow > 0)
         {
-            final ByteBuffer sendBuffer = sendBuffers[activeIndex];
-            sendBuffer.limit(termOffset + available).position(termOffset);
+            final int scanLimit = Math.min(availableWindow, mtuLength);
+            final int activeIndex = indexByPosition(senderPosition, positionBitsToShift);
 
-            if (available == doSend(sendBuffer))
+            final long scanOutcome = scanForAvailability(termBuffers[activeIndex], termOffset, scanLimit);
+            final int available = available(scanOutcome);
+            if (available > 0)
             {
-                bytesSent = available;
-                timeOfLastDataOrHeartbeatNs = nowNs;
-                trackSenderLimits = true;
-                this.senderPosition.setOrdered(senderPosition + available + padding(scanOutcome));
+                final ByteBuffer sendBuffer = sendBuffers[activeIndex];
+                sendBuffer.limit(termOffset + available).position(termOffset);
+
+                if (available == doSend(sendBuffer))
+                {
+                    timeOfLastDataOrHeartbeatNs = nowNs;
+                    trackSenderLimits = true;
+
+                    bytesSent = available + padding(scanOutcome);
+                    this.senderPosition.setOrdered(senderPosition + bytesSent);
+                }
+                else
+                {
+                    shortSends.increment();
+                }
             }
-            else
+            else if (available < 0)
             {
-                shortSends.increment();
+                if (trackSenderLimits)
+                {
+                    trackSenderLimits = false;
+                    senderBpe.incrementOrdered();
+                    senderFlowControlLimits.incrementOrdered();
+                }
             }
         }
-        else if (available < 0 && trackSenderLimits)
+        else if (trackSenderLimits)
         {
             trackSenderLimits = false;
             senderBpe.incrementOrdered();

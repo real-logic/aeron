@@ -96,7 +96,8 @@ inline void aeron_loss_detector_on_gap(void *clientd, int32_t term_id, int32_t t
 inline bool aeron_loss_detector_gaps_match(aeron_loss_detector_t *detector)
 {
     return detector->active_gap.term_id == detector->scanned_gap.term_id &&
-        detector->active_gap.term_offset == detector->scanned_gap.term_offset;
+        detector->active_gap.term_offset == detector->scanned_gap.term_offset &&
+        detector->active_gap.length == detector->scanned_gap.length;
 }
 
 inline void aeron_loss_detector_activate_gap(aeron_loss_detector_t *detector, int64_t now_ns)

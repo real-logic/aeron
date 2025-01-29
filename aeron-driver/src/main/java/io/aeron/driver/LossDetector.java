@@ -77,7 +77,7 @@ public class LossDetector implements TermGapScanner.GapHandler
         final int initialTermId)
     {
         boolean lossFound = false;
-        int rebuildOffset = (int)rebuildPosition & termLengthMask;
+        int rebuildOffset = (int)(rebuildPosition & termLengthMask);
 
         if (rebuildPosition < hwmPosition)
         {
@@ -85,13 +85,15 @@ public class LossDetector implements TermGapScanner.GapHandler
             final int hwmTermCount = (int)(hwmPosition >>> positionBitsToShift);
 
             final int rebuildTermId = initialTermId + rebuildTermCount;
-            final int hwmTermOffset = (int)hwmPosition & termLengthMask;
+            final int hwmTermOffset = (int)(hwmPosition & termLengthMask);
             final int limitOffset = rebuildTermCount == hwmTermCount ? hwmTermOffset : termLengthMask + 1;
 
             rebuildOffset = scanForGap(termBuffer, rebuildTermId, rebuildOffset, limitOffset, this);
             if (rebuildOffset < limitOffset)
             {
-                if (scannedTermOffset != activeTermOffset || scannedTermId != activeTermId)
+                if (scannedTermOffset != activeTermOffset ||
+                    scannedTermId != activeTermId ||
+                    scannedLength != activeLength)
                 {
                     activateGap(nowNs);
                     lossFound = true;

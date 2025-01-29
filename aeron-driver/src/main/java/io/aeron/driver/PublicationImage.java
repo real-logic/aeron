@@ -117,6 +117,7 @@ public final class PublicationImage
     private static final VarHandle END_SM_CHANGE_VH;
     private static final VarHandle BEGIN_LOSS_CHANGE_VH;
     private static final VarHandle END_LOSS_CHANGE_VH;
+
     static
     {
         try
@@ -561,7 +562,7 @@ public final class PublicationImage
                 positionBitsToShift,
                 initialTermId);
 
-            final int rebuildTermOffset = (int)rebuildPosition & termLengthMask;
+            final int rebuildTermOffset = (int)(rebuildPosition & termLengthMask);
             final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
             this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
 
@@ -631,12 +632,12 @@ public final class PublicationImage
                 {
                     final long nowNs = cachedNanoClock.nanoTime();
                     timeOfLastPacketNs = nowNs;
-                    trackConnection(transportIndex, srcAddress, nowNs);
+                    final ImageConnection imageConnection = trackConnection(transportIndex, srcAddress, nowNs);
 
                     if (isEndOfStream)
                     {
-                        imageConnections[transportIndex].eosPosition = packetPosition;
-                        imageConnections[transportIndex].isEos = true;
+                        imageConnection.eosPosition = packetPosition;
+                        imageConnection.isEos = true;
 
                         if (!this.isEndOfStream && isAllConnectedEos())
                         {
@@ -1017,7 +1018,8 @@ public final class PublicationImage
         }
     }
 
-    private void trackConnection(final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
+    private ImageConnection trackConnection(
+        final int transportIndex, final InetSocketAddress srcAddress, final long nowNs)
     {
         imageConnections = ArrayUtil.ensureCapacity(imageConnections, transportIndex + 1);
         ImageConnection imageConnection = imageConnections[transportIndex];
@@ -1030,6 +1032,7 @@ public final class PublicationImage
 
         imageConnection.timeOfLastActivityNs = nowNs;
         imageConnection.timeOfLastFrameNs = nowNs;
+        return imageConnection;
     }
 
     private boolean isAllConnectedEos()

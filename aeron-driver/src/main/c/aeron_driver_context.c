@@ -3094,15 +3094,19 @@ void aeron_set_thread_affinity_on_start(void *state, const char *role_name)
 {
     aeron_driver_context_t *context = (aeron_driver_context_t *)state;
     int result = 0;
-    if (0 == strcmp("conductor", role_name) && 0 <= context->conductor_cpu_affinity_no)
+    if (0 <= context->conductor_cpu_affinity_no &&
+       (0 == strcmp("conductor", role_name) ||
+        0 == strcmp("[conductor, sender, receiver]", role_name)))
     {
         result = aeron_thread_set_affinity(role_name, (uint8_t)context->conductor_cpu_affinity_no);
     }
-    else if (0 == strcmp("sender", role_name) && 0 <= context->sender_cpu_affinity_no)
+    else if (0 <= context->sender_cpu_affinity_no &&
+            (0 == strcmp("sender", role_name) ||
+             0 == strcmp("[sender, receiver]", role_name)))
     {
         result = aeron_thread_set_affinity(role_name, (uint8_t)context->sender_cpu_affinity_no);
     }
-    else if (0 == strcmp("receiver", role_name) && 0 <= context->receiver_cpu_affinity_no)
+    else if (0 <= context->receiver_cpu_affinity_no && 0 == strcmp("receiver", role_name))
     {
         result = aeron_thread_set_affinity(role_name, (uint8_t)context->receiver_cpu_affinity_no);
     }

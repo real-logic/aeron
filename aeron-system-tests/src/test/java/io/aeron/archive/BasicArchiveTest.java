@@ -839,7 +839,6 @@ class BasicArchiveTest
     }
 
     @Test
-    @SlowTest
     @InterruptAfter(20)
     @SuppressWarnings("MethodLength")
     void shakeListingAndPurgingRecordings()

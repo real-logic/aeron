@@ -609,6 +609,10 @@ abstract class ArchiveConductor
             final String msg = "active listing already in progress";
             controlSession.sendErrorResponse(correlationId, ACTIVE_LISTING, msg);
         }
+        else if (!catalog.hasRecording(recordingId))
+        {
+            controlSession.sendRecordingUnknown(correlationId, recordingId);
+        }
         else
         {
             final ListRecordingByIdSession session =

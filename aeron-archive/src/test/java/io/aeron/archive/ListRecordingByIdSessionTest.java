@@ -17,6 +17,7 @@ package io.aeron.archive;
 
 import io.aeron.archive.codecs.RecordingDescriptorDecoder;
 import io.aeron.archive.codecs.RecordingDescriptorHeaderDecoder;
+import io.aeron.archive.codecs.RecordingState;
 import org.agrona.CloseHelper;
 import org.agrona.IoUtil;
 import org.agrona.concurrent.EpochClock;
@@ -28,6 +29,7 @@ import org.mockito.stubbing.Answer;
 
 import java.io.File;
 
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ListRecordingByIdSessionTest
@@ -89,6 +91,79 @@ class ListRecordingByIdSessionTest
         session.doWork();
 
         verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(unknownRecordingId));
+        verifyNoMoreInteractions(controlSession);
+    }
+
+    @Test
+    void shouldSendRecordingUnknownOnInvalidRecordingId()
+    {
+        final long correlationId = 42;
+        final long invalidatedRecordingId = recordingIds[1];
+        assertTrue(catalog.changeState(invalidatedRecordingId, RecordingState.INVALID));
+
+        final ListRecordingByIdSession session = new ListRecordingByIdSession(
+            correlationId, invalidatedRecordingId, catalog, controlSession, descriptorBuffer);
+
+        session.doWork();
+
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(invalidatedRecordingId));
+        verifyNoMoreInteractions(controlSession);
+    }
+
+    @Test
+    void shouldRetrySendingDescriptorUntilSuccess()
+    {
+        final long correlationId = 19;
+        final long recordingId = recordingIds[2];
+        when(controlSession.sendDescriptor(eq(correlationId), any())).thenReturn(false, false, false, true);
+
+        final ListRecordingByIdSession session =
+            new ListRecordingByIdSession(correlationId, recordingId, catalog, controlSession, descriptorBuffer);
+
+        while (!session.isDone())
+        {
+            assertEquals(1, session.doWork());
+        }
+        assertTrue(session.isDone());
+
+        assertEquals(0, session.doWork());
+
+        verify(controlSession, times(4)).sendDescriptor(eq(correlationId), any());
+        verifyNoMoreInteractions(controlSession);
+    }
+
+    @Test
+    void shouldSendRecordingDescriptorUnknownIfRecordingIsInvalidateBetweenRetries()
+    {
+        final long correlationId = 19;
+        final long recordingId = recordingIds[2];
+        when(controlSession.sendDescriptor(eq(correlationId), any())).thenReturn(false);
+
+        final ListRecordingByIdSession session =
+            new ListRecordingByIdSession(correlationId, recordingId, catalog, controlSession, descriptorBuffer);
+
+        assertEquals(1, session.doWork());
+        assertFalse(session.isDone());
+
+        assertTrue(catalog.changeState(recordingId, RecordingState.INVALID));
+
+        assertEquals(1, session.doWork());
+        assertTrue(session.isDone());
+
+        verify(controlSession).sendDescriptor(eq(correlationId), any());
+        verify(controlSession).sendRecordingUnknown(eq(correlationId), eq(recordingId));
+        verifyNoMoreInteractions(controlSession);
+    }
+
+    @Test
+    void shouldCloseActiveListing()
+    {
+        final ListRecordingByIdSession session =
+            new ListRecordingByIdSession(1, 111, catalog, controlSession, descriptorBuffer);
+
+        session.close();
+
+        verify(controlSession).activeListing(null);
         verifyNoMoreInteractions(controlSession);
     }
 

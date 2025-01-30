@@ -17,8 +17,15 @@ package io.aeron.archive;
 
 import org.agrona.concurrent.UnsafeBuffer;
 
-class ListRecordingByIdSession extends AbstractListRecordingsSession
+class ListRecordingByIdSession implements Session
 {
+    private final long correlationId;
+    private final long recordingId;
+    private final Catalog catalog;
+    private final ControlSession controlSession;
+    private final UnsafeBuffer descriptorBuffer;
+    private boolean isDone;
+
     ListRecordingByIdSession(
         final long correlationId,
         final long recordingId,
@@ -26,11 +33,68 @@ class ListRecordingByIdSession extends AbstractListRecordingsSession
         final ControlSession controlSession,
         final UnsafeBuffer descriptorBuffer)
     {
-        super(correlationId, recordingId, 1, catalog, controlSession, descriptorBuffer);
+        this.correlationId = correlationId;
+        this.recordingId = recordingId;
+        this.catalog = catalog;
+        this.controlSession = controlSession;
+        this.descriptorBuffer = descriptorBuffer;
     }
 
-    boolean acceptDescriptor(final UnsafeBuffer descriptorBuffer)
+    /**
+     * {@inheritDoc}
+     */
+    public void abort(final String reason)
     {
-        return true;
+        isDone = true;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public boolean isDone()
+    {
+        return isDone;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public int doWork()
+    {
+        if (isDone)
+        {
+            return 0;
+        }
+
+        if (catalog.wrapDescriptor(recordingId, descriptorBuffer))
+        {
+            if (controlSession.sendDescriptor(correlationId, descriptorBuffer))
+            {
+                isDone = true;
+            }
+        }
+        else
+        {
+            controlSession.sendRecordingUnknown(correlationId, recordingId);
+            isDone = true;
+        }
+
+        return 1;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public long sessionId()
+    {
+        return correlationId;
+    }
+
+    /**
+     * {@inheritDoc}
+     */
+    public void close()
+    {
+        controlSession.activeListing(null);
     }
 }

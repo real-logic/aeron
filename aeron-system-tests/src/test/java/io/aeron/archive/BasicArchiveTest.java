@@ -791,4 +791,57 @@ class BasicArchiveTest
         assertThat(error, Matchers.containsString("mtuLength"));
         assertThat(error, Matchers.containsString("fileIoMaxLength"));
     }
+
+    @Test
+    void shouldNotListRecordingThatWasPurged()
+    {
+        final RecordingResult recording1 = recordData(aeronArchive);
+        final RecordingResult recording2 = recordData(aeronArchive);
+        final RecordingResult recording3 = recordData(aeronArchive);
+
+        final RecordingDescriptorCollector collector = new RecordingDescriptorCollector(3);
+        assertEquals(3, aeronArchive.listRecordings(NULL_VALUE, 100, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+        assertEquals(recording2.recordingId, collector.descriptors().get(1).recordingId());
+        assertEquals(recording3.recordingId, collector.descriptors().get(2).recordingId());
+
+        final RecordingDescriptor descriptor = collector.descriptors().get(0);
+        final ChannelUri channelUri = ChannelUri.parse(descriptor.originalChannel());
+        channelUri.remove(CommonContext.SESSION_ID_PARAM_NAME);
+        final int streamId = descriptor.streamId();
+        assertEquals(3, aeronArchive.listRecordingsForUri(
+            NULL_VALUE, 100, channelUri.toString(), streamId, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+        assertEquals(recording2.recordingId, collector.descriptors().get(1).recordingId());
+        assertEquals(recording3.recordingId, collector.descriptors().get(2).recordingId());
+
+        assertEquals(1, aeronArchive.listRecording(recording1.recordingId, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+
+        assertEquals(1, aeronArchive.listRecording(recording2.recordingId, collector.reset()));
+        assertEquals(recording2.recordingId, collector.descriptors().get(0).recordingId());
+
+        assertEquals(1, aeronArchive.listRecording(recording3.recordingId, collector.reset()));
+        assertEquals(recording3.recordingId, collector.descriptors().get(0).recordingId());
+
+        assertNotEquals(0, aeronArchive.purgeRecording(recording2.recordingId));
+
+        assertEquals(1, aeronArchive.listRecording(recording1.recordingId, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+
+        assertEquals(0, aeronArchive.listRecording(recording2.recordingId, collector.reset()));
+        assertThat(collector.descriptors(), Matchers.hasSize(0));
+
+        assertEquals(1, aeronArchive.listRecording(recording3.recordingId, collector.reset()));
+        assertEquals(recording3.recordingId, collector.descriptors().get(0).recordingId());
+
+        assertEquals(2, aeronArchive.listRecordings(NULL_VALUE, 100, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+        assertEquals(recording3.recordingId, collector.descriptors().get(1).recordingId());
+
+        assertEquals(2, aeronArchive.listRecordingsForUri(
+            NULL_VALUE, 100, channelUri.toString(), streamId, collector.reset()));
+        assertEquals(recording1.recordingId, collector.descriptors().get(0).recordingId());
+        assertEquals(recording3.recordingId, collector.descriptors().get(1).recordingId());
+    }
 }

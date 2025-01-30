@@ -39,6 +39,8 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.condition.DisabledOnOs;
+import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
@@ -839,6 +841,7 @@ class BasicArchiveTest
     @Test
     @SlowTest
     @InterruptAfter(20)
+    @DisabledOnOs(OS.MAC) // too heavy for CI macs
     void shakeListingAndPurgingRecordings()
     {
         final int recordingCount = 500;

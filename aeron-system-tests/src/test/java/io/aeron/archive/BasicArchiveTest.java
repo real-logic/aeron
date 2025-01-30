@@ -39,13 +39,12 @@ import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.DisabledOnOs;
-import org.junit.jupiter.api.condition.OS;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -109,6 +108,7 @@ class BasicArchiveTest
             .deleteArchiveOnStart(true)
             .archiveDir(archiveDir)
             .fileSyncLevel(0)
+            .maxConcurrentRecordings(50)
             .threadingMode(ArchiveThreadingMode.DEDICATED); // testing concurrent operations
 
         driver = TestMediaDriver.launch(driverCtx, systemTestWatcher);
@@ -841,22 +841,65 @@ class BasicArchiveTest
     @Test
     @SlowTest
     @InterruptAfter(20)
-    @DisabledOnOs(OS.MAC) // too heavy for CI macs
+    @SuppressWarnings("MethodLength")
     void shakeListingAndPurgingRecordings()
     {
-        final int recordingCount = 500;
+        final int recordingCount = archive.context().maxConcurrentRecordings();
+        assertThat(recordingCount, Matchers.greaterThan(20));
 
         final String channel = "aeron:ipc?term-length=64k";
         final CountersReader countersReader = aeron.countersReader();
         final long archiveId = aeronArchive.archiveId();
 
+        final ExclusivePublication[] publications = new ExclusivePublication[recordingCount];
+        final long[] recordingIds = new long[recordingCount];
+        Arrays.fill(recordingIds, RecordingPos.NULL_RECORDING_ID);
         for (int i = 0; i < recordingCount; i++)
         {
-            try (Publication publication = aeronArchive.addRecordedExclusivePublication(channel, 10_000 + i))
-            {
-                Tests.awaitRecordingCounterId(countersReader, publication.sessionId(), archiveId);
-            }
+            final ExclusivePublication publication = aeron.addExclusivePublication(channel, 10_000 + i);
+            publications[i] = publication;
+            aeronArchive.startRecording(
+                ChannelUri.addSessionId(channel, publication.sessionId()), publication.streamId(), LOCAL, false);
         }
+
+        while (true)
+        {
+            int count = 0;
+            for (int i = 0; i < recordingCount; i++)
+            {
+                final ExclusivePublication publication = publications[i];
+                final long recordingId = recordingIds[i];
+                if (RecordingPos.NULL_RECORDING_ID == recordingId)
+                {
+                    final int counterId = RecordingPos.findCounterIdBySession(
+                        countersReader, publication.sessionId(), archiveId);
+                    if (CountersReader.NULL_COUNTER_ID != counterId)
+                    {
+                        recordingIds[i] = RecordingPos.getRecordingId(countersReader, counterId);
+                    }
+                }
+                else
+                {
+                    count++;
+                }
+            }
+
+            if (recordingCount == count)
+            {
+                break;
+            }
+
+            Tests.yield();
+        }
+
+        for (final ExclusivePublication publication : publications)
+        {
+            aeronArchive.stopRecording(publication);
+            publication.close();
+        }
+
+        recordingSignalConsumer.reset();
+        awaitSignal(aeronArchive, recordingSignalConsumer, recordingIds[recordingIds.length - 1], RecordingSignal.STOP);
 
         final LongArrayList existingRecordingIds = new LongArrayList(recordingCount, -1);
         final Long2LongHashMap recordingIdToStreamId =
@@ -915,15 +958,15 @@ class BasicArchiveTest
                 count = aeronArchive.listRecordings(fromRecordingId, recordCount, collector.reset());
                 assertEquals(expectedCount, count);
 
-                final LongHashSet recordingIds = new LongHashSet();
+                final LongHashSet foundRecordingIds = new LongHashSet();
                 for (final RecordingDescriptor descriptor : collector.descriptors())
                 {
                     final long recId = descriptor.recordingId();
                     assertEquals(recordingIdToStreamId.get(recId), descriptor.streamId());
                     assertTrue(existingRecordingIds.contains(recId));
-                    recordingIds.add(recId);
+                    foundRecordingIds.add(recId);
                 }
-                assertEquals(expectedCount, recordingIds.size());
+                assertEquals(expectedCount, foundRecordingIds.size());
             }
         }
         catch (final Exception e)

@@ -24,6 +24,7 @@ import io.aeron.archive.codecs.RecordingSignal;
 import io.aeron.archive.status.RecordingPos;
 import io.aeron.driver.MediaDriver;
 import io.aeron.driver.ThreadingMode;
+import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.samples.archive.RecordingDescriptor;
 import io.aeron.samples.archive.RecordingDescriptorCollector;
 import io.aeron.test.*;
@@ -44,7 +45,6 @@ import org.junit.jupiter.api.extension.RegisterExtension;
 
 import java.io.File;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Random;
 import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
@@ -840,69 +840,36 @@ class BasicArchiveTest
 
     @Test
     @InterruptAfter(20)
-    @SuppressWarnings("MethodLength")
     void shakeListingAndPurgingRecordings()
     {
-        final int recordingCount = archive.context().maxConcurrentRecordings();
-        assertThat(recordingCount, Matchers.greaterThan(20));
+        final int recordingCount = 1000;
 
         final String channel = "aeron:ipc?term-length=64k";
-        final CountersReader countersReader = aeron.countersReader();
-        final long archiveId = aeronArchive.archiveId();
+        final Catalog catalog = archive.context().catalog();
 
-        final ExclusivePublication[] publications = new ExclusivePublication[recordingCount];
-        final long[] recordingIds = new long[recordingCount];
-        Arrays.fill(recordingIds, RecordingPos.NULL_RECORDING_ID);
         for (int i = 0; i < recordingCount; i++)
         {
-            final ExclusivePublication publication = aeron.addExclusivePublication(channel, 10_000 + i);
-            publications[i] = publication;
-            aeronArchive.startRecording(
-                ChannelUri.addSessionId(channel, publication.sessionId()), publication.streamId(), LOCAL, false);
+            final long startTimestamp = System.currentTimeMillis();
+            final long startPosition = (long)Math.pow(2, ThreadLocalRandom.current().nextInt(10, 30));
+            catalog.addNewRecording(
+                startPosition,
+                startPosition + startPosition * 10,
+                startTimestamp,
+                startTimestamp + i * 1_000,
+                ThreadLocalRandom.current().nextInt(),
+                1024 * 1024,
+                LogBufferDescriptor.TERM_MIN_LENGTH,
+                1408,
+                ThreadLocalRandom.current().nextInt(),
+                10000 + i,
+                channel,
+                channel,
+                channel);
         }
 
-        while (true)
-        {
-            int count = 0;
-            for (int i = 0; i < recordingCount; i++)
-            {
-                final ExclusivePublication publication = publications[i];
-                final long recordingId = recordingIds[i];
-                if (RecordingPos.NULL_RECORDING_ID == recordingId)
-                {
-                    final int counterId = RecordingPos.findCounterIdBySession(
-                        countersReader, publication.sessionId(), archiveId);
-                    if (CountersReader.NULL_COUNTER_ID != counterId)
-                    {
-                        recordingIds[i] = RecordingPos.getRecordingId(countersReader, counterId);
-                    }
-                }
-                else
-                {
-                    count++;
-                }
-            }
-
-            if (recordingCount == count)
-            {
-                break;
-            }
-
-            Tests.yield();
-        }
-
-        for (final ExclusivePublication publication : publications)
-        {
-            aeronArchive.stopRecording(publication);
-            publication.close();
-        }
-
-        recordingSignalConsumer.reset();
-        awaitSignal(aeronArchive, recordingSignalConsumer, recordingIds[recordingIds.length - 1], RecordingSignal.STOP);
-
-        final LongArrayList existingRecordingIds = new LongArrayList(recordingCount, -1);
+        final LongArrayList existingRecordingIds = new LongArrayList(recordingCount, NULL_VALUE);
         final Long2LongHashMap recordingIdToStreamId =
-            new Long2LongHashMap(recordingCount, Hashing.DEFAULT_LOAD_FACTOR, -1);
+            new Long2LongHashMap(recordingCount, Hashing.DEFAULT_LOAD_FACTOR, NULL_VALUE);
         int count = aeronArchive.listRecordings(
             0,
             Integer.MAX_VALUE,

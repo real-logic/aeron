@@ -30,7 +30,7 @@ namespace aeron { namespace protocol
 /**
  * HeaderFlyweight for Data Header
  * <p>
- * <a href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#data-frame">Data Frame</a>
+ * <a href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#data-frame">Data Frame</a>
  */
 #pragma pack(push)
 #pragma pack(4)

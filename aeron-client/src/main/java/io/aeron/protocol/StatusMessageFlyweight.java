@@ -27,7 +27,7 @@ import static org.agrona.BitUtil.SIZE_OF_LONG;
 /**
  * Flyweight for a Status Message Frame.
  * <p>
- * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#status-messages">
+ * <a target="_blank" href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#status-messages">
  *     Status Message</a> wiki page.
  */
 public class StatusMessageFlyweight extends HeaderFlyweight

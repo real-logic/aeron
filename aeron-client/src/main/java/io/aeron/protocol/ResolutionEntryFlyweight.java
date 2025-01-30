@@ -28,7 +28,7 @@ import static org.agrona.BitUtil.*;
  * Flyweight for Resolution Entry header.
  * <p>
  * <a target="_blank"
- *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification">Protocol Specification</a>
+ *    href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification">Protocol Specification</a>
  * wiki page.
  */
 public class ResolutionEntryFlyweight extends HeaderFlyweight

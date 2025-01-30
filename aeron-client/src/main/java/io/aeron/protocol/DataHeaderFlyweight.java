@@ -27,7 +27,7 @@ import static org.agrona.BitUtil.CACHE_LINE_LENGTH;
  * Flyweight for Data Frame header of a message fragment.
  * <p>
  * <a target="_blank"
- *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#data-frame">Data Frame</a>
+ *    href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#data-frame">Data Frame</a>
  * wiki page.
  */
 public class DataHeaderFlyweight extends HeaderFlyweight

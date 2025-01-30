@@ -53,7 +53,7 @@ namespace aeron { namespace protocol
  *  ...                                                              |
  *   +---------------------------------------------------------------+
  *
- * <a href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#status-messages">Status Messages</a>
+ * <a href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#status-messages">Status Messages</a>
  */
 
 #pragma pack(push)

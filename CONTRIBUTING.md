@@ -4,13 +4,13 @@ If you would like to contribute code you can do so through GitHub by sending a p
 
 When submitting code, please make every effort to follow existing conventions and style in order to keep the code as readable as possible.
 
-[![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/real-logic/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron contributors.
+[![Gitter](https://img.shields.io/gitter/room/gitterHQ/gitter.svg)](https://gitter.im/aeron-io/Aeron?utm_source=badge&utm_medium=badge&utm_campaign=pr-badge&utm_content=badge) To chat with other Aeron contributors.
 
 ## License
 
 By contributing your code, you agree to license your contribution under the terms of the APLv2:
  
-https://github.com/real-logic/aeron/blob/master/LICENSE
+https://github.com/aeron-io/aeron/blob/master/LICENSE
 
 All files are made available under the Apache 2.0 license.
 

@@ -31,4 +31,4 @@ curl -v -H "Accept: application/vnd.github.everest-preview+json" \
     -H "Authorization: token ${AERON_GITHUB_PAT}" \
     --request POST \
     --data "{\"event_type\": \"${event_type}\"}" \
-    https://api.github.com/repos/real-logic/aeron/dispatches
+    https://api.github.com/repos/aeron-io/aeron/dispatches

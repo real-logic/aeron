@@ -132,7 +132,7 @@ code, use the appropriate release version and build the projects.
 
 [subs = "attributes+"]
 ----
-> git clone https://github.com/real-logic/aeron.git
+> git clone https://github.com/aeron-io/aeron.git
 > cd aeron
 > git checkout -b my_tutorial {aeronVersion}
 > ./gradlew

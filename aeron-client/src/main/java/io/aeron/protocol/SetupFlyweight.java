@@ -24,7 +24,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
 /**
  * HeaderFlyweight for Setup Message Frames.
  * <p>
- * <a target="_blank" href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#stream-setup">
+ * <a target="_blank" href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#stream-setup">
  *     Stream Setup</a> wiki page.
  */
 public class SetupFlyweight extends HeaderFlyweight

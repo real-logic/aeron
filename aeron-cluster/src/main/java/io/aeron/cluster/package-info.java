@@ -57,9 +57,9 @@
  * However, 2 node clusters are supported whereby both members must agree the log and in the event of failure the
  * remaining member must be manually reconfigured as a single node cluster to progress.
  * <h2>Protocol</h2>
- * Messages are specified using <a href="https://github.com/real-logic/simple-binary-encoding" target="_blank">SBE</a>
+ * Messages are specified using <a href="https://github.com/aeron-io/simple-binary-encoding" target="_blank">SBE</a>
  * in this schema
- * <a href="https://github.com/real-logic/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml"
+ * <a href="https://github.com/aeron-io/aeron/blob/master/aeron-cluster/src/main/resources/cluster/aeron-cluster-codecs.xml"
  *    target="_blank">aeron-cluster-codecs.xml</a>
  */
 package io.aeron.cluster;

@@ -38,8 +38,8 @@ The driver can be stopped gracefully via `Control-C` or `SIGINT` just like the J
 ## Embedding the Driver
 
 The C media driver may be embedded quite easily. An example is the driver main itself, 
-[aeronmd.c](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.c), and the API is documented in 
-[aeronmd.h](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/main/c/aeronmd.h).
+[aeronmd.c](https://github.com/aeron-io/aeron/blob/master/aeron-driver/src/main/c/aeronmd.c), and the API is documented in 
+[aeronmd.h](https://github.com/aeron-io/aeron/blob/master/aeron-driver/src/main/c/aeronmd.h).
 
 ## Driver Logging
 
@@ -47,5 +47,5 @@ The C media driver uses DL interception for logging. To use this logging, add th
 Aeron C Driver Agent Library to `LD_PRELOAD` or `DYLD_INSERT_LIBRARIES` (for Mac.
 Also requires flat namespace) and set the environment variable, `AERON_EVENT_LOG`
 to a numeric mask for the events of interest. The following
-[script](https://github.com/real-logic/aeron/blob/master/aeron-samples/scripts/logging-c-media-driver)
+[script](https://github.com/aeron-io/aeron/blob/master/aeron-samples/scripts/logging-c-media-driver)
 may be used for convenience.

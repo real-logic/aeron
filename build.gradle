@@ -77,12 +77,12 @@ def projectPom = {
     name = 'aeron'
     // optionally artifactId can be defined here
     description = 'Efficient reliable UDP unicast, UDP multicast, and IPC transport protocol.'
-    url = 'https://github.com/real-logic/aeron'
+    url = 'https://github.com/aeron-io/aeron'
 
     scm {
-        connection = 'scm:git:https://github.com/real-logic/aeron.git'
-        developerConnection = 'scm:git:https://github.com/real-logic/aeron.git'
-        url = 'https://github.com/real-logic/aeron.git'
+        connection = 'scm:git:https://github.com/aeron-io/aeron.git'
+        developerConnection = 'scm:git:https://github.com/aeron-io/aeron.git'
+        url = 'https://github.com/aeron-io/aeron.git'
     }
 
     licenses {

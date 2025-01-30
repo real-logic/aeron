@@ -36,7 +36,7 @@ Also included is some performance tests that can run all in the same process for
 
 ## Aeron Archive Samples
 
-In the [archive](https://github.com/real-logic/aeron/tree/master/aeron-samples/scripts/archive) sub-directory, 
+In the [archive](https://github.com/aeron-io/aeron/tree/master/aeron-samples/scripts/archive) sub-directory, 
 or package, you can find samples for recording and replay of streams from an Archive.
 
     aeron-samples/scripts/archive/

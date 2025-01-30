@@ -5,8 +5,8 @@ Aeron Archive
 
 The aeron-archive is a module which enables Aeron data stream recording and replay from durable storage. 
 
-Samples can be found [here](https://github.com/real-logic/aeron/blob/master/aeron-samples/scripts/archive/README.md) and
-systems tests [here](https://github.com/real-logic/aeron/tree/master/aeron-system-tests/src/test/java/io/aeron/archive).
+Samples can be found [here](https://github.com/aeron-io/aeron/blob/master/aeron-samples/scripts/archive/README.md) and
+systems tests [here](https://github.com/aeron-io/aeron/tree/master/aeron-system-tests/src/test/java/io/aeron/archive).
 
 Features:
 
@@ -41,7 +41,7 @@ Usage
 
 Protocol
 =====
-Messages specification use SBE [aeron-archive-codecs.xml](https://github.com/real-logic/aeron/blob/master/aeron-archive/src/main/resources/archive/aeron-archive-codecs.xml).
+Messages specification use SBE [aeron-archive-codecs.xml](https://github.com/aeron-io/aeron/blob/master/aeron-archive/src/main/resources/archive/aeron-archive-codecs.xml).
 The Archive communicates via the following interfaces:
 
  - **Recording Events stream:** other parties can subscribe to events for the start,

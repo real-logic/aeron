@@ -29,7 +29,7 @@ namespace aeron { namespace protocol
 /**
  * HeaderFlyweight for Setup Frames
  * <p>
- * <a href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#stream-setup">Stream Setup</a>
+ * <a href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#stream-setup">Stream Setup</a>
  */
 
 #pragma pack(push)

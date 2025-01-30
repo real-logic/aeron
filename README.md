@@ -1,30 +1,30 @@
 Aeron
 =====
 
-[![GitHub](https://img.shields.io/github/license/real-logic/Aeron.svg)](https://github.com/real-logic/aeron/blob/master/LICENSE)
+[![GitHub](https://img.shields.io/github/license/aeron-io/Aeron.svg)](https://github.com/aeron-io/aeron/blob/master/LICENSE)
 [![Javadocs](https://www.javadoc.io/badge/io.aeron/aeron-all.svg)](https://www.javadoc.io/doc/io.aeron/aeron-all)
 
-[![Actions Status](https://github.com/real-logic/aeron/workflows/Continuous%20Integration/badge.svg)](https://github.com/real-logic/aeron/actions)
-[![CodeQL Status](https://github.com/real-logic/aeron/workflows/CodeQL/badge.svg)](https://github.com/real-logic/aeron/actions)
+[![Actions Status](https://github.com/aeron-io/aeron/workflows/Continuous%20Integration/badge.svg)](https://github.com/aeron-io/aeron/actions)
+[![CodeQL Status](https://github.com/aeron-io/aeron/workflows/CodeQL/badge.svg)](https://github.com/aeron-io/aeron/actions)
 
 Efficient reliable UDP unicast, UDP multicast, and IPC message transport. Java, C, and C++ clients are available in this
 repository, and a [.NET client](https://github.com/AdaptiveConsulting/Aeron.NET) is available. All
 clients can exchange messages across machines, or on the same machine via IPC, very efficiently. Message streams can be
-recorded by the [Archive](https://github.com/real-logic/aeron/tree/master/aeron-archive) module to persistent storage
-for later, or real-time, replay. Aeron [Cluster](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
+recorded by the [Archive](https://github.com/aeron-io/aeron/tree/master/aeron-archive) module to persistent storage
+for later, or real-time, replay. Aeron [Cluster](https://github.com/aeron-io/aeron/tree/master/aeron-cluster)
 provides support for fault-tolerant services as replicated state machines based on the
 [Raft](https://raft.github.io/) consensus algorithm.
 
 Performance is the key focus. A design goal for Aeron is to be the highest throughput with the lowest and most
 predictable latency of any messaging system. Aeron integrates with
-[Simple Binary Encoding (SBE)](https://github.com/real-logic/simple-binary-encoding) for the best possible message
+[Simple Binary Encoding (SBE)](https://github.com/aeron-io/simple-binary-encoding) for the best possible message
 encoding and decoding performance. Many of the data structures used in the creation of Aeron have been factored out to
-the [Agrona](https://github.com/real-logic/agrona) project.
+the [Agrona](https://github.com/aeron-io/agrona) project.
 
 For details of usage, protocol specification, FAQ, etc. please check out the
-[Wiki](https://github.com/real-logic/aeron/wiki).
+[Wiki](https://github.com/aeron-io/aeron/wiki).
 
-For the latest version information and changes see the [Change Log](https://github.com/real-logic/aeron/wiki/Change-Log)
+For the latest version information and changes see the [Change Log](https://github.com/aeron-io/aeron/wiki/Change-Log)
 with Java **downloads** at [Maven Central](http://search.maven.org/#search%7Cga%7C1%7Caeron).
 
 Aeron is owned and operated by Adaptive Financial Consulting. Originally created by Martin Thompson and Todd Montgomery, the Aeron team joined Adaptive in 2022.
@@ -41,29 +41,29 @@ Please get in touch at [sales@aeron.io](mailto:sales@aeron.io?subject=Aeron) if 
 
 ### How do I use Aeron?
 
-1. [Java Programming Guide](https://github.com/real-logic/aeron/wiki/Java-Programming-Guide)
-1. [C++11 Programming Guide](https://github.com/real-logic/aeron/wiki/Cpp-Programming-Guide)
-1. [Best Practices Guide](https://github.com/real-logic/aeron/wiki/Best-Practices-Guide)
-1. [Monitoring and Debugging](https://github.com/real-logic/aeron/wiki/Monitoring-and-Debugging)
-1. [Configuration Options](https://github.com/real-logic/aeron/wiki/Configuration-Options)
-1. [Channel Specific Configuration](https://github.com/real-logic/aeron/wiki/Channel-Configuration)
-1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/real-logic/aeron/wiki/Aeron-Archive)
-1. [Aeron Cluster (Fault Tolerant Services)](https://github.com/real-logic/aeron/tree/master/aeron-cluster)
+1. [Java Programming Guide](https://github.com/aeron-io/aeron/wiki/Java-Programming-Guide)
+1. [C++11 Programming Guide](https://github.com/aeron-io/aeron/wiki/Cpp-Programming-Guide)
+1. [Best Practices Guide](https://github.com/aeron-io/aeron/wiki/Best-Practices-Guide)
+1. [Monitoring and Debugging](https://github.com/aeron-io/aeron/wiki/Monitoring-and-Debugging)
+1. [Configuration Options](https://github.com/aeron-io/aeron/wiki/Configuration-Options)
+1. [Channel Specific Configuration](https://github.com/aeron-io/aeron/wiki/Channel-Configuration)
+1. [Aeron Archive (Durable/Persistent Stream Storage)](https://github.com/aeron-io/aeron/wiki/Aeron-Archive)
+1. [Aeron Cluster (Fault Tolerant Services)](https://github.com/aeron-io/aeron/tree/master/aeron-cluster)
 1. [Aeron Docs](https://aeron.io/docs/)
 
 ### How does Aeron work?
 
-1. [Transport Protocol Specification](https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification)
-1. [Design Overview](https://github.com/real-logic/aeron/wiki/Design-Overview)
-1. [Design Principles](https://github.com/real-logic/aeron/wiki/Design-Principles)
-1. [Flow Control Semantics](https://github.com/real-logic/aeron/wiki/Flow-and-Congestion-Control)
-1. [Media Driver Operation](https://github.com/real-logic/aeron/wiki/Media-Driver-Operation)
+1. [Transport Protocol Specification](https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification)
+1. [Design Overview](https://github.com/aeron-io/aeron/wiki/Design-Overview)
+1. [Design Principles](https://github.com/aeron-io/aeron/wiki/Design-Principles)
+1. [Flow Control Semantics](https://github.com/aeron-io/aeron/wiki/Flow-and-Congestion-Control)
+1. [Media Driver Operation](https://github.com/aeron-io/aeron/wiki/Media-Driver-Operation)
 
 ### How do I hack on Aeron?
 
-1. [Hacking on Aeron](https://github.com/real-logic/aeron/wiki/Hacking-on-Aeron)
-1. [Performance Testing](https://github.com/real-logic/aeron/wiki/Performance-Testing)
-1. [Building Aeron](https://github.com/real-logic/aeron/wiki/Building-Aeron)
+1. [Hacking on Aeron](https://github.com/aeron-io/aeron/wiki/Hacking-on-Aeron)
+1. [Performance Testing](https://github.com/aeron-io/aeron/wiki/Performance-Testing)
+1. [Building Aeron](https://github.com/aeron-io/aeron/wiki/Building-Aeron)
 
 License (See LICENSE file for full license)
 -------------------------------------------

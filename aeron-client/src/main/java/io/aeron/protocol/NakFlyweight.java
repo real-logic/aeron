@@ -26,7 +26,7 @@ import static java.nio.ByteOrder.LITTLE_ENDIAN;
  * Flyweight for a NAK Message Frame.
  * <p>
  * <a target="_blank"
- *    href="https://github.com/real-logic/aeron/wiki/Transport-Protocol-Specification#data-recovery-via-retransmit-request">
+ *    href="https://github.com/aeron-io/aeron/wiki/Transport-Protocol-Specification#data-recovery-via-retransmit-request">
  *    Data Loss Recovery</a> wiki page.
  */
 // CHECKSTYLE:ON:LineLength

@@ -22,10 +22,10 @@ The C API library requires the following dependencies.
 ## Documentation and Samples
 
 The C API has a single header that contains the API documentation 
-[here](https://github.com/real-logic/aeron/blob/master/aeron-client/src/main/c/aeronc.h)
+[here](https://github.com/aeron-io/aeron/blob/master/aeron-client/src/main/c/aeronc.h)
 
 The System Tests for the API and the C driver can be found 
-[here](https://github.com/real-logic/aeron/blob/master/aeron-driver/src/test/c/aeron_c_system_test.cpp).
+[here](https://github.com/aeron-io/aeron/blob/master/aeron-driver/src/test/c/aeron_c_system_test.cpp).
 	
 Samples of usage of the C API are in development.
 	

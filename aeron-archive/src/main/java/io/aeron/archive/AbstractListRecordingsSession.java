@@ -15,7 +15,6 @@
  */
 package io.aeron.archive;
 
-import io.aeron.Aeron;
 import org.agrona.concurrent.UnsafeBuffer;
 
 abstract class AbstractListRecordingsSession implements Session
@@ -68,7 +67,7 @@ abstract class AbstractListRecordingsSession implements Session
      */
     public long sessionId()
     {
-        return Aeron.NULL_VALUE;
+        return correlationId;
     }
 
     /**

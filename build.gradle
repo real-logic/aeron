@@ -273,7 +273,7 @@ subprojects {
     def aeronLoggingAgent = project.file("../aeron-agent/build/libs/aeron-agent-${aeronVersion}.jar").absolutePath
 
     tasks.register('slowTest', Test) {
-        group 'verification'
+        group = 'verification'
         dependsOn ':aeron-agent:jar'
 
         maxParallelForks = 1
@@ -292,7 +292,7 @@ subprojects {
     }
 
     tasks.register('bindingsTest', Test) {
-        group 'verification'
+        group = 'verification'
         dependsOn ':aeron-agent:jar'
 
         maxParallelForks = 1
@@ -308,7 +308,7 @@ subprojects {
     }
 
     tasks.register('topologyTest', Test) {
-        group 'verification'
+        group = 'verification'
         maxParallelForks = 1
         useJUnitPlatform {
             includeTags 'topology'
@@ -1403,7 +1403,7 @@ tasks.register('tarTestLogs', Tar) {
     dependsOn tasks.named('copyTestLogs')
     archiveBaseName.set('test_logs')
     from 'build/test_logs'
-    compression Compression.BZIP2
+    compression = Compression.BZIP2
 }
 
 def isNonStable = { String version ->

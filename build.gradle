@@ -219,12 +219,12 @@ subprojects {
         }
         testClassesDirs = testing.suites.test.sources.output.classesDirs
         classpath = testing.suites.test.sources.runtimeClasspath
-        maxHeapSize("1g")
+        maxHeapSize = '1g'
         jvmArgs("-XX:MaxDirectMemorySize=1g",
                 "-XX:+CreateCoredumpOnCrash",
                 "-XX:+HeapDumpOnOutOfMemoryError",
                 "-XX:+CrashOnOutOfMemoryError",
-                "-XX:HeapDumpPath=" + project.rootDir + "/heap.hprof")
+                "-XX:HeapDumpPath=${project.rootDir}/heap.hprof")
 
         useJUnitPlatform {
             if (test.name != 'slowTest' && test.name != 'bindingsTest' && test.name != 'topologyTest')
@@ -316,7 +316,7 @@ subprojects {
     }
 
     javadoc {
-        failOnError false
+        failOnError = false
         title = '<h1>Aeron Message Transport</h1>'
         options.bottom = '<i>Copyright &#169; 2014-2025 Real Logic Limited. All Rights Reserved.</i>'
         options.encoding = 'UTF-8'
@@ -363,6 +363,9 @@ project(':aeron-annotations') {
 
     jar {
         bundle {
+            // workaround for https://github.com/bndtools/bnd/issues/6346
+            properties.put("project.group", provider({project.group}))
+            // workaround
             bnd """
                 Automatic-Module-Name:  io.aeron.annotations
                 Bundle-Name:            io.aeron.annotations
@@ -395,7 +398,7 @@ project(':aeron-annotations') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -426,6 +429,9 @@ project(':aeron-client') {
 
     jar {
         bundle {
+            // workaround for https://github.com/bndtools/bnd/issues/6346
+            properties.put("project.group", provider({project.group}))
+            // workaround
             bnd """
                 Automatic-Module-Name:  io.aeron.client
                 Bundle-Name:            io.aeron.client
@@ -462,7 +468,7 @@ project(':aeron-client') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -532,6 +538,9 @@ project(':aeron-driver') {
 
     jar {
         bundle {
+            // workaround for https://github.com/bndtools/bnd/issues/6346
+            properties.put("project.group", provider({project.group}))
+            // workaround
             bnd """
                 Automatic-Module-Name:  io.aeron.driver
                 Bundle-Name:            io.aeron.driver
@@ -573,7 +582,7 @@ project(':aeron-driver') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -759,6 +768,9 @@ project(':aeron-archive') {
         from sourceSets.generated.output
 
         bundle {
+            // workaround for https://github.com/bndtools/bnd/issues/6346
+            properties.put("project.group", provider({project.group}))
+            // workaround
             bnd """
                 Automatic-Module-Name:  io.aeron.archive
                 Bundle-Name:            io.aeron.archive
@@ -807,7 +819,7 @@ project(':aeron-archive') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -915,6 +927,9 @@ project(':aeron-cluster') {
         from sourceSets.generated.output
 
         bundle {
+            // workaround for https://github.com/bndtools/bnd/issues/6346
+            properties.put("project.group", provider({project.group}))
+            // workaround
             bnd """
                 Automatic-Module-Name:  io.aeron.cluster
                 Bundle-Name:            io.aeron.cluster
@@ -965,7 +980,7 @@ project(':aeron-cluster') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1033,10 +1048,10 @@ project(':aeron-agent') {
     jar.finalizedBy shadowJar
 
     tasks.register('dedupJar', io.aeron.build.DeduplicateTask) {
-        source shadowJar.outputs.files.singleFile
+        source = shadowJar.outputs.files.singleFile
     }
 
-    shadowJar.finalizedBy dedupJar
+    shadowJar.finalizedBy('dedupJar')
 
     tasks.register('sourcesJar', Jar) {
         dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
@@ -1079,7 +1094,7 @@ project(':aeron-agent') {
         }
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1121,7 +1136,7 @@ project(':aeron-samples') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1248,7 +1263,7 @@ project(':aeron-test-support') {
 
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword
@@ -1296,10 +1311,10 @@ project(':aeron-all') {
     jar.finalizedBy shadowJar
 
     tasks.register('dedupJar', io.aeron.build.DeduplicateTask) {
-        source shadowJar.outputs.files.singleFile
+        source = shadowJar.outputs.files.singleFile
     }
 
-    shadowJar.finalizedBy dedupJar
+    shadowJar.finalizedBy('dedupJar')
 
     tasks.register('sourcesJar', Jar) {
         dependsOn ':aeron-archive:generateCodecs', ':aeron-cluster:generateCodecs'
@@ -1344,7 +1359,7 @@ project(':aeron-all') {
         }
         repositories {
             maven {
-                url(!isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl)
+                url = !isReleaseVersion ? snapshotsRepoUrl : releasesRepoUrl
                 credentials {
                     username = ossrhUsername
                     password = ossrhPassword

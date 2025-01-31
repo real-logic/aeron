@@ -371,7 +371,7 @@ project(':aeron-annotations') {
                 Bundle-Name:            io.aeron.annotations
                 Bundle-SymbolicName:    io.aeron.annotations
                 Implementation-Title:   Aeron
-                Implementation-Vendor:  Adaptive Financial Consulting
+                Implementation-Vendor:  Adaptive Financial Consulting Limited
                 Implementation-Version: ${aeronVersion}
     
                 -exportcontents: io.aeron.version
@@ -437,7 +437,7 @@ project(':aeron-client') {
                 Bundle-Name:            io.aeron.client
                 Bundle-SymbolicName:    io.aeron.client
                 Implementation-Title:   Aeron
-                Implementation-Vendor:  Adaptive Financial Consulting
+                Implementation-Vendor:  Adaptive Financial Consulting Limited
                 Implementation-Version: ${aeronVersion}
     
                 -exportcontents: io.aeron, io.aeron.*
@@ -546,7 +546,7 @@ project(':aeron-driver') {
                 Bundle-Name:            io.aeron.driver
                 Bundle-SymbolicName:    io.aeron.driver
                 Implementation-Title:   Aeron
-                Implementation-Vendor:  Adaptive Financial Consulting
+                Implementation-Vendor:  Adaptive Financial Consulting Limited
                 Implementation-Version: ${aeronVersion}
     
                 -exportcontents: io.aeron.driver, io.aeron.driver.*
@@ -776,7 +776,7 @@ project(':aeron-archive') {
                 Bundle-Name:            io.aeron.archive
                 Bundle-SymbolicName:    io.aeron.archive
                 Implementation-Title:   Aeron
-                Implementation-Vendor:  Adaptive Financial Consulting
+                Implementation-Vendor:  Adaptive Financial Consulting Limited
                 Implementation-Version: ${aeronVersion}
     
                 -exportcontents: io.aeron.archive, io.aeron.archive.*
@@ -935,7 +935,7 @@ project(':aeron-cluster') {
                 Bundle-Name:            io.aeron.cluster
                 Bundle-SymbolicName:    io.aeron.cluster
                 Implementation-Title:   Aeron
-                Implementation-Vendor:  Adaptive Financial Consulting
+                Implementation-Vendor:  Adaptive Financial Consulting Limited
                 Implementation-Version: ${aeronVersion}
     
                 -exportcontents: io.aeron.cluster, io.aeron.cluster.*
@@ -1034,7 +1034,7 @@ project(':aeron-agent') {
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': aeronVersion,
-            'Implementation-Vendor': 'Adaptive Financial Consulting',
+            'Implementation-Vendor': 'Adaptive Financial Consulting Limited',
             "Premain-Class": "io.aeron.agent.EventLogAgent",
             "Agent-Class": "io.aeron.agent.EventLogAgent",
             "Can-Redefine-Classes": "true",
@@ -1301,7 +1301,7 @@ project(':aeron-all') {
         manifest.attributes(
             'Implementation-Title': 'Aeron',
             'Implementation-Version': aeronVersion,
-            'Implementation-Vendor': 'Adaptive Financial Consulting',
+            'Implementation-Vendor': 'Adaptive Financial Consulting Limited',
             'Automatic-Module-Name': 'io.aeron.all')
 
         relocate 'net.bytebuddy', 'io.aeron.shadow.net.bytebuddy'

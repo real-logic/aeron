@@ -24,6 +24,7 @@ import io.aeron.logbuffer.LogBufferDescriptor;
 import io.aeron.protocol.DataHeaderFlyweight;
 import io.aeron.test.*;
 import io.aeron.test.driver.TestMediaDriver;
+import org.agrona.BitUtil;
 import org.agrona.CloseHelper;
 import org.agrona.DirectBuffer;
 import org.agrona.ErrorHandler;
@@ -67,7 +68,7 @@ class MultiDestinationCastTest
     private static final int MESSAGES_PER_TERM = 64;
     private static final int MESSAGE_LENGTH =
         (TERM_BUFFER_LENGTH / MESSAGES_PER_TERM) - DataHeaderFlyweight.HEADER_LENGTH;
-    private static final String ROOT_DIR = CommonContext.getAeronDirectoryName() + File.separator;
+    private static final String ROOT_DIR = CommonContext.generateRandomDirName() + File.separator;
     private static final int FRAGMENT_LIMIT = 10;
 
     private final MediaDriver.Context driverBContext = new MediaDriver.Context();
@@ -206,6 +207,39 @@ class MultiDestinationCastTest
         verifyFragments(fragmentHandlerA, numMessagesToSend);
         verifyFragments(fragmentHandlerB, numMessagesToSend);
         verifyFragments(fragmentHandlerC, numMessagesToSend);
+    }
+
+    @Test
+    @InterruptAfter(20)
+    void shouldSubscribeWithSessionId()
+    {
+        final int numMessagesToSend = MESSAGES_PER_TERM * 3;
+
+        launch(Tests::onError);
+
+        final String sessionId = "|session-id=" + BitUtil.generateRandomisedId();
+        subscriptionA = clientA.addSubscription(SUB1_MDC_DYNAMIC_URI + sessionId, STREAM_ID);
+        subscriptionB = clientB.addSubscription(SUB2_MDC_DYNAMIC_URI + sessionId, STREAM_ID);
+        publication = clientA.addPublication(PUB_MDC_DYNAMIC_URI + sessionId, STREAM_ID);
+
+        while (subscriptionA.hasNoImages() || subscriptionB.hasNoImages())
+        {
+            Tests.yield();
+        }
+
+        for (int i = 0; i < numMessagesToSend; i++)
+        {
+            while (publication.offer(buffer, 0, buffer.capacity()) < 0L)
+            {
+                Tests.yield();
+            }
+
+            pollForFragment(subscriptionA, fragmentHandlerA);
+            pollForFragment(subscriptionB, fragmentHandlerB);
+        }
+
+        verifyFragments(fragmentHandlerA, numMessagesToSend);
+        verifyFragments(fragmentHandlerB, numMessagesToSend);
     }
 
     @Test

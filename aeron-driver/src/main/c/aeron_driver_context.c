@@ -3134,3 +3134,68 @@ void aeron_set_thread_affinity_on_start(void *state, const char *role_name)
         aeron_err_clear();
     }
 }
+
+
+int aeron_driver_context_set_conductor_cpu_affinity(aeron_driver_context_t *context, int32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->conductor_cpu_affinity_no = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_conductor_cpu_affinity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->conductor_cpu_affinity_no : AERON_CPU_AFFINITY_DEFAULT;
+}
+
+int aeron_driver_context_set_sender_cpu_affinity(aeron_driver_context_t *context, int32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->sender_cpu_affinity_no = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_sender_cpu_affinity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->sender_cpu_affinity_no : AERON_CPU_AFFINITY_DEFAULT;
+}
+
+int aeron_driver_context_set_receiver_cpu_affinity(aeron_driver_context_t *context, int32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->receiver_cpu_affinity_no = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_receiver_cpu_affinity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->receiver_cpu_affinity_no :AERON_CPU_AFFINITY_DEFAULT;
+}
+
+int aeron_driver_context_set_async_executor_cpu_affinity(aeron_driver_context_t *context, int32_t value)
+{
+    if (NULL == context)
+    {
+        return -1;
+    }
+
+    context->async_executor_cpu_affinity_no = value;
+    return 0;
+}
+
+int32_t aeron_driver_context_get_async_executor_cpu_affinity(aeron_driver_context_t *context)
+{
+    return NULL != context ? context->async_executor_cpu_affinity_no : AERON_DRIVER_ASYNC_EXECUTOR_CPU_AFFINITY_DEFAULT;
+}

@@ -158,11 +158,12 @@ class MappedRawLog implements RawLog
 
         if (null != logFile)
         {
-            if (logFile.delete() || !logFile.exists())
+            if (!logFile.delete() && logFile.exists())
             {
-                logFile = null;
+                return false;
             }
-            return false;
+
+            logFile = null;
         }
 
         return true;

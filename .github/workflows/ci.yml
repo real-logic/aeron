@@ -31,6 +31,7 @@ jobs:
   java-build:
     name: Java ${{ matrix.java }} (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -140,6 +141,7 @@ jobs:
   java-topology-build:
     name: Java Topology Tests (JDK ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -202,6 +204,7 @@ jobs:
   cpp-gcc-2004-build:
     name: C++ GCC ${{ matrix.version }} (Ubuntu 20.04)
     runs-on: ubuntu-20.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -255,6 +258,7 @@ jobs:
   cpp-gcc-2404-build:
     name: C++ GCC ${{ matrix.version }} (Ubuntu 24.04)
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -317,6 +321,7 @@ jobs:
   cpp-gcc-rocky-build:
     name: C++ Rocky 8
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -356,6 +361,7 @@ jobs:
   cpp-clang-ubuntu-2004-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 20.04)
     runs-on: ubuntu-20.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -411,6 +417,7 @@ jobs:
   cpp-clang-ubuntu-2404-build:
     name: C++ Clang ${{ matrix.version }} (Ubuntu 24.04)
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -475,6 +482,7 @@ jobs:
   cpp-clang-debug-build:
     name: C++ Clang ${{ matrix.version }} debug build
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -530,6 +538,7 @@ jobs:
   cpp-xcode-build:
     name: C++ Xcode (macOS)
     runs-on: macos-latest
+    timeout-minutes: 60
     env:
       CC: clang
       CXX: clang++
@@ -580,6 +589,7 @@ jobs:
   cpp-msvc-build:
     name: C++ MSVC (Windows)
     runs-on: windows-latest
+    timeout-minutes: 60
     env:
       CC: cl
       CXX: cl

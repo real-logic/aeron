@@ -33,6 +33,7 @@ jobs:
   java-slow-tests:
     name: Java Slow Tests (JDK ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -119,6 +120,7 @@ jobs:
   java-javadoc:
     name: JavaDoc (JDK ${{ matrix.java }}, ${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -165,6 +167,7 @@ jobs:
   cpp-slow-tests-gcc:
     name: C++ Slow System Tests GCC ${{ matrix.version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -218,6 +221,7 @@ jobs:
   cpp-slow-tests-clang:
     name: C++ Slow System Tests Clang ${{ matrix.version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -273,6 +277,7 @@ jobs:
   cpp-slow-tests-msvc:
     name: C++ Slow System Tests MSVC
     runs-on: windows-latest
+    timeout-minutes: 60
     env:
       CC: cl
       CXX: cl
@@ -316,6 +321,7 @@ jobs:
   cpp-sanitize-gcc:
     name: C++ Sanitise Build GCC ${{ matrix.version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:
@@ -369,6 +375,7 @@ jobs:
   cpp-sanitize-clang:
     name: C++ Sanitise Build Clang ${{ matrix.version }}
     runs-on: ubuntu-24.04
+    timeout-minutes: 60
     strategy:
       fail-fast: false
       matrix:

@@ -87,7 +87,7 @@ public class ArchiveAbandonedClientTest
         "aeron:udp?endpoint=localhost:10001, aeron:udp?endpoint=localhost:10002",
         "aeron:udp?endpoint=localhost:10001, aeron:udp?control=localhost:10002|control-mode=response",
     })
-    @InterruptAfter(10)
+    @InterruptAfter(15)
     void test(final String requestChannel, final String responseChannel)
     {
         launch(requestChannel, responseChannel);

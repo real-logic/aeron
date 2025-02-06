@@ -22,6 +22,11 @@
 #include "Aeron.h"
 #include "TestUtil.h"
 
+extern "C"
+{
+#include "aeron_image.h"
+}
+
 using namespace aeron;
 
 class SystemTest : public testing::Test
@@ -232,4 +237,121 @@ TEST_F(SystemTest, shouldFreeSubscriptionDataCorrectlyWithInvoker)
         }
         while (nullptr == subscription);
     }
+}
+
+class SystemTestParameterized : public testing::TestWithParam<std::string>
+{
+public:
+    SystemTestParameterized()
+    {
+        m_driver.start();
+    }
+
+    ~SystemTestParameterized() override
+    {
+        m_driver.stop();
+    }
+
+protected:
+    EmbeddedMediaDriver m_driver;
+};
+
+INSTANTIATE_TEST_SUITE_P(
+    SystemTestParameterized,
+    SystemTestParameterized,
+    testing::Values("aeron:ipc?alias=test", "aeron:udp?alias=test|endpoint=localhost:8092"));
+
+TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
+{
+    std::string channel = GetParam();
+    const int stream_id = 1000;
+    Context ctx;
+    ctx.useConductorAgentInvoker(false);
+
+    std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
+
+    const int64_t pub_registration_id = aeron->addExclusivePublication(channel, stream_id);
+    std::shared_ptr<ExclusivePublication> publication;
+    do
+    {
+        std::this_thread::yield();
+        publication = aeron->findExclusivePublication(pub_registration_id);
+    }
+    while (nullptr == publication);
+
+    int64_t image_correlation_id;
+    bool image_unavailable = false;
+    const int64_t sub_registration_id = aeron->addSubscription(
+        channel,
+        stream_id,
+        [&image_correlation_id](Image &image)
+        {
+            image_correlation_id = image.correlationId();
+        },
+        [&image_unavailable](Image &image)
+        {
+            image_unavailable = true;
+        });
+    std::shared_ptr<Subscription> subscription;
+    do
+    {
+        std::this_thread::yield();
+        subscription = aeron->findSubscription(sub_registration_id);
+    }
+    while (nullptr == subscription);
+
+    {
+        std::shared_ptr<Image> image;
+        do
+        {
+            std::this_thread::yield();
+            image = subscription->imageBySessionId(publication->sessionId());
+        }
+        while (nullptr == image);
+        EXPECT_EQ(image_correlation_id, image->correlationId());
+
+        auto image_by_index = subscription->imageByIndex(0);
+        EXPECT_NE(image, image_by_index);
+        EXPECT_EQ(image_correlation_id, image_by_index->correlationId());
+
+        const auto raw_image =
+            aeron_subscription_image_by_session_id(subscription->subscription(), publication->sessionId());
+        EXPECT_EQ(2, aeron_image_decr_refcnt(raw_image));
+        EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
+    }
+
+    EXPECT_EQ(1, subscription->imageCount());
+    EXPECT_NE(nullptr, subscription->imageBySessionId(publication->sessionId()));
+
+    char log_buffer_file[AERON_MAX_PATH];
+    EXPECT_GT(
+        aeron_network_publication_location(log_buffer_file, sizeof(log_buffer_file), aeron->context().aeronDir().c_str(), pub_registration_id),
+        0);
+    EXPECT_GE(aeron_file_length(log_buffer_file), 0);
+    const auto pub_log_file = std::string().append(log_buffer_file);
+
+    EXPECT_GT(
+        aeron_publication_image_location(log_buffer_file, sizeof(log_buffer_file), aeron->context().aeronDir().c_str(), image_correlation_id),
+        0);
+    const auto image_log_file = -1 == aeron_file_length(log_buffer_file) ? pub_log_file : std::string().append(log_buffer_file);
+
+    publication.reset();
+
+    auto deadline_ns = std::chrono::nanoseconds(m_driver.livenessTimeoutNs());
+    auto zero_ns = std::chrono::nanoseconds(0);
+    auto sleep_ms = std::chrono::milliseconds(10);
+    while (deadline_ns > zero_ns)
+    {
+      if (-1 == aeron_file_length(image_log_file.c_str()))
+      {
+          break;
+      }
+      deadline_ns -= sleep_ms;
+      std::this_thread::sleep_for(sleep_ms);
+    }
+    EXPECT_TRUE(image_unavailable);
+    EXPECT_GT(deadline_ns, zero_ns);
+
+    EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";
+    EXPECT_EQ(-1, aeron_file_length(pub_log_file.c_str())) << pub_log_file << " not deleted";
 }

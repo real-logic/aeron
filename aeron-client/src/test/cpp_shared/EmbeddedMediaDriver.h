@@ -91,6 +91,11 @@ public:
         m_livenessTimeoutNs = livenessTimeoutNs;
     }
 
+    std::uint64_t livenessTimeoutNs()
+    {
+        return m_livenessTimeoutNs;
+    }
+
 protected:
     int init()
     {
@@ -106,8 +111,10 @@ protected:
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleep-ns");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
-        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 10);
+        aeron_driver_context_set_timer_interval_ns(m_context, m_livenessTimeoutNs / 100);
         aeron_driver_context_set_client_liveness_timeout_ns(m_context, m_livenessTimeoutNs);
+        aeron_driver_context_set_publication_linger_timeout_ns(m_context, m_livenessTimeoutNs / 10);
+        aeron_driver_context_set_image_liveness_timeout_ns(m_context, m_livenessTimeoutNs / 10);
         aeron_driver_context_set_enable_experimental_features(m_context, true);
 
         long long debugTimeoutMs;

@@ -156,19 +156,21 @@ for ($i = 0; $i -lt $Args.count; $i++)
 $BuildDir = "$PSScriptRoot\$BuildConfig"
 $SourceDir = "$PSScriptRoot\.."
 $CMakeVersion = "3.30.0"
-$CMakeDir = "$PSScriptRoot\cmake-$CMakeVersion-windows-x86_64"
+$CMakeDirName = "cmake-$CMakeVersion-windows-x86_64"
+$CMakeArchive = "$CMakeDirName.zip"
+$CMakePath = "$PSScriptRoot\$CMakeDirName"
 $OldPath = $env:Path
 
 try
 {
-    if (-not (Test-Path $CMakeDir))
+    if (-not (Test-Path $CMakePath))
     {
         $client = New-Object System.Net.WebClient
-        $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/cmake-$CMakeVersion-windows-x86_64.zip", "$PSScriptRoot\cmake-$CMakeVersion-windows-x86_64.zip")
+        $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/$CMakeArchive", "$PSScriptRoot\$CMakeArchive")
 
         Push-Location $PSScriptRoot
-        Expand-Archive -LiteralPath "cmake-$CMakeVersion-windows-x86_64.zip" -DestinationPath "$PSScriptRoot"
-        Remove-Item "cmake-$CMakeVersion-windows-x86_64.zip"
+        Expand-Archive -LiteralPath "$CMakeArchive" -DestinationPath "$PSScriptRoot"
+        Remove-Item "$CMakeArchive"
         Pop-Location
     }
 
@@ -189,7 +191,7 @@ try
     Import-Module (Join-Path $vsPath "Common7\Tools\Microsoft.VisualStudio.DevShell.dll")
     Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation
 
-    $env:Path = "$CMakeDir\bin;$env:Path"
+    $env:Path = "$CMakePath\bin;$env:Path"
 
     cmake $CmakeExtraArgs $SourceDir
     cmake --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel

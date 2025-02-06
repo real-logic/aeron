@@ -165,6 +165,8 @@ try
 {
     if (-not (Test-Path $CMakePath))
     {
+        Write-Host "Installing $CMakeArchive ..."
+
         $client = New-Object System.Net.WebClient
         $client.DownloadFile("https://github.com/Kitware/CMake/releases/download/v$CMakeVersion/$CMakeArchive", "$PSScriptRoot\$CMakeArchive")
 
@@ -172,6 +174,8 @@ try
         Expand-Archive -LiteralPath "$CMakeArchive" -DestinationPath "$PSScriptRoot"
         Remove-Item "$CMakeArchive"
         Pop-Location
+
+        Write-Host "Success: $CMakePath"
     }
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))

@@ -279,7 +279,7 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
     }
     while (nullptr == publication);
 
-    int64_t image_correlation_id;
+    int64_t image_correlation_id = -1;
     bool image_unavailable = false;
     const int64_t sub_registration_id = aeron->addSubscription(
         channel,
@@ -308,6 +308,11 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
             image = subscription->imageBySessionId(publication->sessionId());
         }
         while (nullptr == image);
+
+        while (-1 == image_correlation_id)
+        {
+            std::this_thread::yield();
+        }
         EXPECT_EQ(image_correlation_id, image->correlationId());
 
         auto image_by_index = subscription->imageByIndex(0);

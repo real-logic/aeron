@@ -16,7 +16,7 @@
 package io.aeron.security;
 
 /**
- * Interface for an authorisation service to handle authorisation checks of clients performing actions on a system.
+ * Interface for an authorisation service to handle authorisation checks on clients performing actions to a system.
  *
  * @see AuthorisationServiceSupplier
  */
@@ -34,12 +34,12 @@ public interface AuthorisationService
     AuthorisationService DENY_ALL = (protocolId, actionId, type, encodedPrincipal) -> false;
 
     /**
-     * Checks if the client with authenticated credentials is allowed to perform an operation indicated by the
+     * Checks if the client with authenticated credentials is allowed to perform an action indicated by the
      * given {@code actionId}.
      *
      * @param protocolId       of the protocol to which the action belongs, e.g. a SBE schema id.
      * @param actionId         of the command being checked, e.g. a SBE message template id.
-     * @param type             optional type for the command being checked, may be {@code null}. For example for
+     * @param type             optional type for the action being checked, may be {@code null}. For example for
      *                         an admin request in the cluster it will contain {@code AdminRequestType} value which
      *                         denotes the exact kind of the request.
      * @param encodedPrincipal that has been authenticated.

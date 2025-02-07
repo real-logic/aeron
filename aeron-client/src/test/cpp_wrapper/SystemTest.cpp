@@ -259,7 +259,7 @@ protected:
 INSTANTIATE_TEST_SUITE_P(
     SystemTestParameterized,
     SystemTestParameterized,
-    testing::Values("aeron:ipc?alias=test", "aeron:udp?alias=test|endpoint=localhost:8092"));
+    testing::Values("aeron:ipc?alias=test|term-length=64k", "aeron:udp?alias=test|endpoint=localhost:8092|term-length=64k"));
 
 TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
 {
@@ -328,7 +328,6 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
 
     EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
     EXPECT_EQ(1, subscription->imageCount());
-    EXPECT_NE(nullptr, subscription->imageBySessionId(publication->sessionId()));
 
     char log_buffer_file[AERON_MAX_PATH];
     EXPECT_GT(
@@ -357,6 +356,7 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
       std::this_thread::sleep_for(sleep_ms);
     }
     EXPECT_TRUE(image_unavailable);
+    EXPECT_EQ(0, subscription->imageCount());
     EXPECT_GT(deadline_ns, zero_ns);
 
     EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";

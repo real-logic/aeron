@@ -261,7 +261,7 @@ INSTANTIATE_TEST_SUITE_P(
     SystemTestParameterized,
     testing::Values("aeron:ipc?alias=test", "aeron:udp?alias=test|endpoint=localhost:8092"));
 
-TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
+TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
 {
     std::string channel = GetParam();
     const int stream_id = 1000;
@@ -300,6 +300,7 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
     }
     while (nullptr == subscription);
 
+    aeron_image_t *raw_image = nullptr;
     {
         std::shared_ptr<Image> image;
         do
@@ -319,12 +320,13 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
         EXPECT_NE(image, image_by_index);
         EXPECT_EQ(image_correlation_id, image_by_index->correlationId());
 
-        const auto raw_image =
+        raw_image =
             aeron_subscription_image_by_session_id(subscription->subscription(), publication->sessionId());
-        EXPECT_EQ(2, aeron_image_decr_refcnt(raw_image));
-        EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
+        EXPECT_EQ(4, aeron_image_decr_refcnt(raw_image));
+        EXPECT_EQ(3, aeron_image_refcnt_volatile(raw_image));
     }
 
+    EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
     EXPECT_EQ(1, subscription->imageCount());
     EXPECT_NE(nullptr, subscription->imageBySessionId(publication->sessionId()));
 

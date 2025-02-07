@@ -475,16 +475,12 @@ public final class ClusterBackupAgent implements Agent
         else if (!logSourceValidator.isAcceptable(leaderMemberId, memberId))
         {
             consensusPublicationGroup.closeAndExcludeCurrent();
-            if (null != logSupplierMember && logSupplierMember.id() == memberId)
-            {
-                // we can no longer replay from the current node due to the role change
-                state(RESET_BACKUP, epochClock.time());
-            }
-            else
-            {
-                // just query another node
-                timeOfLastBackupQueryMs = 0;
-            }
+            state(RESET_BACKUP, epochClock.time());
+            return;
+        }
+        else if (null != logSupplierMember && logSupplierMember.id() != memberId)
+        {
+            state(RESET_BACKUP, epochClock.time());
             return;
         }
 

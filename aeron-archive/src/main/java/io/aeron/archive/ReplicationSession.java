@@ -732,7 +732,7 @@ class ReplicationSession implements Session, RecordingDescriptorConsumer
             state(null == liveDestination ? State.REPLICATE : State.CATCHUP,
                 "image.correlationId=" + image.correlationId() +
                 ", image.sessionId=" + image.sessionId() +
-                ", image.jointPosition=" + image.joinPosition());
+                ", image.joinPosition=" + image.joinPosition());
             workCount += 1;
         }
         else if (epochClock.time() >= (timeOfLastActionMs + actionTimeoutMs))

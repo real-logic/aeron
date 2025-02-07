@@ -266,7 +266,10 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     std::string channel = GetParam();
     const int stream_id = 1000;
     Context ctx;
-    ctx.useConductorAgentInvoker(false);
+    ctx
+    .useConductorAgentInvoker(false)
+    .resourceLingerTimeout(5)
+    .idleSleepDuration(1);
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
 
@@ -353,6 +356,13 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     }
     ASSERT_TRUE(image_unavailable);
 
+    while (0 != subscription->imageCount())
+    {
+        std::this_thread::yield();
+    }
+    ASSERT_EQ(0, subscription->imageCount());
+    ASSERT_EQ(0, aeron_subscription_image_count(raw_subscription));
+
     auto deadline_ns = std::chrono::nanoseconds(m_driver.livenessTimeoutNs());
     auto zero_ns = std::chrono::nanoseconds(0);
     auto sleep_ms = std::chrono::milliseconds(10);
@@ -366,8 +376,6 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
       std::this_thread::sleep_for(sleep_ms);
     }
     EXPECT_GT(deadline_ns, zero_ns);
-    EXPECT_EQ(0, subscription->imageCount());
-    EXPECT_EQ(0, aeron_subscription_image_count(raw_subscription));
 
     EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";
     EXPECT_EQ(-1, aeron_file_length(pub_log_file.c_str())) << pub_log_file << " not deleted";

@@ -27,12 +27,13 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <inttypes.h>
+#include <inttypes.h>`
 
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"
 #include "aeron_alloc.h"
 #include "util/aeron_arrayutil.h"
+#include "util/aeron_strutil.h"
 #include "aeron_windows.h"
 
 #if !defined(HAVE_STRUCT_MMSGHDR)
@@ -147,24 +148,6 @@ size_t aeron_driver_agent_max_event_count(void)
 aeron_mpsc_rb_t *aeron_driver_agent_mpsc_rb(void)
 {
     return &logging_mpsc_rb;
-}
-
-void aeron_driver_agent_format_date(char *str, size_t count, int64_t timestamp)
-{
-    char time_buffer[80];
-    char msec_buffer[8];
-    char tz_buffer[8];
-    struct tm time;
-    time_t just_seconds = timestamp / 1000;
-    int64_t msec_after_sec = timestamp % 1000;
-
-    localtime_r(&just_seconds, &time);
-
-    strftime(time_buffer, sizeof(time_buffer) - 1, "%Y-%m-%d %H:%M:%S.", &time);
-    snprintf(msec_buffer, sizeof(msec_buffer) - 1, "%03" PRId64, msec_after_sec);
-    strftime(tz_buffer, sizeof(tz_buffer) - 1, "%z", &time);
-
-    snprintf(str, count, "%s%s%s", time_buffer, msec_buffer, tz_buffer);
 }
 
 static void *aeron_driver_agent_log_reader(void *arg)
@@ -1462,7 +1445,7 @@ const char *aeron_driver_agent_dissect_log_start(int64_t time_ns, int64_t time_m
 
     const int64_t seconds = time_ns / NANOS_PER_SECOND;
     const int64_t nanos = time_ns - seconds * NANOS_PER_SECOND;
-    aeron_driver_agent_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
+    aeron_format_date(datestamp, sizeof(datestamp) - 1, time_ms);
     snprintf(buffer, sizeof(buffer) - 1, "[%" PRIu64".%09" PRIu64 "] log started %s",
         seconds,
         nanos,

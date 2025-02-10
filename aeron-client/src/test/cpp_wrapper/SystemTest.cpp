@@ -251,6 +251,7 @@ public:
     {
         m_driver.stop();
     }
+
 protected:
     EmbeddedMediaDriver m_driver;
 };
@@ -294,9 +295,6 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
         },
         [&image_unavailable](Image &image)
         {
-            char date[256];
-            aeron_format_date(date, sizeof(date), aeron_epoch_clock());
-            std::cout << "[" << date << "] Image unavailable correlationId=" << image.correlationId() << std::endl;
             image_unavailable = true;
         });
     std::shared_ptr<Subscription> subscription;

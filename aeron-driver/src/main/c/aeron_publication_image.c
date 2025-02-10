@@ -410,15 +410,8 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
 
     if (!image->raw_log_free_func(&image->mapped_raw_log, image->log_file_name))
     {
-        char date[256];
-        aeron_format_date(date, sizeof(date), aeron_epoch_clock());
-        fprintf(stdout, "[%s] (FAIL) aeron_publication_image_free: correlation_id=%" PRIi64 "\n", date, image->conductor_fields.subscribable.correlation_id);
         return false;
     }
-
-    char date[256];
-    aeron_format_date(date, sizeof(date), aeron_epoch_clock());
-    fprintf(stdout, "[%s] (OK) aeron_publication_image_free: correlation_id=%" PRIi64 ", %s\n", date, image->conductor_fields.subscribable.correlation_id, image->log_file_name);
 
     aeron_counter_add_ordered(image->mapped_bytes_counter, -((int64_t)image->mapped_raw_log.mapped_file.length));
 

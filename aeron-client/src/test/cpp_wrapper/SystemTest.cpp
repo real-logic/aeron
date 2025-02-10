@@ -18,6 +18,10 @@
 
 #include <gtest/gtest.h>
 
+#if defined(AERON_COMPILER_MSVC)
+#include <io.h>
+#endif
+
 #include "EmbeddedMediaDriver.h"
 #include "Aeron.h"
 #include "TestUtil.h"
@@ -350,6 +354,13 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
         aeron_publication_image_location(log_buffer_file, sizeof(log_buffer_file), aeron->context().aeronDir().c_str(), image_correlation_id),
         0);
     const auto image_log_file = -1 == aeron_file_length(log_buffer_file) ? pub_log_file : std::string().append(log_buffer_file);
+#if defined(AERON_COMPILER_MSVC)
+    std::cout << "*** File: " << image_log_file << std::endl;
+    std::cout << "*** >>            Exists: " << _access( image_log_file.c_str(), 0 ) << std::endl;
+    std::cout << "*** >>      Write access: " << _access( image_log_file.c_str(), 2 ) << std::endl;
+    std::cout << "*** >>       Read access: " << _access( image_log_file.c_str(), 4 ) << std::endl;
+    std::cout << "*** >> Read/write access: " << _access( image_log_file.c_str(), 6 ) << std::endl;
+#endif
 
     publication.reset();
 

@@ -96,6 +96,16 @@ public:
         return m_livenessTimeoutNs;
     }
 
+    void aeronDir(std::string aeronDir)
+    {
+        m_aeronDir = aeronDir;
+    }
+
+    std::string aeronDir()
+    {
+        return m_aeronDir;
+    }
+
 protected:
     int init()
     {
@@ -105,9 +115,13 @@ protected:
             return -1;
         }
 
-        aeron_driver_context_set_threading_mode(m_context, AERON_THREADING_MODE_SHARED);
+        if (!m_aeronDir.empty())
+        {
+            aeron_driver_context_set_dir(m_context, m_aeronDir.c_str());
+        }
         aeron_driver_context_set_dir_delete_on_start(m_context, true);
         aeron_driver_context_set_dir_delete_on_shutdown(m_context, true);
+        aeron_driver_context_set_threading_mode(m_context, AERON_THREADING_MODE_SHARED);
         aeron_driver_context_set_shared_idle_strategy(m_context, "sleep-ns");
         aeron_driver_context_set_term_buffer_sparse_file(m_context, true);
         aeron_driver_context_set_term_buffer_length(m_context, 64 * 1024);
@@ -144,6 +158,7 @@ protected:
 
 private:
     std::uint64_t m_livenessTimeoutNs = 5 * 1000 * 1000 * 1000LL;
+    std::string m_aeronDir;
     std::atomic<bool> m_running = { true };
     std::thread m_thread;
     aeron_driver_context_t *m_context = nullptr;

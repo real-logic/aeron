@@ -244,6 +244,8 @@ class SystemTestParameterized : public testing::TestWithParam<std::string>
 public:
     SystemTestParameterized()
     {
+        const auto aeronDir = Context::defaultAeronPath().append("-").append(std::to_string(aeron_randomised_int32()));
+        m_driver.aeronDir(aeronDir);
         m_driver.start();
     }
 
@@ -269,7 +271,8 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     ctx
     .useConductorAgentInvoker(false)
     .resourceLingerTimeout(5)
-    .idleSleepDuration(1);
+    .idleSleepDuration(1)
+    .aeronDir(m_driver.aeronDir());
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
 

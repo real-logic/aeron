@@ -2305,9 +2305,15 @@ int aeron_client_conductor_release_log_buffer(aeron_client_conductor_t *conducto
 {
     if (--log_buffer->refcnt <= 0)
     {
-        aeron_int64_to_ptr_hash_map_remove(&conductor->log_buffer_by_id_map, log_buffer->correlation_id);
+        const int64_t correlation_id = log_buffer->correlation_id;
+        aeron_int64_to_ptr_hash_map_remove(&conductor->log_buffer_by_id_map, correlation_id);
 
         aeron_log_buffer_delete(log_buffer);
+
+        char date[256];
+        aeron_format_date(date, sizeof(date), aeron_epoch_clock());
+        fprintf(stdout, "[%s] aeron_client_conductor_release_log_buffer: correlation_id=%" PRIi64 "\n", date,
+                correlation_id);
     }
 
     return 0;

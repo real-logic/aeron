@@ -245,8 +245,15 @@ bool aeron_ipc_publication_free(aeron_ipc_publication_t *publication)
 
     if (!publication->raw_log_free_func(&publication->mapped_raw_log, publication->log_file_name))
     {
+        char date[256];
+        aeron_format_date(date, sizeof(date), aeron_epoch_clock());
+        fprintf(stdout, "[%s] (FAIL) aeron_ipc_publication_free: correlation_id=%" PRIi64 "\n", date, publication->conductor_fields.managed_resource.registration_id);
         return false;
     }
+
+    char date[256];
+    aeron_format_date(date, sizeof(date), aeron_epoch_clock());
+    fprintf(stdout, "[%s] (OK) aeron_ipc_publication_free: correlation_id=%" PRIi64 ", %s\n", date, publication->conductor_fields.managed_resource.registration_id, publication->log_file_name);
 
     aeron_counter_add_ordered(
         publication->mapped_bytes_counter, -((int64_t)publication->mapped_raw_log.mapped_file.length));

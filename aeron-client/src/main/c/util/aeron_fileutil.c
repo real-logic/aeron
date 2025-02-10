@@ -771,21 +771,9 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
 
     if (NULL != filename && mapped_raw_log->mapped_file.length > 0)
     {
-        int err_code = errno;
-        if (err_code != 0)
+        if (remove(filename) < 0 && aeron_file_length(filename) > 0)
         {
-            fprintf(stdout, "*** [aeron_raw_log_free] errno is not zero: err_code=%d, err_msg=%s\n", err_code, strerror(err_code));
-        }
-
-        if (remove(filename) < 0)
-        {
-            err_code = errno;
-            fprintf(stdout, "*** [aeron_raw_log_free] remove failed: err_code=%d, err_msg=%s, file=%s\n", err_code, strerror(err_code), filename);
-
-            if (aeron_file_length(filename) > 0)
-            {
-                return false;
-            }
+            return false;
         }
 
         mapped_raw_log->mapped_file.length = 0;

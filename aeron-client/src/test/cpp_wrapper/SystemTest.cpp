@@ -351,6 +351,37 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
         0);
     const auto image_log_file = -1 == aeron_file_length(log_buffer_file) ? pub_log_file : std::string().append(log_buffer_file);
 
+#if defined(AERON_COMPILER_MSVC)
+    const DWORD attributes = GetFileAttributes(image_log_file.c_str());
+    if (INVALID_FILE_ATTRIBUTES != attributes)
+    {
+        std::cout << "*** Attributes for: " << image_log_file << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_READONLY: " << (attributes & FILE_ATTRIBUTE_READONLY) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_HIDDEN: " << (attributes & FILE_ATTRIBUTE_HIDDEN) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_SYSTEM: " << (attributes & FILE_ATTRIBUTE_SYSTEM) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_DIRECTORY: " << (attributes & FILE_ATTRIBUTE_DIRECTORY) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_ARCHIVE: " << (attributes & FILE_ATTRIBUTE_ARCHIVE) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_DEVICE: " << (attributes & FILE_ATTRIBUTE_DEVICE) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_NORMAL: " << (attributes & FILE_ATTRIBUTE_NORMAL) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_TEMPORARY: " << (attributes & FILE_ATTRIBUTE_TEMPORARY) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_SPARSE_FILE: " << (attributes & FILE_ATTRIBUTE_SPARSE_FILE) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_REPARSE_POINT: " << (attributes & FILE_ATTRIBUTE_REPARSE_POINT) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_COMPRESSED: " << (attributes & FILE_ATTRIBUTE_COMPRESSED) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_OFFLINE: " << (attributes & FILE_ATTRIBUTE_OFFLINE) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_NOT_CONTENT_INDEXED: " << (attributes & FILE_ATTRIBUTE_NOT_CONTENT_INDEXED) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_ENCRYPTED: " << (attributes & FILE_ATTRIBUTE_ENCRYPTED) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_INTEGRITY_STREAM: " << (attributes & FILE_ATTRIBUTE_INTEGRITY_STREAM) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_VIRTUAL: " << (attributes & FILE_ATTRIBUTE_VIRTUAL) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_NO_SCRUB_DATA: " << (attributes & FILE_ATTRIBUTE_NO_SCRUB_DATA) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_EA: " << (attributes & FILE_ATTRIBUTE_EA) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_PINNED: " << (attributes & FILE_ATTRIBUTE_PINNED) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_UNPINNED: " << (attributes & FILE_ATTRIBUTE_UNPINNED) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_RECALL_ON_OPEN: " << (attributes & FILE_ATTRIBUTE_RECALL_ON_OPEN) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS: " << (attributes & FILE_ATTRIBUTE_RECALL_ON_DATA_ACCESS) << std::endl;
+        std::cout << ">>> FILE_ATTRIBUTE_STRICTLY_SEQUENTIAL: " << (attributes & FILE_ATTRIBUTE_STRICTLY_SEQUENTIAL) << std::endl;
+    }
+#endif
+
     publication.reset();
 
     while (!image_unavailable)

@@ -27,7 +27,7 @@
 
 #include <stdio.h>
 #include <time.h>
-#include <inttypes.h>`
+#include <inttypes.h>
 
 #include "agent/aeron_driver_agent.h"
 #include "aeron_driver_context.h"

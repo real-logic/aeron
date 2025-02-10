@@ -763,6 +763,8 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
     {
         if (aeron_unmap(&mapped_raw_log->mapped_file) < 0)
         {
+            int err_code = errno;
+            fprintf(stdout, "*** [aeron_raw_log_free] aeron_unmap failed: errno=%d, strerror=%s, aeron_errcode=%d, aeron_errmsg=%s\n", err_code, strerror(err_code), aeron_errcode(), aeron_errmsg());
             return false;
         }
 
@@ -774,13 +776,13 @@ bool aeron_raw_log_free(aeron_mapped_raw_log_t *mapped_raw_log, const char *file
         int err_code = errno;
         if (err_code != 0)
         {
-            fprintf(stdout, "*** [aeron_raw_log_free] errno is not zero: err_code=%d, err_msg=%s\n", err_code, strerror(err_code));
+            fprintf(stdout, "*** [aeron_raw_log_free] errno is not zero: errno=%d, strerror=%s, aeron_errcode=%d, aeron_errmsg=%s\n", err_code, strerror(err_code), aeron_errcode(), aeron_errmsg());
         }
 
         if (remove(filename) < 0)
         {
             err_code = errno;
-            fprintf(stdout, "*** [aeron_raw_log_free] remove failed: err_code=%d, err_msg=%s, file=%s\n", err_code, strerror(err_code), filename);
+            fprintf(stdout, "*** [aeron_raw_log_free] remove failed: errno=%d, strerror=%s, aeron_errcode=%d, aeron_errmsg=%s, file=%s\n", err_code, strerror(err_code), aeron_errcode(), aeron_errmsg(), filename);
 
             if (aeron_file_length(filename) > 0)
             {

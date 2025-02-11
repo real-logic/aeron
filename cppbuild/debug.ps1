@@ -88,7 +88,7 @@ try
         Exit 1
     }
 
-    ctest -C $BuildConfig --output-on-failure --timeout 2000
+    ctest -C $BuildConfig -R systemTestW --output-on-failure --timeout 2000
 
     Push-Location $PSScriptRoot
     Write-Host "Stopping $PSScriptRoot\ProcessMonitor..."

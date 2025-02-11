@@ -52,7 +52,7 @@ try
 
     Write-Host "Success: $PSScriptRoot\ProcessMonitor"
 
-    "$PSScriptRoot\ProcessMonitor\Procmon.exe" /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
+    $PSScriptRoot\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
 
     Get-ChildItem -Path $PSScriptRoot
 

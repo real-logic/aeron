@@ -41,20 +41,19 @@ try
 
     Write-Host "Installing ProcessMonitor ..."
 
-    $dir = (get-location).path
     $client = New-Object System.Net.WebClient
-    $client.DownloadFile("https://download.sysinternals.com/files/ProcessMonitor.zip", "$dir\ProcessMonitor.zip")
+    $client.DownloadFile("https://download.sysinternals.com/files/ProcessMonitor.zip", "$PSScriptRoot\ProcessMonitor.zip")
 
-    Push-Location $dir
-    Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$dir"
+    Push-Location $PSScriptRoot
+    Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot"
     Remove-Item "ProcessMonitor.zip"
     Pop-Location
 
-    Write-Host "Success: $dir\ProcessMonitor"
+    Write-Host "Success: $PSScriptRoot\ProcessMonitor"
 
-    Get-ChildItem -Path $dir
+    Get-ChildItem -Path $PSScriptRoot
 
-    Start-Process -NoNewWindow -FilePath "$dir\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
+    $PSScriptRoot\ProcessMonitor\Procmon.exe /?
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {

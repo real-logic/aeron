@@ -48,7 +48,23 @@ jobs:
           distribution: 'zulu'
           java-version: ${{ env.JAVA_VERSION }}
       - name: Build
-        run: cppbuild/cppbuild.ps1 --cxx-hide-deprecation-message --no-system-tests
+        run: |
+          Write-Host "Installing ProcessMonitor ..."
+
+          $dir = Get-Location
+          $client = New-Object System.Net.WebClient
+          $client.DownloadFile("https://download.sysinternals.com/files/ProcessMonitor.zip", "$dir\ProcessMonitor.zip")
+  
+          Push-Location $dir
+          Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$dir"
+          Remove-Item "ProcessMonitor.zip"
+          Pop-Location
+  
+          Write-Host "Success: ProcessMonitor"
+          
+          Start-Process -NoNewWindow $dir/ProcessMonitor/Procmon.exe /AcceptEula /Quiet /Backingfile $dir/procmon.log
+
+          cppbuild/cppbuild.ps1 --cxx-hide-deprecation-message --no-system-tests
       - name: Copy test logs
         id: copy_test_logs
         if: failure()

@@ -15,6 +15,8 @@
 #
 
 $CmakeBuildParallelLevel = [Environment]::ProcessorCount
+$DeleteBuildDir = $true
+$BuildConfig = "Release"
 $BuildDir = "$PSScriptRoot\$BuildConfig"
 $SourceDir = "$PSScriptRoot\.."
 $CMakeVersion = "3.30.0"
@@ -52,13 +54,9 @@ try
     Write-Host "Starting $PSScriptRoot\ProcessMonitor..."
 
     .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
-
-    Write-Host "Running..."
-    Get-Process procmon | Format-List *
-
     Pop-Location
 
-    Write-Host "Still running..."
+    Write-Host "Running?"
     Get-Process procmon | Format-List *
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))

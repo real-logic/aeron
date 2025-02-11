@@ -89,6 +89,17 @@ try
     }
 
     ctest -C $BuildConfig --output-on-failure --timeout 2000
+
+    Push-Location $PSScriptRoot
+    Write-Host "Stopping $PSScriptRoot\ProcessMonitor..."
+    .\ProcessMonitor\Procmon.exe /Terminate
+
+    Write-Host "Stopped?"
+    Get-Process procmon | Format-List *
+
+    Pop-Location
+
+    Get-ChildItem -Path $PSScriptRoot
 }
 finally
 {

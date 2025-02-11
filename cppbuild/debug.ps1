@@ -53,7 +53,7 @@ try
 
     Get-ChildItem -Path $PSScriptRoot
 
-    Start-Process -NoNewWindow -FilePath "$PSScriptRoot\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
+    Start-Process -NoNewWindow -FilePath "$PSScriptRoot\ProcessMonitor\Procmon.exe" -ArgumentList "/AcceptEula /?"
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {

@@ -171,5 +171,4 @@ private:
 };
 
 }}}
-
 #endif

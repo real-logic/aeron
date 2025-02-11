@@ -62,8 +62,9 @@ jobs:
   
           Write-Host "Success: $dir\ProcessMonitor"
           
-          Start-Process -FilePath "$dir\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
-#          Start-Process -NoNewWindow -FilePath "$dir\ProcessMonitor\Procmon.exe" /AcceptEula /Quiet /Backingfile $dir\procmon.log
+          Get-ChildItem -Path $dir
+          
+          Start-Process -NoNewWindow -FilePath "$dir\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
 
 #          cppbuild/cppbuild.ps1 --cxx-hide-deprecation-message --no-system-tests
       - name: Copy test logs

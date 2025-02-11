@@ -54,8 +54,6 @@ try
     .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile "$PSScriptRoot\procmon.log"
     Pop-Location
 
-    Get-ChildItem -Path $PSScriptRoot
-
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {
         Remove-Item -Path $BuildDir -Force -Recurse
@@ -74,6 +72,8 @@ try
     Enter-VsDevShell -VsInstallPath $vsPath -SkipAutomaticLocation
 
     $env:Path = "$CMakePath\bin;$env:Path"
+
+    Get-ChildItem -Path $PSScriptRoot
 
     cmake -DAERON_SYSTEM_TESTS=OFF $SourceDir
     cmake -DAERON_SYSTEM_TESTS=OFF --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel

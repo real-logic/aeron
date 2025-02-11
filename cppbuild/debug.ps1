@@ -49,10 +49,17 @@ try
     Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot\ProcessMonitor"
     Remove-Item "ProcessMonitor.zip"
 
-    Write-Host "Success: $PSScriptRoot\ProcessMonitor"
+    Write-Host "Starting $PSScriptRoot\ProcessMonitor..."
 
     .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile .\procmon.log
+
+    Write-Host "Running..."
+    Get-Process procmon | Format-List *
+
     Pop-Location
+
+    Write-Host "Still running..."
+    Get-Process procmon | Format-List *
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {

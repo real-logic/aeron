@@ -29,8 +29,6 @@ namespace aeron { namespace concurrent { namespace logbuffer { namespace LogBuff
 
 const std::int32_t TERM_MIN_LENGTH = 64 * 1024;
 const std::int32_t TERM_MAX_LENGTH = 1024 * 1024 * 1024;
-const std::int32_t AERON_PAGE_MIN_SIZE = 4 * 1024;
-const std::int32_t AERON_PAGE_MAX_SIZE = 1024 * 1024 * 1024;
 
 #if defined(__GNUC__) || _MSC_VER >= 1900
 static constexpr const int PARTITION_COUNT = 3;

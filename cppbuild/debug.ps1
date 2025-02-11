@@ -50,14 +50,7 @@ try
     Push-Location $PSScriptRoot
     Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot\ProcessMonitor"
     Remove-Item "ProcessMonitor.zip"
-
-    Write-Host "Starting $PSScriptRoot\ProcessMonitor..."
-
-    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.PML
     Pop-Location
-
-    Write-Host "Running?"
-    Get-Process procmon | Format-List *
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {
@@ -78,8 +71,6 @@ try
 
     $env:Path = "$CMakePath\bin;$env:Path"
 
-    Get-ChildItem -Path $PSScriptRoot
-
     cmake -DAERON_SYSTEM_TESTS=OFF $SourceDir
     cmake --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
     if (-not $?)
@@ -88,15 +79,23 @@ try
         Exit 1
     }
 
+    Push-Location $PSScriptRoot
+    Write-Host "> Starting $PSScriptRoot\ProcessMonitor..."
+    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.PML
+
+    Write-Host "> Running?"
+    Get-Process procmon | Format-List *
+    Pop-Location
+
     ctest -C $BuildConfig -R systemTestW --output-on-failure --timeout 2000
 
     Push-Location $PSScriptRoot
-    Write-Host "Stopping $PSScriptRoot\ProcessMonitor..."
+    Write-Host "> Stopping $PSScriptRoot\ProcessMonitor..."
+    .\ProcessMonitor\Procmon.exe /Terminate
     .\ProcessMonitor\Procmon.exe /Terminate
 
-    Write-Host "Stopped?"
+    Write-Host "> Stopped?"
     Get-Process procmon | Format-List *
-
     Pop-Location
 
     Get-ChildItem -Path $PSScriptRoot

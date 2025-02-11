@@ -492,7 +492,9 @@ public:
             return nullptr;
         }
 
-        return std::make_shared<Image>(m_subscription, image);
+        auto result = std::make_shared<Image>(m_subscription, image);
+        aeron_subscription_image_release(m_subscription, image);
+        return result;
     }
 
     /**
@@ -512,7 +514,9 @@ public:
             throw std::logic_error("index out of range");
         }
 
-        return std::make_shared<Image>(m_subscription, image);
+        auto result = std::make_shared<Image>(m_subscription, image);
+        aeron_subscription_image_release(m_subscription, image);
+        return result;
     }
 
     /**
@@ -569,26 +573,6 @@ public:
     {
         return m_subscription;
     }
-
-    /// @cond HIDDEN_SYMBOLS
-    bool hasImage(std::int64_t correlationId) const
-    {
-        bool hasImage = false;
-        auto imageList = copyOfImageList();
-
-        for (auto &image : *imageList)
-        {
-            if (image->correlationId() == correlationId)
-            {
-                hasImage = true;
-                break;
-            }
-        }
-
-        return hasImage;
-    }
-    /// @endcond
-
 private:
     aeron_t *m_aeron = nullptr;
     aeron_subscription_t *m_subscription = nullptr;

@@ -244,6 +244,8 @@ class SystemTestParameterized : public testing::TestWithParam<std::string>
 public:
     SystemTestParameterized()
     {
+        const auto aeronDir = Context::defaultAeronPath().append("-").append(std::to_string(aeron_randomised_int32()));
+        m_driver.aeronDir(aeronDir);
         m_driver.start();
     }
 
@@ -259,14 +261,18 @@ protected:
 INSTANTIATE_TEST_SUITE_P(
     SystemTestParameterized,
     SystemTestParameterized,
-    testing::Values("aeron:ipc?alias=test", "aeron:udp?alias=test|endpoint=localhost:8092"));
+    testing::Values("aeron:ipc?alias=test|term-length=64k", "aeron:udp?alias=test|endpoint=localhost:8092|term-length=64k"));
 
-TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
+TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
 {
     std::string channel = GetParam();
     const int stream_id = 1000;
     Context ctx;
-    ctx.useConductorAgentInvoker(false);
+    ctx
+    .useConductorAgentInvoker(false)
+    .resourceLingerTimeout(5)
+    .idleSleepDuration(1)
+    .aeronDir(m_driver.aeronDir());
 
     std::shared_ptr<Aeron> aeron = Aeron::connect(ctx);
 
@@ -279,8 +285,10 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
     }
     while (nullptr == publication);
 
-    int64_t image_correlation_id = -1;
-    bool image_unavailable = false;
+    std::atomic<int64_t> image_correlation_id;
+    image_correlation_id = -1;
+    std::atomic<bool> image_unavailable;
+    image_unavailable = false;
     const int64_t sub_registration_id = aeron->addSubscription(
         channel,
         stream_id,
@@ -300,6 +308,8 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
     }
     while (nullptr == subscription);
 
+    aeron_subscription_t *raw_subscription = subscription->subscription();
+    aeron_image_t *raw_image = nullptr;
     {
         std::shared_ptr<Image> image;
         do
@@ -313,20 +323,21 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
         {
             std::this_thread::yield();
         }
-        EXPECT_EQ(image_correlation_id, image->correlationId());
+        ASSERT_EQ(image_correlation_id, image->correlationId());
 
         auto image_by_index = subscription->imageByIndex(0);
         EXPECT_NE(image, image_by_index);
         EXPECT_EQ(image_correlation_id, image_by_index->correlationId());
 
-        const auto raw_image =
-            aeron_subscription_image_by_session_id(subscription->subscription(), publication->sessionId());
-        EXPECT_EQ(2, aeron_image_decr_refcnt(raw_image));
-        EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
+        raw_image =
+            aeron_subscription_image_by_session_id(raw_subscription, publication->sessionId());
+        EXPECT_EQ(4, aeron_image_decr_refcnt(raw_image));
+        EXPECT_EQ(3, aeron_image_refcnt_volatile(raw_image));
     }
 
+    EXPECT_EQ(1, aeron_image_refcnt_volatile(raw_image));
     EXPECT_EQ(1, subscription->imageCount());
-    EXPECT_NE(nullptr, subscription->imageBySessionId(publication->sessionId()));
+    EXPECT_EQ(1, aeron_subscription_image_count(raw_subscription));
 
     char log_buffer_file[AERON_MAX_PATH];
     EXPECT_GT(
@@ -342,6 +353,19 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
 
     publication.reset();
 
+    while (!image_unavailable)
+    {
+        std::this_thread::yield();
+    }
+    ASSERT_TRUE(image_unavailable);
+
+    while (0 != subscription->imageCount())
+    {
+        std::this_thread::yield();
+    }
+    ASSERT_EQ(0, subscription->imageCount());
+    ASSERT_EQ(0, aeron_subscription_image_count(raw_subscription));
+
     auto deadline_ns = std::chrono::nanoseconds(m_driver.livenessTimeoutNs());
     auto zero_ns = std::chrono::nanoseconds(0);
     auto sleep_ms = std::chrono::milliseconds(10);
@@ -354,7 +378,6 @@ TEST_P(SystemTestParameterized, DISABLED_shouldFreeUnavailableImage)
       deadline_ns -= sleep_ms;
       std::this_thread::sleep_for(sleep_ms);
     }
-    EXPECT_TRUE(image_unavailable);
     EXPECT_GT(deadline_ns, zero_ns);
 
     EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";

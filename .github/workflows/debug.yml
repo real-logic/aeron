@@ -62,7 +62,6 @@ jobs:
   
           Write-Host "Success: $dir\ProcessMonitor"
           
-          Invoke-Expression "$dir\ProcessMonitor\Procmon.exe /?"
           Start-Process -FilePath "$dir\ProcessMonitor\Procmon.exe /?"
 #          Start-Process -NoNewWindow -FilePath "$dir\ProcessMonitor\Procmon.exe" /AcceptEula /Quiet /Backingfile $dir\procmon.log
 

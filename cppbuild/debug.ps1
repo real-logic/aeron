@@ -53,7 +53,7 @@ try
 
     Write-Host "Starting $PSScriptRoot\ProcessMonitor..."
 
-    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
+    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.PML
     Pop-Location
 
     Write-Host "Running?"

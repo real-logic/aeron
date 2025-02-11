@@ -1390,6 +1390,7 @@ tasks.register('copyTestLogs', Copy) {
     include '/var/coredump/core*'
     include '**/*.log'
     include '**/*.tlog'
+    include '**/*.PML'
     include '**/build/reports/tests/**'
     include '**/build/test-results/**/*'
     include 'LICENSE'

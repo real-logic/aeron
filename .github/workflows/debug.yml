@@ -62,7 +62,7 @@ jobs:
   
           Write-Host "Success: $dir\ProcessMonitor"
           
-          Start-Process -FilePath "$dir\ProcessMonitor\Procmon.exe /?"
+          Start-Process -FilePath "$dir\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
 #          Start-Process -NoNewWindow -FilePath "$dir\ProcessMonitor\Procmon.exe" /AcceptEula /Quiet /Backingfile $dir\procmon.log
 
 #          cppbuild/cppbuild.ps1 --cxx-hide-deprecation-message --no-system-tests

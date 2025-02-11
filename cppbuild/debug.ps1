@@ -51,7 +51,7 @@ try
 
     Write-Host "Success: $PSScriptRoot\ProcessMonitor"
 
-    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile "$PSScriptRoot\procmon.log"
+    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile .\procmon.log
     Pop-Location
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))

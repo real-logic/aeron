@@ -7,10 +7,10 @@ on:
     types: run-slow-tests
   schedule:
     - cron: '0 0,12 * * *'
-  push:
-    branches:
-      - master
-      - 'release/**'
+#  push:
+#    branches:
+#      - master
+#      - 'release/**'
   pull_request:
     types: [opened, synchronize]
     branches:

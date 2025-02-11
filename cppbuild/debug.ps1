@@ -48,11 +48,11 @@ try
     Push-Location $PSScriptRoot
     Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot\ProcessMonitor"
     Remove-Item "ProcessMonitor.zip"
-    Pop-Location
 
     Write-Host "Success: $PSScriptRoot\ProcessMonitor"
 
-    $PSScriptRoot\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
+    .\ProcessMonitor\Procmon.exe /AcceptEula /NoFilter /Backingfile "$PSScriptRoot\procmon.log"
+    Pop-Location
 
     Get-ChildItem -Path $PSScriptRoot
 

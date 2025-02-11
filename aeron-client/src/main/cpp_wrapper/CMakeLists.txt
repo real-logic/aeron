@@ -54,6 +54,7 @@ SET(HEADERS
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/atomic/Atomic64_msvc.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/ErrorLogDescriptor.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/ErrorLogReader.h
+    ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/errors/DistinctErrorLog.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/BufferClaim.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/DataFrameHeader.h
     ${CMAKE_CURRENT_SOURCE_DIR}/concurrent/logbuffer/FrameDescriptor.h

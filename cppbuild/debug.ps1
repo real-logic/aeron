@@ -74,8 +74,8 @@ try
 
     $env:Path = "$CMakePath\bin;$env:Path"
 
-    cmake --no-system-tests $SourceDir
-    cmake --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
+    cmake -DAERON_SYSTEM_TESTS=OFF $SourceDir
+    cmake -DAERON_SYSTEM_TESTS=OFF --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
     if (-not $?)
     {
         Write-Host "Compile Failed"

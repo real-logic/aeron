@@ -53,7 +53,7 @@ try
 
     Get-ChildItem -Path $PSScriptRoot
 
-    $PSScriptRoot\ProcessMonitor\Procmon.exe /?
+    Start-Process -NoNewWindow -FilePath "$PSScriptRoot\ProcessMonitor\Procmon.exe" -ArgumentList "/?"
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {

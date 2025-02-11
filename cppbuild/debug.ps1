@@ -81,7 +81,7 @@ try
     Get-ChildItem -Path $PSScriptRoot
 
     cmake -DAERON_SYSTEM_TESTS=OFF $SourceDir
-    cmake -DAERON_SYSTEM_TESTS=OFF --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
+    cmake --build . --config $BuildConfig --parallel $CmakeBuildParallelLevel
     if (-not $?)
     {
         Write-Host "Compile Failed"

@@ -14,6 +14,7 @@
 # limitations under the License.
 #
 
+$CmakeBuildParallelLevel = [Environment]::ProcessorCount
 $BuildDir = "$PSScriptRoot\$BuildConfig"
 $SourceDir = "$PSScriptRoot\.."
 $CMakeVersion = "3.30.0"
@@ -51,11 +52,9 @@ try
 
     Write-Host "Success: $PSScriptRoot\ProcessMonitor"
 
-    Get-ChildItem -Path $PSScriptRoot
+    "$PSScriptRoot\ProcessMonitor\Procmon.exe" /AcceptEula /NoFilter /Backingfile $PSScriptRoot\procmon.log
 
-    Push-Location $PSScriptRoot
-    .\ProcessMonitor\Procmon.exe /AcceptEula /?
-    Pop-Location
+    Get-ChildItem -Path $PSScriptRoot
 
     if ((Test-Path $BuildDir) -and ($DeleteBuildDir))
     {

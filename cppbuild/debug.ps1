@@ -45,7 +45,7 @@ try
     $client.DownloadFile("https://download.sysinternals.com/files/ProcessMonitor.zip", "$PSScriptRoot\ProcessMonitor.zip")
 
     Push-Location $PSScriptRoot
-    Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot"
+    Expand-Archive -LiteralPath "ProcessMonitor.zip" -DestinationPath "$PSScriptRoot\ProcessMonitor"
     Remove-Item "ProcessMonitor.zip"
     Pop-Location
 

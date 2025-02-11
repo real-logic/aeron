@@ -18,12 +18,10 @@
 
 #include "util/Platform.h"
 
-#if defined(AERON_COMPILER_GCC)
-    #if defined(AERON_CPU_X64)
-        #include "concurrent/atomic/Atomic64_gcc_x86_64.h"
-    #else
-        #include "concurrent/atomic/Atomic64_gcc_cpp11.h"
-    #endif
+#if defined(AERON_COMPILER_GCC) && defined(AERON_CPU_X64)
+    #include "concurrent/atomic/Atomic64_gcc_x86_64.h"
+#elif defined(AERON_COMPILER_GCC) && defined(AERON_CPU_ARM)
+    #include "concurrent/atomic/Atomic64_gcc_cpp11.h"
 #elif defined(AERON_COMPILER_MSVC) && defined(AERON_CPU_X64)
     #include "concurrent/atomic/Atomic64_msvc.h"
 #else

@@ -102,7 +102,7 @@ int aeron_udp_channel_transport_init(
     {
         transport->interceptor_clientds[i] = NULL;
     }
-    
+
     if (NULL == params)
     {
         AERON_SET_ERR(EINVAL, "%s", "channel transport params is NULL");
@@ -584,12 +584,14 @@ static int aeron_udp_channel_transport_sendv(
     struct mmsghdr msg[AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND];
     size_t msg_i;
 
+    size_t msg_namelen = address == NULL ? 0 : AERON_ADDR_LEN(address);
+
     for (msg_i = 0; msg_i < iov_length && msg_i < AERON_NETWORK_PUBLICATION_MAX_MESSAGES_PER_SEND; msg_i++)
     {
         msg[msg_i].msg_hdr.msg_control = NULL;
         msg[msg_i].msg_hdr.msg_controllen = 0;
         msg[msg_i].msg_hdr.msg_name = address;
-        msg[msg_i].msg_hdr.msg_namelen = AERON_ADDR_LEN(address);
+        msg[msg_i].msg_hdr.msg_namelen = msg_namelen;
         msg[msg_i].msg_hdr.msg_flags = 0;
         msg[msg_i].msg_hdr.msg_iov = &iov[msg_i];
         msg[msg_i].msg_hdr.msg_iovlen = 1;
@@ -634,9 +636,16 @@ int aeron_udp_channel_transport_send(
     int64_t *bytes_sent)
 {
 #if defined(HAVE_SENDMMSG)
-    if (1 == iov_length && NULL != transport->connected_address)
+    if (NULL != transport->connected_address)
     {
-        return aeron_udp_channel_transport_send_connected(transport, iov, bytes_sent);
+        if (1 == iov_length)
+        {
+            return aeron_udp_channel_transport_send_connected(transport, iov, bytes_sent);
+        }
+        else
+        {
+            return aeron_udp_channel_transport_sendv(transport, NULL, iov, iov_length, bytes_sent);
+        }
     }
     else
     {

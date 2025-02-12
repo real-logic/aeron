@@ -179,20 +179,19 @@ uint64_t aeron_usable_fs_space(const char *path)
 
 int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
-    int fd;
-    int error = _sopen_s(&fd, path, _O_RDWR | _O_CREAT | _O_EXCL, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    HANDLE hfile = CreateFile(
+            path,
+            FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            NULL,
+            CREATE_NEW,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
 
-    if (NO_ERROR != error)
+    if (INVALID_HANDLE_VALUE == hfile)
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to create file: %s", path);
         return -1;
-    }
-
-    HANDLE hfile = (HANDLE)_get_osfhandle(fd);
-    if (INVALID_HANDLE_VALUE == hfile)
-    {
-        AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain operating-system file handle: %s", path);
-        goto error;
     }
 
     if (sparse_file)
@@ -215,13 +214,20 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         goto error;
     }
 
+    int fd = _open_osfhandle((intptr_t)hfile, _O_RDWR);
+    if (fd < 0)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain file descriptor: %s", path);
+        goto error;
+    }
+
     return fd;
 
 error:
-    _close(fd);
+    CloseHandle(hfile);
     if (-1 == remove(path))
     {
-        AERON_APPEND_ERR("(%d) Failed to remove file", GetLastError());
+        AERON_APPEND_ERR("(%d) Failed to remove file: %s", GetLastError(), path);
     }
     return -1;
 }

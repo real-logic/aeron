@@ -182,7 +182,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
     HANDLE hfile = CreateFile(
             path,
             GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
             CREATE_NEW,
             FILE_ATTRIBUTE_NORMAL,
@@ -237,7 +237,7 @@ int aeron_open_file_rw(const char *path)
     HANDLE hfile = CreateFile(
             path,
             GENERIC_READ | GENERIC_WRITE,
-            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
             OPEN_EXISTING,
             FILE_ATTRIBUTE_NORMAL,

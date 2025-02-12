@@ -383,3 +383,41 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";
     EXPECT_EQ(-1, aeron_file_length(pub_log_file.c_str())) << pub_log_file << " not deleted";
 }
+
+TEST_F(SystemTest, debugLogBufferFileDelete)
+{
+    std::cout << "In debugLogBufferFileDelete..." << std::endl;
+    char path[AERON_MAX_PATH];
+    ASSERT_GT(aeron_default_path(path, sizeof(path)), 0);
+    std::string dir = std::string(path).append("-debugLogBufferFileDelete");
+    aeron_delete_directory(dir.c_str());
+    ASSERT_EQ(0, aeron_mkdir_recursive(dir.c_str(), S_IRWXU | S_IRWXG | S_IRWXO));
+
+    std::string log_path = dir.append("/test.logbuffer");
+    std::cout << log_path << std::endl;
+    remove(log_path.c_str());
+    int32_t termLength = AERON_LOGBUFFER_TERM_MIN_LENGTH;
+    int32_t pageSize = 4096;
+
+    aeron_mapped_raw_log_t server_log = {};
+    ASSERT_EQ(0, aeron_raw_log_map(&server_log, log_path.c_str(), true, termLength, pageSize));
+    ASSERT_EQ(server_log.term_length, termLength);
+    ASSERT_NE(server_log.mapped_file.addr, nullptr);
+    const auto metadata = (aeron_logbuffer_metadata_t *) (server_log.log_meta_data.addr);
+    metadata->term_length = termLength;
+    metadata->page_size = pageSize;
+
+    aeron_mapped_raw_log_t client_log = {};
+    ASSERT_EQ(0, aeron_raw_log_map_existing(&client_log, log_path.c_str(), false)) << aeron_errmsg();
+    ASSERT_NE(client_log.mapped_file.addr, nullptr);
+    ASSERT_NE(client_log.mapped_file.addr, server_log.mapped_file.addr);
+
+    EXPECT_TRUE(aeron_raw_log_free(&server_log, log_path.c_str())) << "Failed to delete while the other mapping exists!";
+    EXPECT_EQ(-1, aeron_file_length(log_path.c_str()));
+    EXPECT_EQ(server_log.mapped_file.addr, nullptr);
+
+    EXPECT_TRUE(aeron_raw_log_free(&client_log, log_path.c_str())) << "Failed to delete without mappings!";
+    EXPECT_EQ(-1, aeron_file_length(log_path.c_str()));
+    EXPECT_EQ(client_log.mapped_file.addr, nullptr);
+    std::cout << "Done!" << std::endl;
+}

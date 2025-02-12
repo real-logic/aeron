@@ -222,29 +222,25 @@ uint64_t aeron_usable_fs_space(const char *path)
 
 int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
+    DWORD flagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
+    if (sparse_file)
+    {
+        flagsAndAttributes |= FILE_ATTRIBUTE_SPARSE_FILE;
+    }
+
     HANDLE hfile = CreateFile(
             path,
             GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE,
             NULL,
             CREATE_NEW,
-            FILE_ATTRIBUTE_NORMAL,
+            flagsAndAttributes,
             NULL);
 
     if (INVALID_HANDLE_VALUE == hfile)
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to create file: %s", path);
         return -1;
-    }
-
-    if (sparse_file)
-    {
-        DWORD bytesReturned;
-        if (!DeviceIoControl(hfile, FSCTL_SET_SPARSE, NULL, 0, NULL, 0, &bytesReturned, NULL))
-        {
-            AERON_SET_ERR_WIN(GetLastError(), "Failed to mark file as sparse: %s", path);
-            goto error;
-        }
     }
 
     LARGE_INTEGER file_size;

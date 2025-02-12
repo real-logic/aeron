@@ -222,19 +222,13 @@ uint64_t aeron_usable_fs_space(const char *path)
 
 int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
-    DWORD flagsAndAttributes = FILE_ATTRIBUTE_NORMAL;
-    if (sparse_file)
-    {
-        flagsAndAttributes |= FILE_ATTRIBUTE_SPARSE_FILE;
-    }
-
     HANDLE hfile = CreateFile(
             path,
             FILE_GENERIC_READ | FILE_GENERIC_WRITE | DELETE,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             NULL,
             CREATE_NEW,
-            flagsAndAttributes,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_POSIX_SEMANTICS | (sparse_file ? FILE_ATTRIBUTE_SPARSE_FILE : 0),
             NULL);
 
     if (INVALID_HANDLE_VALUE == hfile)
@@ -279,7 +273,7 @@ int aeron_open_file_rw(const char *path)
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             NULL,
             OPEN_EXISTING,
-            FILE_ATTRIBUTE_NORMAL,
+            FILE_ATTRIBUTE_NORMAL | FILE_FLAG_POSIX_SEMANTICS,
             NULL);
 
     if (INVALID_HANDLE_VALUE == hfile)

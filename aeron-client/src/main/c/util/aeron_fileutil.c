@@ -181,7 +181,7 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
 {
     HANDLE hfile = CreateFile(
             path,
-            FILE_GENERIC_READ | FILE_GENERIC_WRITE,
+            GENERIC_READ | GENERIC_WRITE,
             FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
             NULL,
             CREATE_NEW,
@@ -234,12 +234,25 @@ error:
 
 int aeron_open_file_rw(const char *path)
 {
-    int fd;
-    int error = _sopen_s(&fd, path, _O_RDWR, _SH_DENYNO, _S_IREAD | _S_IWRITE);
+    HANDLE hfile = CreateFile(
+            path,
+            GENERIC_READ | GENERIC_WRITE,
+            FILE_SHARE_READ | FILE_SHARE_WRITE | FILE_SHARE_DELETE,
+            NULL,
+            OPEN_EXISTING,
+            FILE_ATTRIBUTE_NORMAL,
+            NULL);
 
-    if (NO_ERROR != error)
+    if (INVALID_HANDLE_VALUE == hfile)
     {
         AERON_SET_ERR_WIN(GetLastError(), "Failed to open file: %s", path);
+        return -1;
+    }
+
+    int fd = _open_osfhandle((intptr_t)hfile, _O_RDWR);
+    if (fd < 0)
+    {
+        AERON_SET_ERR_WIN(GetLastError(), "Failed to obtain file descriptor: %s", path);
         return -1;
     }
 

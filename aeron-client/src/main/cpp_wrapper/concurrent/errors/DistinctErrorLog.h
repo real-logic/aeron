@@ -62,9 +62,9 @@ public:
     bool record(std::size_t errorCode, const std::string &description, const std::string &message)
     {
         return aeron_distinct_error_log_record(
-        &m_log,
-  static_cast<int>(errorCode),
-  encodeObservation(description, message).c_str()) == 0;
+            &m_log,
+            static_cast<int>(errorCode),
+            encodeObservation(description, message).c_str()) == 0;
     }
 
 private:

@@ -260,7 +260,6 @@ int aeron_create_file(const char *path, size_t length, bool sparse_file)
         goto error;
     }
 
-    CloseHandle(hfile);
     return fd;
 
 error:
@@ -296,7 +295,6 @@ int aeron_open_file_rw(const char *path)
         return -1;
     }
 
-    CloseHandle(hfile);
     return fd;
 }
 

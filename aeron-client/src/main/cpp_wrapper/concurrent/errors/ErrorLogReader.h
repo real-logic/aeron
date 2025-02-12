@@ -17,9 +17,11 @@
 #define AERON_CONCURRENT_ERROR_LOG_READER_H
 
 #include <functional>
-#include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
-#include "concurrent/errors/ErrorLogDescriptor.h"
+extern "C"
+{
+#include "concurrent/aeron_distinct_error_log.h"
+}
 
 namespace aeron { namespace concurrent { namespace errors {
 
@@ -35,40 +37,26 @@ typedef std::function<void(
 
 inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, std::int64_t sinceTimestamp)
 {
-    int entries = 0;
-    int offset = 0;
-    const int capacity = buffer.capacity();
-
-    while (offset < capacity)
+    aeron_error_log_reader_func_t aeron_error_log_consumer = [](
+        int32_t observation_count,
+        int64_t first_observation_timestamp,
+        int64_t last_observation_timestamp,
+        const char *encoded_exception,
+        size_t length,
+        void *client_id)
     {
-        const std::int32_t length = buffer.getInt32Volatile(offset + ErrorLogDescriptor::LENGTH_OFFSET);
-        if (0 == length)
-        {
-            break;
-        }
-
-        const std::int64_t lastObservationTimestamp =
-            buffer.getInt64Volatile(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET);
-
-        if (lastObservationTimestamp >= sinceTimestamp)
-        {
-            auto &entry = buffer.overlayStruct<ErrorLogDescriptor::ErrorLogEntryDefn>(offset);
-
-            ++entries;
-
-            consumer(
-                entry.observationCount,
-                entry.firstObservationTimestamp,
-                lastObservationTimestamp,
-                buffer.getStringWithoutLength(
-                    offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET,
-                    static_cast<std::size_t>(length - ErrorLogDescriptor::HEADER_LENGTH)));
-        }
-
-        offset += util::BitUtil::align(length, ErrorLogDescriptor::RECORD_ALIGNMENT);
-    }
-
-    return entries;
+        auto consumer = reinterpret_cast<error_consumer_t *>(client_id);
+        (*consumer)(observation_count,
+            first_observation_timestamp,
+            last_observation_timestamp,
+            std::string(encoded_exception, length));
+    };
+    aeron_error_log_read(
+        buffer.buffer(),
+        buffer.capacity(),
+        aeron_error_log_consumer,
+        const_cast<void *>(reinterpret_cast<const void *>(&consumer)),
+        sinceTimestamp);
 }
 
 }}}}

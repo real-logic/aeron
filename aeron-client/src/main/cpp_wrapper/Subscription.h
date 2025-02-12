@@ -21,6 +21,7 @@
 #include <iostream>
 #include <memory>
 #include <iterator>
+#include <stdexcept>
 
 #include "Image.h"
 #include "concurrent/CountersReader.h"
@@ -492,9 +493,7 @@ public:
             return nullptr;
         }
 
-        auto result = std::make_shared<Image>(m_subscription, image);
-        aeron_subscription_image_release(m_subscription, image);
-        return result;
+        return createImage(image);
     }
 
     /**
@@ -514,9 +513,7 @@ public:
             throw std::logic_error("index out of range");
         }
 
-        auto result = std::make_shared<Image>(m_subscription, image);
-        aeron_subscription_image_release(m_subscription, image);
-        return result;
+        return createImage(image);
     }
 
     /**
@@ -587,6 +584,21 @@ private:
         auto subscriptionAndImages =
             static_cast<std::pair<aeron_subscription_t *, std::vector<std::shared_ptr<Image>> *> *>(clientd);
         subscriptionAndImages->second->push_back(std::make_shared<Image>(subscriptionAndImages->first, image));
+    }
+
+    inline std::shared_ptr<Image> createImage(aeron_image_t *image) const
+    {
+        std::shared_ptr<Image> result;
+        try {
+            result = std::make_shared<Image>(m_subscription, image);
+        }
+        catch (const std::exception& e)
+        {
+            aeron_subscription_image_release(m_subscription, image);
+            throw e;
+        }
+        aeron_subscription_image_release(m_subscription, image);
+        return result;
     }
 };
 

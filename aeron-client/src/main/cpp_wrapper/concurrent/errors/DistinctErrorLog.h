@@ -16,15 +16,12 @@
 #ifndef AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
 #define AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
 
-#include <functional>
-#include <typeinfo>
-#include <vector>
-#include <algorithm>
-#include <mutex>
-#include <atomic>
-#include "util/BitUtil.h"
 #include "concurrent/AtomicBuffer.h"
-#include "concurrent/errors/ErrorLogDescriptor.h"
+extern "C"
+{
+#include "util/aeron_error.h"
+#include "concurrent/aeron_distinct_error_log.h"
+}
 
 namespace aeron { namespace concurrent { namespace errors {
 
@@ -35,11 +32,21 @@ class DistinctErrorLog
 public:
     typedef std::function<std::int64_t()> clock_t;
 
-    inline DistinctErrorLog(AtomicBuffer &buffer, clock_t clock) :
-        m_buffer(buffer),
-        m_clock(clock),
-        m_observations(static_cast<std::size_t>(buffer.capacity() / ErrorLogDescriptor::HEADER_LENGTH))
+    inline DistinctErrorLog(AtomicBuffer &buffer, clock_t clock)
     {
+        std::int64_t (*c_clock_t)() = *clock.target<std::int64_t(*)()>();
+        if (aeron_distinct_error_log_init(
+        &m_log, buffer.buffer(), buffer.capacity(), c_clock_t) < 0)
+        {
+            std::string errMsg = aeron_errmsg();
+            aeron_err_clear();
+            throw util::SourcedException(errMsg, SOURCEINFO);
+        }
+    }
+
+    inline ~DistinctErrorLog()
+    {
+        aeron_distinct_error_log_close(&m_log);
     }
 
     inline bool record(std::exception &observation)
@@ -54,119 +61,18 @@ public:
 
     bool record(std::size_t errorCode, const std::string &description, const std::string &message)
     {
-        std::int64_t timestamp = m_clock();
-        std::size_t originalNumObservations = std::atomic_load(&m_numObservations);
-
-        auto it = findObservation(m_observations, originalNumObservations, errorCode, description);
-
-        if (it == m_observations.end())
-        {
-            std::lock_guard<std::recursive_mutex> lock(m_lock);
-
-            it = newObservation(originalNumObservations, timestamp, errorCode, description, message);
-            if (it == m_observations.end())
-            {
-                return false;
-            }
-        }
-
-        DistinctObservation &observation = *it;
-
-        util::index_t offset = observation.m_offset;
-
-        m_buffer.getAndAddInt32(offset + ErrorLogDescriptor::OBSERVATION_COUNT_OFFSET, 1);
-        m_buffer.putInt64Ordered(offset + ErrorLogDescriptor::LAST_OBSERVATION_TIMESTAMP_OFFSET, timestamp);
-
-        return true;
+        return aeron_distinct_error_log_record(
+        &m_log,
+  static_cast<int>(errorCode),
+  encodeObservation(description, message).c_str()) == 0;
     }
 
 private:
-    struct DistinctObservation
+    aeron_distinct_error_log_t m_log{};
+
+    static std::string encodeObservation(const std::string &description, const std::string &message)
     {
-        std::size_t m_errorCode = 0;
-        std::string m_description;
-        util::index_t m_offset = 0;
-    };
-
-    AtomicBuffer &m_buffer;
-    clock_t m_clock;
-    std::recursive_mutex m_lock;
-
-    std::vector<DistinctObservation> m_observations;
-    std::atomic<std::size_t> m_numObservations = { 0 };
-
-    util::index_t m_nextOffset = 0;
-
-    static std::string encodeObservation(
-        std::size_t errorCode, const std::string &description, const std::string &message)
-    {
-        return description + " " + message;
-    }
-
-    static std::vector<DistinctObservation>::iterator findObservation(
-        std::vector<DistinctObservation> &observations,
-        std::size_t numObservations,
-        std::size_t errorCode,
-        const std::string &description)
-    {
-        auto begin = observations.begin();
-        auto end = begin + numObservations;
-
-        auto result = std::find_if(begin, end,
-            [errorCode, description](const DistinctObservation &observation)
-            {
-                return errorCode == observation.m_errorCode && description == observation.m_description;
-            });
-
-        return result != end ? result : observations.end();
-    }
-
-    std::vector<DistinctObservation>::iterator newObservation(
-        std::size_t existingNumObservations,
-        std::int64_t timestamp,
-        std::size_t errorCode,
-        const std::string &description,
-        const std::string &message)
-    {
-        std::size_t numObservations = std::atomic_load(&m_numObservations);
-
-        auto it = m_observations.end();
-
-        if (existingNumObservations != numObservations)
-        {
-            it = findObservation(m_observations, numObservations, errorCode, description);
-        }
-
-        if (it == m_observations.end())
-        {
-            const std::string encodedError = encodeObservation(errorCode, description, message);
-            const util::index_t length =
-                ErrorLogDescriptor::HEADER_LENGTH + static_cast<util::index_t>(encodedError.length());
-            const util::index_t offset = m_nextOffset;
-
-            if ((offset + length) > m_buffer.capacity())
-            {
-                return m_observations.end();
-            }
-
-            m_buffer.putStringWithoutLength(offset + ErrorLogDescriptor::ENCODED_ERROR_OFFSET, encodedError);
-            m_buffer.putInt64(offset + ErrorLogDescriptor::FIRST_OBSERVATION_TIMESTAMP_OFFSET, timestamp);
-
-            m_nextOffset = util::BitUtil::align(offset + length, ErrorLogDescriptor::RECORD_ALIGNMENT);
-
-            it = m_observations.begin() + numObservations;
-
-            DistinctObservation &observation = *it;
-            observation.m_errorCode = errorCode;
-            observation.m_description = description;
-            observation.m_offset = offset;
-
-            std::atomic_store(&m_numObservations, numObservations + 1);
-
-            m_buffer.putInt32Ordered(offset + ErrorLogDescriptor::LENGTH_OFFSET, length);
-        }
-
-        return it;
+      return description + " " + message;
     }
 };
 

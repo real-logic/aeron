@@ -16,6 +16,8 @@
 #ifndef AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
 #define AERON_CONCURRENT_DISTINCT_ERROR_LOG_H
 
+#include <functional>
+#include <typeinfo>
 #include "concurrent/AtomicBuffer.h"
 extern "C"
 {

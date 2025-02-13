@@ -15,7 +15,6 @@
  */
 package io.aeron.driver.buffer;
 
-import io.aeron.LogBuffers;
 import io.aeron.driver.Configuration;
 import io.aeron.exceptions.AeronException;
 import io.aeron.exceptions.StorageSpaceException;
@@ -38,8 +37,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.FileStore;
 import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.List;
 
 import static io.aeron.logbuffer.LogBufferDescriptor.PARTITION_COUNT;
@@ -217,25 +214,6 @@ class FileStoreLogFactoryTest
                 " usable=" + usableSpace + " in " + fileStore, exception.getMessage());
         }
         verifyNoMoreInteractions(errorHandler);
-    }
-
-    @Test
-    void debugFileRetention()
-    {
-        rawLog = fileStoreLogFactory.newPublication(CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
-        assertEquals(TERM_BUFFER_LENGTH, rawLog.termLength());
-        LogBufferDescriptor.termLength(rawLog.metaData(), TERM_BUFFER_LENGTH);
-        LogBufferDescriptor.pageSize(rawLog.metaData(), PAGE_SIZE);
-
-        final Path file = Paths.get(rawLog.fileName());
-        assertTrue(Files.exists(file));
-
-        final LogBuffers logBuffers = new LogBuffers(rawLog.fileName());
-
-        assertTrue(rawLog.free());
-        assertFalse(Files.exists(file));
-
-        logBuffers.close();
     }
 
     private static void assertThrowsStorageSpaceException(

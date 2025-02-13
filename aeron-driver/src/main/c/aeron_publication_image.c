@@ -413,8 +413,6 @@ bool aeron_publication_image_free(aeron_publication_image_t *image)
         return false;
     }
 
-    fprintf(stdout, "*** %" PRIi64 " aeron_publication_image_free: correlationId=%" PRIi64 ", file=%s\n", aeron_epoch_clock(), image->conductor_fields.subscribable.correlation_id, image->log_file_name);
-
     aeron_counter_add_ordered(image->mapped_bytes_counter, -((int64_t)image->mapped_raw_log.mapped_file.length));
 
     aeron_free(image->log_file_name);
@@ -1179,7 +1177,6 @@ void aeron_publication_image_on_time_event(
 void aeron_publication_image_receiver_release(aeron_publication_image_t *image)
 {
     AERON_SET_RELEASE(image->has_receiver_released, true);
-    fprintf(stdout, "*** %" PRIi64 " aeron_publication_image_receiver_release: correlationId=%" PRIi64 "\n", aeron_epoch_clock(), image->conductor_fields.subscribable.correlation_id);
 }
 
 void aeron_publication_image_invalidate(aeron_publication_image_t *image, int32_t reason_length, const char *reason)

@@ -794,6 +794,8 @@ int aeron_client_conductor_linger_image(aeron_client_conductor_t *conductor, aer
     resource->resource.image = image;
     image->is_lingering = true;
 
+    fprintf(stdout, "*** [%lld] aeron_client_conductor_linger_image: correlationId=%lld\n", aeron_epoch_clock(), image->log_buffer->correlation_id);
+
     return 0;
 }
 
@@ -2305,8 +2307,10 @@ int aeron_client_conductor_release_log_buffer(aeron_client_conductor_t *conducto
 {
     if (--log_buffer->refcnt <= 0)
     {
-        aeron_int64_to_ptr_hash_map_remove(&conductor->log_buffer_by_id_map, log_buffer->correlation_id);
+        int64_t correlationId = log_buffer->correlation_id;
+        aeron_int64_to_ptr_hash_map_remove(&conductor->log_buffer_by_id_map, correlationId);
 
+        fprintf(stdout, "*** [%lld] aeron_client_conductor_release_log_buffer: correlationId=%lld\n", aeron_epoch_clock(), correlationId);
         aeron_log_buffer_delete(log_buffer);
     }
 

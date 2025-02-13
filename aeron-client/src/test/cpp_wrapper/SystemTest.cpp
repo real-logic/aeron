@@ -366,6 +366,8 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     ASSERT_EQ(0, subscription->imageCount());
     ASSERT_EQ(0, aeron_subscription_image_count(raw_subscription));
 
+    fprintf(stdout, "*** [%lld] Awaiting file deleted...\n", aeron_epoch_clock());
+
     auto deadline_ns = std::chrono::nanoseconds(m_driver.livenessTimeoutNs());
     auto zero_ns = std::chrono::nanoseconds(0);
     auto sleep_ms = std::chrono::milliseconds(10);
@@ -382,6 +384,8 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
 
     EXPECT_EQ(-1, aeron_file_length(image_log_file.c_str())) << image_log_file << " not deleted";
     EXPECT_EQ(-1, aeron_file_length(pub_log_file.c_str())) << pub_log_file << " not deleted";
+
+    fprintf(stdout, "*** [%lld] Test finished!\n", aeron_epoch_clock());
 }
 
 TEST_F(SystemTest, debugLogBufferFileDelete)

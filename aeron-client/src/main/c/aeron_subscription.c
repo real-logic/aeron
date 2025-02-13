@@ -188,6 +188,7 @@ int aeron_client_conductor_subscription_remove_image(aeron_subscription_t *subsc
     }
 
     image->removal_change_number = subscription->conductor_fields.next_change_number;
+    aeron_image_close(image);
 
     return aeron_client_conductor_subscription_install_new_image_list(subscription, new_image_list);
 }

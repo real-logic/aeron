@@ -723,7 +723,7 @@ void aeron_client_conductor_on_close(aeron_client_conductor_t *conductor)
 
 void aeron_client_conductor_force_close_image(void *clientd, const uint8_t *key, size_t key_len, void *value)
 {
-    aeron_image_force_close((aeron_image_t *)value);
+    aeron_image_close((aeron_image_t *)value);
 }
 
 void aeron_client_conductor_force_close_resource(void *clientd, int64_t key, void *value)
@@ -749,7 +749,7 @@ void aeron_client_conductor_force_close_resource(void *clientd, int64_t key, voi
             break;
 
         case AERON_CLIENT_TYPE_IMAGE:
-            aeron_image_force_close((aeron_image_t *)value);
+            aeron_image_close((aeron_image_t *)value);
             break;
 
         case AERON_CLIENT_TYPE_LOGBUFFER:

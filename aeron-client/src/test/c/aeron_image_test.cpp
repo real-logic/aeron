@@ -351,7 +351,7 @@ TEST_F(ImageTest, shouldStopReadingIfImageIsClosed)
     auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
     {
         handlerCallCount++;
-        aeron_image_force_close(m_image);
+        aeron_image_close(m_image);
     };
 
     EXPECT_EQ(imagePoll(handler, std::numeric_limits<size_t>::max()), 1);
@@ -599,7 +599,7 @@ TEST_F(ImageTest, shouldStopPeekOneFragmentToControlledFragmentHandlerIfImageIsC
     auto handler = [&](const uint8_t *buffer, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        aeron_image_force_close(m_image);
+        aeron_image_close(m_image);
         return AERON_ACTION_CONTINUE;
     };
 
@@ -823,7 +823,7 @@ TEST_F(ImageTest, shouldStopPollFragmentsToControlledFragmentHandlerIfImageIsClo
         -> aeron_controlled_fragment_handler_action_t
     {
         fragmentCount++;
-        aeron_image_force_close(m_image);
+        aeron_image_close(m_image);
         return AERON_ACTION_CONTINUE;
     };
 
@@ -932,7 +932,7 @@ TEST_F(ImageTest, shouldStopPollFragmentsToBoundedControlledFragmentHandlerIfIma
     auto handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         -> aeron_controlled_fragment_handler_action_t
     {
-        aeron_image_force_close(m_image);
+        aeron_image_close(m_image);
         return AERON_ACTION_CONTINUE;
     };
 
@@ -980,7 +980,7 @@ TEST_F(ImageTest, shouldStopPollFragmentsToBoundedFragmentHandlerIfImageIsClosed
 
     auto null_handler = [&](const uint8_t *, size_t length, aeron_header_t *header)
         {
-            aeron_image_force_close(m_image);
+            aeron_image_close(m_image);
         };
 
     EXPECT_EQ(imageBoundedPoll(null_handler, INT64_MAX, std::numeric_limits<size_t>::max()), 1);

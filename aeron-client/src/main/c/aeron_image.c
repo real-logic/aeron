@@ -122,11 +122,11 @@ int aeron_image_delete(aeron_image_t *image)
     return 0;
 }
 
-void aeron_image_force_close(aeron_image_t *image)
+void aeron_image_close(aeron_image_t *image)
 {
     AERON_GET_ACQUIRE(image->eos_position, image->metadata->end_of_stream_position);
-    AERON_SET_RELEASE(image->final_position, *image->subscriber_position);
-    AERON_SET_RELEASE(image->is_eos, (image->final_position >= image->eos_position));
+    image->final_position = aeron_counter_get_volatile(image->subscriber_position);
+    image->is_eos = image->final_position >= image->eos_position;
     AERON_SET_RELEASE(image->is_closed, true);
 }
 

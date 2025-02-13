@@ -222,7 +222,7 @@ class FileStoreLogFactoryTest
     @Test
     void debugFileRetention()
     {
-        rawLog = fileStoreLogFactory.newPublication(777777, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
+        rawLog = fileStoreLogFactory.newPublication(CREATION_ID, TERM_BUFFER_LENGTH, PRE_ZERO_LOG);
         assertEquals(TERM_BUFFER_LENGTH, rawLog.termLength());
         LogBufferDescriptor.termLength(rawLog.metaData(), TERM_BUFFER_LENGTH);
         LogBufferDescriptor.pageSize(rawLog.metaData(), PAGE_SIZE);

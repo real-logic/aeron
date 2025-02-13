@@ -203,8 +203,6 @@ int aeron_client_conductor_subscription_install_new_image_list(
 
     AERON_SET_RELEASE(subscription->conductor_fields.image_lists_head.next_list, image_list);
 
-    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
-
     return 0;
 }
 

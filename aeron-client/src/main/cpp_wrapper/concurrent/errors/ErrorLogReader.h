@@ -51,12 +51,12 @@ inline static int read(AtomicBuffer &buffer, const error_consumer_t &consumer, s
             last_observation_timestamp,
             std::string(encoded_exception, length));
     };
-    aeron_error_log_read(
+    return static_cast<int>(aeron_error_log_read(
         buffer.buffer(),
         buffer.capacity(),
         aeron_error_log_consumer,
         const_cast<void *>(reinterpret_cast<const void *>(&consumer)),
-        sinceTimestamp);
+        sinceTimestamp));
 }
 
 }}}}

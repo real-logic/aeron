@@ -144,13 +144,15 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithoutPoll)
     aeron_image_t *image = m_imageMap.find(image_id)->second;
 
     ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
+    EXPECT_EQ(aeron_subscription_last_image_list_change_number(m_subscription), -1);
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 1);
 
     ASSERT_EQ(aeron_client_conductor_subscription_remove_image(m_subscription, image), 0);
+    EXPECT_EQ(aeron_subscription_last_image_list_change_number(m_subscription), 0);
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
 
-    EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 0);
-    EXPECT_TRUE(
+    EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 2);
+    EXPECT_FALSE(
         aeron_image_is_in_use_by_subscription(image, aeron_subscription_last_image_list_change_number(m_subscription)));
 
     aeron_log_buffer_delete(image->log_buffer);
@@ -183,10 +185,11 @@ TEST_F(SubscriptionTest, shouldAddAndRemoveImageWithPollBetween)
     ASSERT_EQ(aeron_client_conductor_subscription_add_image(m_subscription, image), 0);
     ASSERT_EQ(aeron_subscription_poll(m_subscription, null_fragment_handler, this, 1), 0);
     ASSERT_EQ(aeron_client_conductor_subscription_remove_image(m_subscription, image), 0);
+    EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
 
     EXPECT_EQ(aeron_subscription_image_count(m_subscription), 0);
-    EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 1);
-    EXPECT_TRUE(
+    EXPECT_EQ(aeron_client_conductor_subscription_prune_image_lists(m_subscription), 2);
+    EXPECT_FALSE(
         aeron_image_is_in_use_by_subscription(image, aeron_subscription_last_image_list_change_number(m_subscription)));
 
     aeron_log_buffer_delete(image->log_buffer);

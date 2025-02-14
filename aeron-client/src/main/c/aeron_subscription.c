@@ -286,6 +286,8 @@ int aeron_subscription_image_count(aeron_subscription_t *subscription)
 
     AERON_GET_ACQUIRE(image_list, subscription->conductor_fields.image_lists_head.next_list);
 
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
+
     return (int)image_list->length;
 }
 
@@ -364,14 +366,11 @@ int aeron_subscription_image_retain(aeron_subscription_t *subscription, aeron_im
         return -1;
     }
 
-    /*
-    * Update the subscriptions last image change number so that if the subscription isn't polling or touching
-    * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
-    */
-    aeron_subscription_propose_last_image_change_number(
-        subscription, aeron_subscription_last_image_list_change_number(subscription));
-
     aeron_image_incr_refcnt(image);
+
+    aeron_image_list_t *volatile image_list;
+    AERON_GET_ACQUIRE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return 0;
 }
@@ -388,14 +387,11 @@ int aeron_subscription_image_release(aeron_subscription_t *subscription, aeron_i
         return -1;
     }
 
-    /*
-     * Update the subscriptions last image change number so that if the subscription isn't polling or touching
-     * or touched the image list, then at least this will allow the previous image_lists to be reclaimed.
-     */
-    aeron_subscription_propose_last_image_change_number(
-        subscription, aeron_subscription_last_image_list_change_number(subscription));
-
     aeron_image_decr_refcnt(image);
+
+    aeron_image_list_t *volatile image_list;
+    AERON_GET_ACQUIRE(image_list, subscription->conductor_fields.image_lists_head.next_list);
+    aeron_subscription_propose_last_image_change_number(subscription, image_list->change_number);
 
     return 0;
 }

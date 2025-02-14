@@ -519,6 +519,7 @@ int aeron_client_conductor_check_lingering_resources(aeron_client_conductor_t *c
                 if (!aeron_image_is_in_use_by_subscription(
                     image, aeron_subscription_last_image_list_change_number(image->subscription)))
                 {
+                    aeron_client_conductor_subscription_prune_image_lists(image->subscription);
                     aeron_image_decr_refcnt(image);
                     image->subscription = NULL;
                     image->removal_change_number = INT64_MIN;

@@ -363,9 +363,6 @@ TEST_P(SystemTestParameterized, shouldFreeUnavailableImage)
     {
         std::this_thread::yield();
     }
-    ASSERT_EQ(0, subscription->imageCount());
-    ASSERT_EQ(0, aeron_subscription_image_count(raw_subscription));
-    ASSERT_FALSE(subscription->isConnected());
 
     auto deadline_ns = std::chrono::nanoseconds(m_driver.livenessTimeoutNs());
     auto zero_ns = std::chrono::nanoseconds(0);

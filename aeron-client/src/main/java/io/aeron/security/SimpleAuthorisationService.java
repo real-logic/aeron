@@ -25,7 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Authorisation service that supports setting general and per-principal rules as well as scoping to protocol, action
+ * Authorisation service that supports setting general and per-principal rules as well as scoping to protocol, action,
  * and type. Uses a fluent API to add authorisation rules.
  */
 public final class SimpleAuthorisationService implements AuthorisationService
@@ -105,11 +105,11 @@ public final class SimpleAuthorisationService implements AuthorisationService
         }
 
         /**
-         * Add rule for a specific principal that is scope to a protocolId, actionId, and type.
+         * Add rule for a specific principal that is scoped to a protocolId, actionId, and type.
          *
          * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
          * @param actionId         <code>sbe:message@id</code> value that the rule applies to.
-         * @param type             a parameter of the message can be used to narrow the scope of the authorisation
+         * @param type             A parameter of the message can be used to narrow the scope of the authorisation
          *                         rule. This is message dependent.
          * @param encodedPrincipal The principal encoded as byte array.
          * @param isAllowed        If the rule should allow or deny access.
@@ -134,7 +134,7 @@ public final class SimpleAuthorisationService implements AuthorisationService
         }
 
         /**
-         * Add rule for a specific principal that is scope to a protocolId and actionId.
+         * Add rule for a specific principal that is scoped to a protocolId, and actionId.
          *
          * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
          * @param actionId         <code>sbe:message@id</code> value that the rule applies to.
@@ -156,7 +156,7 @@ public final class SimpleAuthorisationService implements AuthorisationService
         }
 
         /**
-         * Add rule for a specific principal that is scope to a protocolId.
+         * Add rule for a specific principal that is scoped to a protocolId.
          *
          * @param protocolId       <code>sbe:messageSchema@id</code> value that the rule applies to.
          * @param encodedPrincipal The principal encoded as byte array.
@@ -176,11 +176,11 @@ public final class SimpleAuthorisationService implements AuthorisationService
         }
 
         /**
-         * Add rule for all principals that is scoped to a protocolId, actionId and type.
+         * Add rule for all principals that is scoped to a protocolId, actionId, and type.
          *
          * @param protocolId <code>sbe:messageSchema@id</code> value that the rule applies to.
          * @param actionId   <code>sbe:message@id</code> value that the rule applies to.
-         * @param type       a parameter of the message can be used to narrow the scope of the authorisation
+         * @param type       A parameter of the message can be used to narrow the scope of the authorisation
          *                   rule. This is message dependent.
          * @param isAllowed  If the rule should allow or deny access.
          * @return this for a fluent API.
@@ -290,10 +290,12 @@ public final class SimpleAuthorisationService implements AuthorisationService
             {
                 return true;
             }
+
             if (o == null || getClass() != o.getClass())
             {
                 return false;
             }
+
             final ByteArrayAsKey that = (ByteArrayAsKey)o;
             return Arrays.equals(data, that.data);
         }

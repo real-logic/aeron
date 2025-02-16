@@ -285,7 +285,7 @@ public class ArchiveMarkFile implements AutoCloseable
             final UnsafeBuffer emptyBuffer = new UnsafeBuffer();
             headerEncoder.wrap(emptyBuffer, 0);
             headerDecoder.wrap(emptyBuffer, 0, 0, 0);
-            errorBuffer.wrap(emptyBuffer, 0, 0);
+            errorBuffer.wrap(0, 0);
         }
     }
 

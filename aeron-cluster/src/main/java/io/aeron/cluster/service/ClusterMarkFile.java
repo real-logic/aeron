@@ -336,7 +336,7 @@ public final class ClusterMarkFile implements AutoCloseable
             final UnsafeBuffer emptyBuffer = new UnsafeBuffer();
             headerEncoder.wrap(emptyBuffer, 0);
             headerDecoder.wrap(emptyBuffer, 0, 0, 0);
-            errorBuffer.wrap(emptyBuffer, 0, 0);
+            errorBuffer.wrap(0, 0);
         }
     }
 
@@ -558,17 +558,22 @@ public final class ClusterMarkFile implements AutoCloseable
     /**
      * The control properties for communicating between the consensus module and the services.
      *
-     * @return the control properties for communicating between the consensus module and the services.
+     * @return the control properties for communicating between the consensus module and the services or {@code null}
+     * if mark file was already closed.
      */
     public ClusterNodeControlProperties loadControlProperties()
     {
-        headerDecoder.sbeRewind();
-        return new ClusterNodeControlProperties(
-            headerDecoder.memberId(),
-            headerDecoder.serviceStreamId(),
-            headerDecoder.consensusModuleStreamId(),
-            headerDecoder.aeronDirectory(),
-            headerDecoder.controlChannel());
+        if (!markFile.isClosed())
+        {
+            headerDecoder.sbeRewind();
+            return new ClusterNodeControlProperties(
+                headerDecoder.memberId(),
+                headerDecoder.serviceStreamId(),
+                headerDecoder.consensusModuleStreamId(),
+                headerDecoder.aeronDirectory(),
+                headerDecoder.controlChannel());
+        }
+        return null;
     }
 
     /**

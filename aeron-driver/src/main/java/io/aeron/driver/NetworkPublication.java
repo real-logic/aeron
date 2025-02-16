@@ -606,8 +606,11 @@ public final class NetworkPublication
             }
             while (remainingBytes > 0);
 
-            retransmitsSent.incrementOrdered();
-            retransmittedBytes.getAndAddOrdered(totalBytesSent);
+            if (totalBytesSent > 0)
+            {
+                retransmitsSent.incrementOrdered();
+                retransmittedBytes.getAndAddOrdered(totalBytesSent);
+            }
         }
     }
 

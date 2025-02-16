@@ -685,7 +685,7 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
         term_id, term_offset, publication->position_bits_to_shift, publication->initial_term_id);
     int32_t term_length = publication->term_length_mask + 1;
     int64_t bottom_resend_window =
-        sender_position - (int64_t)(term_length / 2) - (int64_t)aeron_compute_max_message_length(term_length);
+        sender_position - (int64_t)(term_length >> 1) - (int64_t)aeron_compute_max_message_length(term_length);
     int result = 0;
 
     if (bottom_resend_window <= resend_position && resend_position < sender_position)
@@ -738,8 +738,11 @@ int aeron_network_publication_resend(void *clientd, int32_t term_id, int32_t ter
         }
         while (remaining_bytes > 0);
 
-        aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
-        aeron_counter_add_ordered(publication->retransmitted_bytes_counter, total_bytes_sent);
+        if (total_bytes_sent > 0)
+        {
+            aeron_counter_ordered_increment(publication->retransmits_sent_counter, 1);
+            aeron_counter_add_ordered(publication->retransmitted_bytes_counter, total_bytes_sent);
+        }
     }
 
     if (NULL != publication->log.resend)

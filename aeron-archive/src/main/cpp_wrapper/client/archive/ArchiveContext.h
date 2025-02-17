@@ -16,6 +16,11 @@
 #ifndef AERON_ARCHIVE_WRAPPER_CONTEXT_H
 #define AERON_ARCHIVE_WRAPPER_CONTEXT_H
 
+extern "C"
+{
+#include "client/aeron_archive_context.h"
+}
+
 #include "AeronArchive.h"
 #include "CredentialsSupplier.h"
 #include "concurrent/YieldingIdleStrategy.h"
@@ -80,6 +85,13 @@ public:
         }
 
         setupContext();
+    }
+
+    Context clone()
+    {
+        aeron_archive_context_t *new_ctx = nullptr;
+        aeron_archive_context_duplicate(&new_ctx, m_aeron_archive_ctx_t);
+        return Context(new_ctx);
     }
 
     ~Context()

@@ -186,7 +186,7 @@ public abstract class AbstractMinMulticastFlowControl
             receivers = truncateReceivers(receivers, removed);
             hasRequiredReceivers = receivers.length >= groupMinSize;
             this.receivers = receivers;
-            receiverCount.setOrdered(receivers.length);
+            receiverCount.setRelease(receivers.length);
         }
 
         return receivers.length < groupMinSize || receivers.length == 0 ? senderLimit : minLimitPosition;
@@ -275,7 +275,7 @@ public abstract class AbstractMinMulticastFlowControl
             this.receivers = receivers;
             minPosition = Math.min(minPosition, lastPositionPlusWindow);
             receiverAdded(receiver.receiverId, receiver.sessionId, receiver.streamId, channel, receivers.length);
-            receiverCount.setOrdered(receivers.length);
+            receiverCount.setRelease(receivers.length);
             lastSetupSenderLimit = -1;
         }
 

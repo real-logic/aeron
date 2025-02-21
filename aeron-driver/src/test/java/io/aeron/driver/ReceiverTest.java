@@ -513,14 +513,14 @@ class ReceiverTest
 
         assertThat(commandsRead, is(1));
 
-        verify(mockHighestReceivedPosition).setOrdered(initialTermOffset);
+        verify(mockHighestReceivedPosition).setRelease(initialTermOffset);
 
         receiver.doWork();
 
         fillDataFrame(dataHeader, initialTermOffset);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress, 0);
 
-        verify(mockHighestReceivedPosition).setOrdered(initialTermOffset + alignedDataFrameLength);
+        verify(mockHighestReceivedPosition).setRelease(initialTermOffset + alignedDataFrameLength);
 
         final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],

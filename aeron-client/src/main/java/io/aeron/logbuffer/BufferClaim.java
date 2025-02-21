@@ -183,7 +183,7 @@ public final class BufferClaim
             frameLength = Integer.reverseBytes(frameLength);
         }
 
-        buffer.putIntOrdered(FRAME_LENGTH_FIELD_OFFSET, frameLength);
+        buffer.putIntRelease(FRAME_LENGTH_FIELD_OFFSET, frameLength);
     }
 
     /**
@@ -198,7 +198,7 @@ public final class BufferClaim
         }
 
         buffer.putShort(TYPE_FIELD_OFFSET, (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
-        buffer.putIntOrdered(FRAME_LENGTH_FIELD_OFFSET, frameLength);
+        buffer.putIntRelease(FRAME_LENGTH_FIELD_OFFSET, frameLength);
     }
 }
 

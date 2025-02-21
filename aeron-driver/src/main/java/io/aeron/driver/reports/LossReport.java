@@ -157,7 +157,7 @@ public final class LossReport
             buffer.putStringAscii(
                 offset + CHANNEL_OFFSET + BitUtil.align(encodedChannelLength, SIZE_OF_INT), source);
 
-            buffer.putLongOrdered(offset + OBSERVATION_COUNT_OFFSET, 1);
+            buffer.putLongRelease(offset + OBSERVATION_COUNT_OFFSET, 1);
 
             reportEntry = new ReportEntry(buffer, offset);
             nextRecordOffset += BitUtil.align(requiredCapacity, ENTRY_ALIGNMENT);
@@ -200,7 +200,7 @@ public final class LossReport
          */
         public void recordObservation(final long bytesLost, final long timestampMs)
         {
-            buffer.putLongOrdered(offset + LAST_OBSERVATION_OFFSET, timestampMs);
+            buffer.putLongRelease(offset + LAST_OBSERVATION_OFFSET, timestampMs);
             buffer.getAndAddLong(offset + TOTAL_BYTES_LOST_OFFSET, bytesLost);
             buffer.getAndAddLong(offset + OBSERVATION_COUNT_OFFSET, 1);
         }

@@ -317,7 +317,7 @@ public class FrameDescriptor
             length = Integer.reverseBytes(frameLength);
         }
 
-        buffer.putIntOrdered(termOffset, length);
+        buffer.putIntRelease(termOffset, length);
     }
 
     /**

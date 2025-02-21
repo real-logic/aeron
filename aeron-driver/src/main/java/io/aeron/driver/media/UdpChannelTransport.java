@@ -250,7 +250,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         {
             if (null != statusIndicator)
             {
-                statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+                statusIndicator.setRelease(ChannelEndpointStatus.ERRORED);
             }
 
             CloseHelper.quietClose(sendDatagramChannel);
@@ -496,7 +496,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
 
                 if (null != statusIndicator)
                 {
-                    statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+                    statusIndicator.setRelease(ChannelEndpointStatus.ACTIVE);
                 }
             }
         }
@@ -504,7 +504,7 @@ public abstract class UdpChannelTransport implements AutoCloseable
         {
             if (null != statusIndicator)
             {
-                statusIndicator.setOrdered(ChannelEndpointStatus.ERRORED);
+                statusIndicator.setRelease(ChannelEndpointStatus.ERRORED);
             }
 
             final String message = "re-resolve endpoint channel error - " + ex.getMessage() +

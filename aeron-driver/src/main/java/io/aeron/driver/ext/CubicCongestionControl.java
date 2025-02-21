@@ -153,8 +153,8 @@ public class CubicCongestionControl implements CongestionControl
                 udpChannel.originalUriString());
 
             windowLength = this.initialWindowLength;
-            rttIndicator.setOrdered(0);
-            windowIndicator.setOrdered(this.initialWindowLength);
+            rttIndicator.setRelease(0);
+            windowIndicator.setRelease(this.initialWindowLength);
 
             lastLossTimestampNs = nanoClock.nanoTime();
             lastUpdateTimestampNs = lastLossTimestampNs;
@@ -198,7 +198,7 @@ public class CubicCongestionControl implements CongestionControl
     {
         lastRttTimestampNs = nowNs;
         this.rttNs = rttNs;
-        rttIndicator.setOrdered(rttNs);
+        rttIndicator.setRelease(rttNs);
         rttTimeoutNs = Math.max(rttNs, CubicCongestionControlConfiguration.INITIAL_RTT_NS) * RTT_TIMEOUT_MULTIPLE;
     }
 
@@ -223,7 +223,7 @@ public class CubicCongestionControl implements CongestionControl
             k = StrictMath.cbrt((double)w_max * B / C);
             cwnd = Math.max(1, (int)(cwnd * (1.0 - B)));
             windowLength = cwnd * mtu;
-            windowIndicator.setOrdered(windowLength);
+            windowIndicator.setRelease(windowLength);
 
             lastLossTimestampNs = nowNs;
         }
@@ -251,7 +251,7 @@ public class CubicCongestionControl implements CongestionControl
             if (windowLength != this.windowLength)
             {
                 this.windowLength = windowLength;
-                windowIndicator.setOrdered(windowLength);
+                windowIndicator.setRelease(windowLength);
             }
 
             lastUpdateTimestampNs = nowNs;

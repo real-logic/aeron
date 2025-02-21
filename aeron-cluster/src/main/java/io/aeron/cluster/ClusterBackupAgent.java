@@ -186,7 +186,7 @@ public final class ClusterBackupAgent implements Agent
             backupArchive.controlResponsePoller().subscription());
 
         final long nowMs = epochClock.time();
-        nextQueryDeadlineMsCounter.setOrdered(nowMs - 1);
+        nextQueryDeadlineMsCounter.setRelease(nowMs - 1);
         timeOfLastProgressMs = nowMs;
     }
 
@@ -870,7 +870,7 @@ public final class ClusterBackupAgent implements Agent
                     countersReader, (int)liveLogReplaySessionId, backupArchive.archiveId());
                 if (NULL_COUNTER_ID != liveLogRecordingCounterId)
                 {
-                    liveLogPositionCounter.setOrdered(countersReader.getCounterValue(liveLogRecordingCounterId));
+                    liveLogPositionCounter.setRelease(countersReader.getCounterValue(liveLogRecordingCounterId));
                     liveLogRecordingId = RecordingPos.getRecordingId(countersReader, liveLogRecordingCounterId);
                     timeOfLastBackupQueryMs = nowMs;
                     timeOfLastProgressMs = nowMs;
@@ -968,7 +968,7 @@ public final class ClusterBackupAgent implements Agent
             recordingLog.force(2);
             if (!snapshotsRetrieved.isEmpty())
             {
-                ctx.snapshotRetrieveCounter().incrementOrdered();
+                ctx.snapshotRetrieveCounter().incrementRelease();
             }
 
             if (null != eventsListener)
@@ -981,7 +981,7 @@ public final class ClusterBackupAgent implements Agent
         snapshotsToRetrieve.clear();
 
         timeOfLastProgressMs = nowMs;
-        nextQueryDeadlineMsCounter.setOrdered(nowMs + backupQueryIntervalMs);
+        nextQueryDeadlineMsCounter.setRelease(nowMs + backupQueryIntervalMs);
         state(BACKING_UP, nowMs);
 
         return 1;
@@ -1003,7 +1003,7 @@ public final class ClusterBackupAgent implements Agent
         {
             final long liveLogPosition = aeron.countersReader().getCounterValue(liveLogRecordingCounterId);
 
-            if (liveLogPositionCounter.proposeMaxOrdered(liveLogPosition))
+            if (liveLogPositionCounter.proposeMaxRelease(liveLogPosition))
             {
                 if (null != eventsListener)
                 {
@@ -1028,7 +1028,7 @@ public final class ClusterBackupAgent implements Agent
 
         if (!stateCounter.isClosed())
         {
-            stateCounter.setOrdered(newState.code());
+            stateCounter.setRelease(newState.code());
         }
 
         state = newState;

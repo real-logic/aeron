@@ -321,7 +321,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
         final int neighborCount = neighborList.size();
         if (neighborsCounter.getWeak() != neighborCount)
         {
-            neighborsCounter.setOrdered(neighborCount);
+            neighborsCounter.setRelease(neighborCount);
         }
 
         return workCount;
@@ -447,7 +447,7 @@ final class DriverNameResolver implements AutoCloseable, UdpNameResolutionTransp
                     InetAddress.getByAddress(neighborAddress), port), timeOfLastActivity);
                 Neighbor.neighborAdded(nowMs, neighbor.socketAddress);
                 neighborList.add(neighbor);
-                neighborsCounter.setOrdered(neighborList.size());
+                neighborsCounter.setRelease(neighborList.size());
             }
             catch (final Exception ex)
             {

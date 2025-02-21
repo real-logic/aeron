@@ -466,7 +466,7 @@ public final class NetworkPublication
 
         timeOfLastStatusMessageNs = timeNs;
 
-        senderLimit.setOrdered(flowControl.onStatusMessage(
+        senderLimit.setRelease(flowControl.onStatusMessage(
             msg,
             srcAddress,
             senderLimit.get(),
@@ -608,8 +608,8 @@ public final class NetworkPublication
 
             if (totalBytesSent > 0)
             {
-                retransmitsSent.incrementOrdered();
-                retransmittedBytes.getAndAddOrdered(totalBytesSent);
+                retransmitsSent.incrementRelease();
+                retransmittedBytes.getAndAddRelease(totalBytesSent);
             }
         }
     }
@@ -634,12 +634,12 @@ public final class NetworkPublication
             if (spiesSimulateConnection && hasSpies && !hasReceivers)
             {
                 final long newSenderPosition = maxSpyPosition(senderPosition);
-                this.senderPosition.setOrdered(newSenderPosition);
-                senderLimit.setOrdered(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
+                this.senderPosition.setRelease(newSenderPosition);
+                senderLimit.setRelease(flowControl.onIdle(nowNs, newSenderPosition, newSenderPosition, isEndOfStream));
             }
             else
             {
-                senderLimit.setOrdered(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
+                senderLimit.setRelease(flowControl.onIdle(nowNs, senderLimit.get(), senderPosition, isEndOfStream));
             }
 
             updateHasReceivers(nowNs);
@@ -730,7 +730,7 @@ public final class NetworkPublication
             final long producerPosition = producerPosition();
             final long senderPosition = this.senderPosition.getVolatile();
 
-            publisherPos.setOrdered(producerPosition);
+            publisherPos.setRelease(producerPosition);
 
             if (hasRequiredReceivers() || (spiesSimulateConnection && spyPositions.length > 0))
             {
@@ -745,7 +745,7 @@ public final class NetworkPublication
                 if (proposedPublisherLimit > publisherLimit)
                 {
                     cleanBufferTo(minConsumerPosition - termBufferLength);
-                    this.publisherLimit.setOrdered(proposedPublisherLimit);
+                    this.publisherLimit.setRelease(proposedPublisherLimit);
                     workCount = 1;
                 }
             }
@@ -756,7 +756,7 @@ public final class NetworkPublication
                     LogBufferDescriptor.isConnected(metaDataBuffer, false);
                     isConnected = false;
                 }
-                publisherLimit.setOrdered(senderPosition);
+                publisherLimit.setRelease(senderPosition);
                 cleanBufferTo(senderPosition - termBufferLength);
                 workCount = 1;
             }
@@ -805,7 +805,7 @@ public final class NetworkPublication
                     trackSenderLimits = true;
 
                     bytesSent = available + padding(scanOutcome);
-                    this.senderPosition.setOrdered(senderPosition + bytesSent);
+                    this.senderPosition.setRelease(senderPosition + bytesSent);
                 }
                 else
                 {
@@ -817,16 +817,16 @@ public final class NetworkPublication
                 if (trackSenderLimits)
                 {
                     trackSenderLimits = false;
-                    senderBpe.incrementOrdered();
-                    senderFlowControlLimits.incrementOrdered();
+                    senderBpe.incrementRelease();
+                    senderFlowControlLimits.incrementRelease();
                 }
             }
         }
         else if (trackSenderLimits)
         {
             trackSenderLimits = false;
-            senderBpe.incrementOrdered();
-            senderFlowControlLimits.incrementOrdered();
+            senderBpe.incrementRelease();
+            senderFlowControlLimits.incrementRelease();
         }
 
         return bytesSent;
@@ -893,7 +893,7 @@ public final class NetworkPublication
             }
 
             timeOfLastDataOrHeartbeatNs = nowNs;
-            heartbeatsSent.incrementOrdered();
+            heartbeatsSent.incrementRelease();
         }
 
         return bytesSent;
@@ -910,7 +910,7 @@ public final class NetworkPublication
             final int length = Math.min(bytesForCleaning, termBufferLength - termOffset);
 
             dirtyTermBuffer.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
-            dirtyTermBuffer.putLongOrdered(termOffset, 0);
+            dirtyTermBuffer.putLongRelease(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }
@@ -923,7 +923,7 @@ public final class NetworkPublication
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                 {
-                    unblockedPublications.incrementOrdered();
+                    unblockedPublications.incrementRelease();
                 }
             }
         }
@@ -1059,7 +1059,7 @@ public final class NetworkPublication
             {
                 updateConnectedStatus();
                 final long producerPosition = producerPosition();
-                publisherPos.setOrdered(producerPosition);
+                publisherPos.setRelease(producerPosition);
                 if (!isExclusive)
                 {
                     checkForBlockedPublisher(producerPosition, senderPosition.getVolatile(), timeNs);
@@ -1071,13 +1071,13 @@ public final class NetworkPublication
             case DRAINING:
             {
                 final long producerPosition = producerPosition();
-                publisherPos.setOrdered(producerPosition);
+                publisherPos.setRelease(producerPosition);
                 final long senderPosition = this.senderPosition.getVolatile();
                 if (producerPosition > senderPosition)
                 {
                     if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, senderPosition, termBufferLength))
                     {
-                        unblockedPublications.incrementOrdered();
+                        unblockedPublications.incrementRelease();
                         break;
                     }
 
@@ -1137,7 +1137,7 @@ public final class NetworkPublication
         if (0 == --refCount)
         {
             final long producerPosition = producerPosition();
-            publisherLimit.setOrdered(producerPosition);
+            publisherLimit.setRelease(producerPosition);
             endOfStreamPosition(metaDataBuffer, producerPosition);
 
             if (senderPosition.getVolatile() >= producerPosition)

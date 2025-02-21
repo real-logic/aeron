@@ -606,7 +606,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + alignedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -641,7 +641,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -706,7 +706,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + alignedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -747,7 +747,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -832,7 +832,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + alignedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -872,7 +872,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + framedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -952,7 +952,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + alignedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -977,7 +977,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int termLength = termBuffer.capacity();
 
         int resultingOffset = termOffset + alignedLength;
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
 
         if (resultingOffset > termLength)
         {
@@ -1003,7 +1003,7 @@ public final class ExclusivePublication extends ExclusivePublicationValues
         final int resultingOffset = termOffset + length;
         final int lengthOfFirstFrame = buffer.getInt(offset, LITTLE_ENDIAN);
 
-        logMetaDataBuffer.putLongOrdered(tailCounterOffset, packTail(termId, resultingOffset));
+        logMetaDataBuffer.putLongRelease(tailCounterOffset, packTail(termId, resultingOffset));
         buffer.putInt(offset, 0, LITTLE_ENDIAN);
         termBuffer.putBytes(termOffset, buffer, offset, length);
         frameLengthOrdered(termBuffer, termOffset, lengthOfFirstFrame);

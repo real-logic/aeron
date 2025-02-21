@@ -94,7 +94,7 @@ class RecordingSessionTest
                 positionLong = invocation.getArgument(0);
                 return null;
             })
-            .when(mockPosition).setOrdered(anyLong());
+            .when(mockPosition).setRelease(anyLong());
 
         termFilePath = Files.createTempFile("test.rec", "sourceIdentity");
 

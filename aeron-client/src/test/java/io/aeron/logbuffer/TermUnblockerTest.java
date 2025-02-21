@@ -82,7 +82,7 @@ class TermUnblockerTest
         final InOrder inOrder = inOrder(mockTermBuffer);
         inOrder.verify(mockTermBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
         inOrder.verify(mockTermBuffer).putInt(termOffsetOffset(termOffset), termOffset, LITTLE_ENDIAN);
-        inOrder.verify(mockTermBuffer).putIntOrdered(termOffset, messageLength);
+        inOrder.verify(mockTermBuffer).putIntRelease(termOffset, messageLength);
     }
 
     @Test
@@ -101,7 +101,7 @@ class TermUnblockerTest
         final InOrder inOrder = inOrder(mockTermBuffer);
         inOrder.verify(mockTermBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
         inOrder.verify(mockTermBuffer).putInt(termOffsetOffset(termOffset), termOffset, LITTLE_ENDIAN);
-        inOrder.verify(mockTermBuffer).putIntOrdered(termOffset, messageLength);
+        inOrder.verify(mockTermBuffer).putIntRelease(termOffset, messageLength);
     }
 
     @Test
@@ -119,7 +119,7 @@ class TermUnblockerTest
         final InOrder inOrder = inOrder(mockTermBuffer);
         inOrder.verify(mockTermBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
         inOrder.verify(mockTermBuffer).putInt(termOffsetOffset(termOffset), termOffset, LITTLE_ENDIAN);
-        inOrder.verify(mockTermBuffer).putIntOrdered(termOffset, messageLength);
+        inOrder.verify(mockTermBuffer).putIntRelease(termOffset, messageLength);
     }
 
     @Test
@@ -137,7 +137,7 @@ class TermUnblockerTest
         final InOrder inOrder = inOrder(mockTermBuffer);
         inOrder.verify(mockTermBuffer).putShort(typeOffset(termOffset), (short)HDR_TYPE_PAD, LITTLE_ENDIAN);
         inOrder.verify(mockTermBuffer).putInt(termOffsetOffset(termOffset), termOffset, LITTLE_ENDIAN);
-        inOrder.verify(mockTermBuffer).putIntOrdered(termOffset, messageLength);
+        inOrder.verify(mockTermBuffer).putIntRelease(termOffset, messageLength);
     }
 
     @Test

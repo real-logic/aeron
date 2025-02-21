@@ -151,7 +151,7 @@ final class ControlSession implements Session
         controlSessionAdapter.removeControlSession(controlSessionId);
         if (!conductor.context().controlSessionsCounter().isClosed())
         {
-            conductor.context().controlSessionsCounter().decrementOrdered();
+            conductor.context().controlSessionsCounter().decrementRelease();
         }
 
         if (null != abortReason && !SESSION_CLOSED_MSG.equals(abortReason))

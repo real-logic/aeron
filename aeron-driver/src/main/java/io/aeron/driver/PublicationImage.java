@@ -273,8 +273,8 @@ public final class PublicationImage
         lastOverrunThreshold = position + (termLength >> 1);
         cleanPosition = position;
 
-        hwmPosition.setOrdered(position);
-        rebuildPosition.setOrdered(position);
+        hwmPosition.setRelease(position);
+        rebuildPosition.setRelease(position);
     }
 
     /**
@@ -564,7 +564,7 @@ public final class PublicationImage
 
             final int rebuildTermOffset = (int)(rebuildPosition & termLengthMask);
             final long newRebuildPosition = (rebuildPosition - rebuildTermOffset) + rebuildOffset(scanOutcome);
-            this.rebuildPosition.proposeMaxOrdered(newRebuildPosition);
+            this.rebuildPosition.proposeMaxRelease(newRebuildPosition);
 
             final long ccOutcome = congestionControl.onTrackRebuild(
                 nowNs,
@@ -646,12 +646,12 @@ public final class PublicationImage
                         }
                     }
 
-                    hwmPosition.proposeMaxOrdered(proposedPosition);
-                    heartbeatsReceived.incrementOrdered();
+                    hwmPosition.proposeMaxRelease(proposedPosition);
+                    heartbeatsReceived.incrementRelease();
                 }
                 else
                 {
-                    flowControlUnderRuns.incrementOrdered();
+                    flowControlUnderRuns.incrementRelease();
                 }
             }
             else if (!isFlowControlUnderRun(packetPosition))
@@ -663,7 +663,7 @@ public final class PublicationImage
                 final UnsafeBuffer termBuffer = termBuffers[indexByPosition(packetPosition, positionBitsToShift)];
                 TermRebuilder.insert(termBuffer, termOffset, buffer, length);
 
-                hwmPosition.proposeMaxOrdered(proposedPosition);
+                hwmPosition.proposeMaxRelease(proposedPosition);
             }
             else if (packetPosition >= (lastSmPosition - maxReceiverWindowLength))
             {
@@ -762,7 +762,7 @@ public final class PublicationImage
                 channelEndpoint.sendStatusMessage(
                     imageConnections, sessionId, streamId, termId, termOffset, receiverWindowLength, flags);
 
-                statusMessagesSent.incrementOrdered();
+                statusMessagesSent.incrementRelease();
 
                 lastSmPosition = smPosition;
                 lastOverrunThreshold = smPosition + (termLength >> 1);
@@ -801,14 +801,14 @@ public final class PublicationImage
                 if (isReliable)
                 {
                     channelEndpoint.sendNakMessage(imageConnections, sessionId, streamId, termId, termOffset, length);
-                    nakMessagesSent.incrementOrdered();
+                    nakMessagesSent.incrementRelease();
                 }
                 else
                 {
                     final UnsafeBuffer termBuffer = termBuffers[indexByTerm(initialTermId, termId)];
                     if (tryFillGap(rawLog.metaData(), termBuffer, termId, termOffset, length))
                     {
-                        lossGapFills.incrementOrdered();
+                        lossGapFills.incrementRelease();
                     }
                 }
 
@@ -984,7 +984,7 @@ public final class PublicationImage
 
         if (isFlowControlUnderRun)
         {
-            flowControlUnderRuns.incrementOrdered();
+            flowControlUnderRuns.incrementRelease();
         }
 
         return isFlowControlUnderRun;
@@ -996,7 +996,7 @@ public final class PublicationImage
 
         if (isFlowControlOverRun)
         {
-            flowControlOverRuns.incrementOrdered();
+            flowControlOverRuns.incrementRelease();
         }
 
         return isFlowControlOverRun;
@@ -1013,7 +1013,7 @@ public final class PublicationImage
             final int length = Math.min(bytesForCleaning, dirtyTermBuffer.capacity() - termOffset);
 
             dirtyTermBuffer.setMemory(termOffset, length - SIZE_OF_LONG, (byte)0);
-            dirtyTermBuffer.putLongOrdered(termOffset + (length - SIZE_OF_LONG), 0);
+            dirtyTermBuffer.putLongRelease(termOffset + (length - SIZE_OF_LONG), 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

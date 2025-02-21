@@ -71,7 +71,7 @@ final class DriverNameResolverCache implements AutoCloseable
                 Arrays.copyOf(address, addressLength),
                 port);
             entries.add(entry);
-            cacheEntriesCounter.setOrdered(entries.size());
+            cacheEntriesCounter.setRelease(entries.size());
         }
         else
         {
@@ -99,7 +99,7 @@ final class DriverNameResolverCache implements AutoCloseable
             if (entry.deadlineMs - nowMs < 0)
             {
                 ArrayListUtil.fastUnorderedRemove(listOfEntries, i, lastIndex--);
-                cacheEntriesCounter.setOrdered(listOfEntries.size());
+                cacheEntriesCounter.setRelease(listOfEntries.size());
                 workCount++;
             }
         }

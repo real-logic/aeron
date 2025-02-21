@@ -258,6 +258,6 @@ class SubscriptionTest
             LocalSocketAddressStatus.LOCAL_SOCKET_ADDRESS_STATUS_TYPE_ID);
 
         LocalSocketAddressStatus.updateBindAddress(counter, address, (UnsafeBuffer)countersManager.metaDataBuffer());
-        counter.setOrdered(status);
+        counter.setRelease(status);
     }
 }

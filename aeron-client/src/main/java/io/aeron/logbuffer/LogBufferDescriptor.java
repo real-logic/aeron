@@ -578,7 +578,7 @@ public class LogBufferDescriptor
      */
     public static void isConnected(final UnsafeBuffer metadataBuffer, final boolean isConnected)
     {
-        metadataBuffer.putIntOrdered(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
+        metadataBuffer.putIntRelease(LOG_IS_CONNECTED_OFFSET, isConnected ? 1 : 0);
     }
 
     /**
@@ -600,7 +600,7 @@ public class LogBufferDescriptor
      */
     public static void activeTransportCount(final UnsafeBuffer metadataBuffer, final int numberOfActiveTransports)
     {
-        metadataBuffer.putIntOrdered(LOG_ACTIVE_TRANSPORT_COUNT, numberOfActiveTransports);
+        metadataBuffer.putIntRelease(LOG_ACTIVE_TRANSPORT_COUNT, numberOfActiveTransports);
     }
 
     /**
@@ -622,7 +622,7 @@ public class LogBufferDescriptor
      */
     public static void endOfStreamPosition(final UnsafeBuffer metadataBuffer, final long position)
     {
-        metadataBuffer.putLongOrdered(LOG_END_OF_STREAM_POSITION_OFFSET, position);
+        metadataBuffer.putLongRelease(LOG_END_OF_STREAM_POSITION_OFFSET, position);
     }
 
     /**
@@ -638,14 +638,14 @@ public class LogBufferDescriptor
     }
 
     /**
-     * Set the value of the current active term count for the producer using memory ordered semantics.
+     * Set the value of the current active term count for the producer using memory release semantics.
      *
      * @param metadataBuffer containing the meta data.
      * @param termCount      value of the active term count used by the producer of this log.
      */
     public static void activeTermCountOrdered(final UnsafeBuffer metadataBuffer, final int termCount)
     {
-        metadataBuffer.putIntOrdered(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
+        metadataBuffer.putIntRelease(LOG_ACTIVE_TERM_COUNT_OFFSET, termCount);
     }
 
     /**

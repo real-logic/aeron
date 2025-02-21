@@ -81,7 +81,7 @@ public class HeaderWriter
      */
     public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
-        termBuffer.putLongOrdered(offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((-length) & 0xFFFF_FFFFL));
+        termBuffer.putLongRelease(offset + FRAME_LENGTH_FIELD_OFFSET, versionFlagsType | ((-length) & 0xFFFF_FFFFL));
         VarHandle.storeStoreFence();
 
         termBuffer.putLong(offset + TERM_OFFSET_FIELD_OFFSET, sessionId | offset);
@@ -101,7 +101,7 @@ final class NativeBigEndianHeaderWriter extends HeaderWriter
 
     public void write(final UnsafeBuffer termBuffer, final int offset, final int length, final int termId)
     {
-        termBuffer.putLongOrdered(
+        termBuffer.putLongRelease(
             offset + FRAME_LENGTH_FIELD_OFFSET, ((((long)reverseBytes(-length))) << 32) | versionFlagsType);
         VarHandle.storeStoreFence();
 

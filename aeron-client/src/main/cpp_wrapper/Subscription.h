@@ -37,6 +37,7 @@ namespace aeron
 {
 
 using namespace aeron::concurrent::logbuffer;
+using AsyncDestination = aeron_async_destination_t;
 
 class AsyncAddSubscription
 {

@@ -520,7 +520,7 @@ class ReceiverTest
         fillDataFrame(dataHeader, initialTermOffset);  // initial data frame
         receiveChannelEndpoint.onDataPacket(dataHeader, dataBuffer, alignedDataFrameLength, senderAddress, 0);
 
-        verify(mockHighestReceivedPosition).setRelease(initialTermOffset + alignedDataFrameLength);
+        verify(mockHighestReceivedPosition).proposeMaxRelease(initialTermOffset + alignedDataFrameLength);
 
         final int readOutcome = TermReader.read(
             termBuffers[ACTIVE_INDEX],

@@ -341,7 +341,7 @@ class SelectorAndTransportTest
             processLoop(controlTransportPoller, 1);
         }
 
-        verify(mockStatusMessagesReceivedCounter, times(1)).incrementOrdered();
+        verify(mockStatusMessagesReceivedCounter, times(1)).incrementRelease();
     }
 
     private void processLoop(final UdpTransportPoller transportPoller, final int iterations)

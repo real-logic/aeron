@@ -435,7 +435,7 @@ abstract class ArchiveConductor
         authenticator.onConnectRequest(controlSession.sessionId(), encodedCredentials, cachedEpochClock.time());
 
         addSession(controlSession);
-        ctx.controlSessionsCounter().incrementOrdered();
+        ctx.controlSessionsCounter().incrementRelease();
 
         return controlSession;
     }
@@ -831,7 +831,7 @@ abstract class ArchiveConductor
 
         replaySessionByIdMap.put(replaySessionId, replaySession);
         replayer.addSession(replaySession);
-        ctx.replaySessionCounter().incrementOrdered();
+        ctx.replaySessionCounter().incrementRelease();
     }
 
     void startBoundedReplay(
@@ -1196,7 +1196,7 @@ abstract class ArchiveConductor
                 closeAndRemoveRecordingSubscription(subscription, "close recording session");
             }
             closeSession(session);
-            ctx.recordingSessionCounter().decrementOrdered();
+            ctx.recordingSessionCounter().decrementRelease();
         }
     }
 
@@ -1216,7 +1216,7 @@ abstract class ArchiveConductor
 
         replaySessionByIdMap.remove(session.sessionId());
         closeSession(session);
-        ctx.replaySessionCounter().decrementOrdered();
+        ctx.replaySessionCounter().decrementRelease();
     }
 
     void replicate(
@@ -1854,7 +1854,7 @@ abstract class ArchiveConductor
             streamId,
             strippedChannel,
             sourceIdentity);
-        position.setOrdered(startPosition);
+        position.setRelease(startPosition);
 
         final RecordingSession session = new RecordingSession(
             correlationId,
@@ -1880,7 +1880,7 @@ abstract class ArchiveConductor
         subscriptionRefCountMap.incrementAndGet(image.subscription().registrationId());
         recordingSessionByIdMap.put(recordingId, session);
         recorder.addSession(session);
-        ctx.recordingSessionCounter().incrementOrdered();
+        ctx.recordingSessionCounter().incrementRelease();
     }
 
     private void extendRecordingSession(
@@ -1927,7 +1927,7 @@ abstract class ArchiveConductor
                 strippedChannel,
                 image.sourceIdentity());
 
-            position.setOrdered(image.joinPosition());
+            position.setRelease(image.joinPosition());
 
             final RecordingSession session = new RecordingSession(
                 correlationId,
@@ -1950,7 +1950,7 @@ abstract class ArchiveConductor
             subscriptionRefCountMap.incrementAndGet(subscriptionId);
             recordingSessionByIdMap.put(recordingId, session);
             recorder.addSession(session);
-            ctx.recordingSessionCounter().incrementOrdered();
+            ctx.recordingSessionCounter().incrementRelease();
         }
         catch (final Exception ex)
         {
@@ -2560,9 +2560,9 @@ abstract class ArchiveConductor
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalWriteBytesCounter.setOrdered(totalWriteBytes);
-                totalWriteTimeCounter.setOrdered(totalWriteTimeNs);
-                maxWriteTimeCounter.setOrdered(maxWriteTimeNs);
+                totalWriteBytesCounter.setRelease(totalWriteBytes);
+                totalWriteTimeCounter.setRelease(totalWriteTimeNs);
+                maxWriteTimeCounter.setRelease(maxWriteTimeNs);
             }
 
             return workCount;
@@ -2606,9 +2606,9 @@ abstract class ArchiveConductor
             final int workCount = super.doWork();
             if (workCount > 0)
             {
-                totalReadBytesCounter.setOrdered(totalReadBytes);
-                totalReadTimeCounter.setOrdered(totalReadTimeNs);
-                maxReadTimeCounter.setOrdered(maxReadTimeNs);
+                totalReadBytesCounter.setRelease(totalReadBytes);
+                totalReadTimeCounter.setRelease(totalReadTimeNs);
+                maxReadTimeCounter.setRelease(maxReadTimeNs);
             }
 
             return workCount;

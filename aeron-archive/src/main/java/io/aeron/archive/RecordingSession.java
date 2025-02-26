@@ -233,7 +233,7 @@ class RecordingSession implements Session
             final int workCount = image.blockPoll(recordingWriter, blockLengthLimit);
             if (workCount > 0)
             {
-                this.position.setOrdered(recordingWriter.position());
+                this.position.setRelease(recordingWriter.position());
             }
             else if (image.isEndOfStream() || image.isClosed())
             {

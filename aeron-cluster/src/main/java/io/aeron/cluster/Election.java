@@ -125,8 +125,8 @@ class Election
         this.timeOfLastCommitPositionUpdateNs = initialTimeOfLastUpdateNs;
 
         Objects.requireNonNull(thisMember);
-        ctx.electionStateCounter().setOrdered(INIT.code());
-        ctx.electionCounter().incrementOrdered();
+        ctx.electionStateCounter().setRelease(INIT.code());
+        ctx.electionCounter().incrementRelease();
 
         if (clusterMembers.length == 1 && thisMember.id() == clusterMembers[0].id())
         {
@@ -1320,7 +1320,7 @@ class Election
                 reason);
 
             state = newState;
-            ctx.electionStateCounter().setOrdered(newState.code());
+            ctx.electionStateCounter().setRelease(newState.code());
             timeOfLastStateChangeNs = nowNs;
             timeOfLastUpdateNs = initialTimeOfLastUpdateNs;
             timeOfLastCommitPositionUpdateNs = initialTimeOfLastUpdateNs;

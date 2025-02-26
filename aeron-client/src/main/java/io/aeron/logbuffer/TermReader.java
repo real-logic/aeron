@@ -86,7 +86,7 @@ public class TermReader
             final long newPosition = currentPosition + (offset - termOffset);
             if (newPosition > currentPosition)
             {
-                subscriberPosition.setOrdered(newPosition);
+                subscriberPosition.setRelease(newPosition);
             }
         }
 

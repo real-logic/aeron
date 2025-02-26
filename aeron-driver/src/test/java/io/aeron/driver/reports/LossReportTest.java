@@ -57,7 +57,7 @@ class LossReportTest
         inOrder.verify(buffer).putStringAscii(CHANNEL_OFFSET, channel);
         inOrder.verify(buffer).putStringAscii(
             CHANNEL_OFFSET + BitUtil.align(SIZE_OF_INT + channel.length(), SIZE_OF_INT), source);
-        inOrder.verify(buffer).putLongOrdered(OBSERVATION_COUNT_OFFSET, 1L);
+        inOrder.verify(buffer).putLongRelease(OBSERVATION_COUNT_OFFSET, 1L);
     }
 
     @Test

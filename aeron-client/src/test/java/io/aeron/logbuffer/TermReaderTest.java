@@ -66,7 +66,7 @@ class TermReaderTest
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
+        inOrder.verify(subscriberPosition).setRelease(alignedFrameLength);
     }
 
     @Test
@@ -77,7 +77,7 @@ class TermReaderTest
         final int readOutcome = TermReader.read(
             termBuffer, termOffset, handler, Integer.MAX_VALUE, header, errorHandler, 0, subscriberPosition);
         assertEquals(0, readOutcome);
-        verify(subscriberPosition, never()).setOrdered(anyLong());
+        verify(subscriberPosition, never()).setRelease(anyLong());
 
         verify(termBuffer).getIntVolatile(0);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
@@ -101,7 +101,7 @@ class TermReaderTest
         final InOrder inOrder = inOrder(termBuffer, handler, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(0);
         inOrder.verify(handler).onFragment(eq(termBuffer), eq(HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength);
+        inOrder.verify(subscriberPosition).setRelease(alignedFrameLength);
         inOrder.verifyNoMoreInteractions();
     }
 
@@ -129,7 +129,7 @@ class TermReaderTest
         inOrder
             .verify(handler)
             .onFragment(eq(termBuffer), eq(alignedFrameLength + HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(alignedFrameLength * 2L);
+        inOrder.verify(subscriberPosition).setRelease(alignedFrameLength * 2L);
     }
 
     @Test
@@ -161,7 +161,7 @@ class TermReaderTest
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         inOrder.verify(handler).onFragment(
             eq(termBuffer), eq(frameOffset + HEADER_LENGTH), eq(msgLength), any(Header.class));
-        inOrder.verify(subscriberPosition).setOrdered(TERM_BUFFER_CAPACITY);
+        inOrder.verify(subscriberPosition).setRelease(TERM_BUFFER_CAPACITY);
     }
 
     @Test
@@ -192,6 +192,6 @@ class TermReaderTest
         final InOrder inOrder = inOrder(termBuffer, subscriberPosition);
         inOrder.verify(termBuffer).getIntVolatile(frameOffset);
         verify(handler, never()).onFragment(any(), anyInt(), anyInt(), any());
-        inOrder.verify(subscriberPosition).setOrdered(TERM_BUFFER_CAPACITY);
+        inOrder.verify(subscriberPosition).setRelease(TERM_BUFFER_CAPACITY);
     }
 }

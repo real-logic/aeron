@@ -712,7 +712,7 @@ public class ClusterToolOperator
                         final AtomicCounter atomicCounter = new AtomicCounter(
                             countersReader.valuesBuffer(), counterId, null);
 
-                        atomicCounter.setOrdered(timeMs);
+                        atomicCounter.setRelease(timeMs);
                         result.value = true;
                     }
                 });

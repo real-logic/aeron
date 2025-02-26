@@ -84,11 +84,11 @@ public class DutyCycleStallTracker extends DutyCycleTracker
     {
         if (!maxCycleTime.isClosed())
         {
-            maxCycleTime.proposeMaxOrdered(durationNs);
+            maxCycleTime.proposeMaxRelease(durationNs);
 
             if (durationNs > cycleTimeThresholdNs)
             {
-                cycleTimeThresholdExceededCount.incrementOrdered();
+                cycleTimeThresholdExceededCount.incrementRelease();
             }
         }
     }

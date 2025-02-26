@@ -234,7 +234,7 @@ public final class Image
         if (!isClosed)
         {
             validatePosition(newPosition);
-            subscriberPosition.setOrdered(newPosition);
+            subscriberPosition.setRelease(newPosition);
         }
     }
 
@@ -366,7 +366,7 @@ public final class Image
             final long newPosition = initialPosition + (offset - initialOffset);
             if (newPosition > initialPosition)
             {
-                subscriberPosition.setOrdered(newPosition);
+                subscriberPosition.setRelease(newPosition);
             }
         }
 
@@ -442,7 +442,7 @@ public final class Image
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;
-                    subscriberPosition.setOrdered(initialPosition);
+                    subscriberPosition.setRelease(initialPosition);
                 }
             }
         }
@@ -455,7 +455,7 @@ public final class Image
             final long resultingPosition = initialPosition + (offset - initialOffset);
             if (resultingPosition > initialPosition)
             {
-                subscriberPosition.setOrdered(resultingPosition);
+                subscriberPosition.setRelease(resultingPosition);
             }
         }
 
@@ -530,7 +530,7 @@ public final class Image
             final long resultingPosition = initialPosition + (offset - initialOffset);
             if (resultingPosition > initialPosition)
             {
-                subscriberPosition.setOrdered(resultingPosition);
+                subscriberPosition.setRelease(resultingPosition);
             }
         }
 
@@ -615,7 +615,7 @@ public final class Image
                 {
                     initialPosition += (offset - initialOffset);
                     initialOffset = offset;
-                    subscriberPosition.setOrdered(initialPosition);
+                    subscriberPosition.setRelease(initialPosition);
                 }
             }
         }
@@ -628,7 +628,7 @@ public final class Image
             final long resultingPosition = initialPosition + (offset - initialOffset);
             if (resultingPosition > initialPosition)
             {
-                subscriberPosition.setOrdered(resultingPosition);
+                subscriberPosition.setRelease(resultingPosition);
             }
         }
 
@@ -768,7 +768,7 @@ public final class Image
             }
             finally
             {
-                subscriberPosition.setOrdered(position + length);
+                subscriberPosition.setRelease(position + length);
             }
         }
 
@@ -823,7 +823,7 @@ public final class Image
             }
             finally
             {
-                subscriberPosition.setOrdered(position + length);
+                subscriberPosition.setRelease(position + length);
             }
         }
 

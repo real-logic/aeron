@@ -1571,7 +1571,7 @@ public final class DriverConductor implements Agent
             {
                 if (toDriverCommands.unblock())
                 {
-                    ctx.systemCounters().get(UNBLOCKED_COMMANDS).incrementOrdered();
+                    ctx.systemCounters().get(UNBLOCKED_COMMANDS).incrementRelease();
                 }
             }
         }
@@ -1614,7 +1614,7 @@ public final class DriverConductor implements Agent
                     subscription.channel(),
                     joinPosition);
 
-                position.setOrdered(joinPosition);
+                position.setRelease(joinPosition);
                 subscriberPositions.add(new SubscriberPosition(subscription, null, position));
             }
         }
@@ -1759,10 +1759,10 @@ public final class DriverConductor implements Agent
             {
                 final int bits = LogBufferDescriptor.positionBitsToShift(params.termLength);
                 final long position = computePosition(params.termId, params.termOffset, bits, params.initialTermId);
-                publisherPos.setOrdered(position);
-                publisherLmt.setOrdered(position);
-                senderPos.setOrdered(position);
-                senderLmt.setOrdered(position);
+                publisherPos.setRelease(position);
+                publisherLmt.setRelease(position);
+                senderPos.setRelease(position);
+                senderLmt.setRelease(position);
             }
 
             final RetransmitHandler retransmitHandler = new RetransmitHandler(
@@ -2245,7 +2245,7 @@ public final class DriverConductor implements Agent
 
                 countersManager.setCounterReferenceId(position.id(), image.correlationId());
 
-                position.setOrdered(joinPosition);
+                position.setRelease(joinPosition);
                 subscriptionLink.link(image, position);
                 image.addSubscriber(subscriptionLink, position, cachedNanoClock.nanoTime());
 
@@ -2294,7 +2294,7 @@ public final class DriverConductor implements Agent
 
         countersManager.setCounterReferenceId(position.id(), publication.registrationId());
 
-        position.setOrdered(joinPosition);
+        position.setRelease(joinPosition);
         subscription.link(publication, position);
         publication.addSubscriber(subscription, position, cachedNanoClock.nanoTime());
 
@@ -2315,7 +2315,7 @@ public final class DriverConductor implements Agent
 
         countersManager.setCounterReferenceId(position.id(), publication.registrationId());
 
-        position.setOrdered(joinPosition);
+        position.setRelease(joinPosition);
         subscription.link(publication, position);
         publication.addSubscriber(subscription, position, cachedNanoClock.nanoTime());
 
@@ -2414,7 +2414,7 @@ public final class DriverConductor implements Agent
             final AtomicCounter counter = ClientHeartbeatTimestamp.allocate(tempBuffer, countersManager, clientId);
             final int counterId = counter.id();
 
-            counter.setOrdered(cachedEpochClock.time());
+            counter.setRelease(cachedEpochClock.time());
             countersManager.setCounterOwnerId(counterId, clientId);
             countersManager.setCounterRegistrationId(counterId, clientId);
 
@@ -2460,8 +2460,8 @@ public final class DriverConductor implements Agent
                 final int positionBitsToShift = positionBitsToShift(params.termLength);
                 final long position = computePosition(
                     params.termId, params.termOffset, positionBitsToShift, params.initialTermId);
-                publisherPosition.setOrdered(position);
-                publisherLimit.setOrdered(position);
+                publisherPosition.setRelease(position);
+                publisherLimit.setRelease(position);
             }
 
             final IpcPublication publication = new IpcPublication(
@@ -2609,7 +2609,7 @@ public final class DriverConductor implements Agent
             }
             else
             {
-                ctx.systemCounters().get(FREE_FAILS).incrementOrdered();
+                ctx.systemCounters().get(FREE_FAILS).incrementRelease();
                 endOfLiveResources.addLast(resource);
             }
         }

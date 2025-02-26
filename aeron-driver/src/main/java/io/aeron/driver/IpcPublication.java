@@ -294,7 +294,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             case ACTIVE:
             {
                 final long producerPosition = producerPosition();
-                publisherPos.setOrdered(producerPosition);
+                publisherPos.setRelease(producerPosition);
                 if (!isExclusive)
                 {
                     checkForBlockedPublisher(producerPosition, timeNs);
@@ -306,7 +306,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             case DRAINING:
             {
                 final long producerPosition = producerPosition();
-                publisherPos.setOrdered(producerPosition);
+                publisherPos.setRelease(producerPosition);
                 if (isDrained(producerPosition))
                 {
                     conductor.transitionToLinger(this);
@@ -314,7 +314,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 }
                 else if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
-                    unblockedPublications.incrementOrdered();
+                    unblockedPublications.incrementRelease();
                 }
                 break;
             }
@@ -348,7 +348,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         if (0 == --refCount)
         {
             final long producerPosition = producerPosition();
-            publisherLimit.setOrdered(producerPosition);
+            publisherLimit.setRelease(producerPosition);
             LogBufferDescriptor.endOfStreamPosition(metaDataBuffer, producerPosition);
             state = State.DRAINING;
         }
@@ -361,7 +361,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
         if (State.ACTIVE == state)
         {
             final long producerPosition = producerPosition();
-            publisherPos.setOrdered(producerPosition);
+            publisherPos.setRelease(producerPosition);
 
             if (subscriberPositions.length > 0)
             {
@@ -384,7 +384,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
                 if (proposedLimit > tripLimit)
                 {
                     cleanBufferTo(minSubscriberPosition);
-                    publisherLimit.setOrdered(proposedLimit);
+                    publisherLimit.setRelease(proposedLimit);
                     tripLimit = proposedLimit + tripGain;
                     workCount = 1;
                 }
@@ -392,7 +392,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             else if (publisherLimit.get() > consumerPosition)
             {
                 tripLimit = consumerPosition;
-                publisherLimit.setOrdered(consumerPosition);
+                publisherLimit.setRelease(consumerPosition);
                 cleanBufferTo(consumerPosition);
             }
         }
@@ -506,7 +506,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             {
                 if (LogBufferUnblocker.unblock(termBuffers, metaDataBuffer, consumerPosition, termBufferLength))
                 {
-                    unblockedPublications.incrementOrdered();
+                    unblockedPublications.incrementRelease();
                 }
             }
         }
@@ -542,7 +542,7 @@ public final class IpcPublication implements DriverManagedResource, Subscribable
             final int length = Math.min(bytesForCleaning, bufferCapacity - termOffset);
 
             dirtyTermBuffer.setMemory(termOffset + SIZE_OF_LONG, length - SIZE_OF_LONG, (byte)0);
-            dirtyTermBuffer.putLongOrdered(termOffset, 0);
+            dirtyTermBuffer.putLongRelease(termOffset, 0);
             this.cleanPosition = cleanPosition + length;
         }
     }

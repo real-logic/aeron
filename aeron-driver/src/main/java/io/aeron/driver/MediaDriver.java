@@ -703,7 +703,7 @@ public final class MediaDriver implements AutoCloseable
                 concludeDependantProperties();
                 concludeIdleStrategies();
 
-                systemCounters.get(BYTES_CURRENTLY_MAPPED).setOrdered(cncFileLength + lossReportBufferLength);
+                systemCounters.get(BYTES_CURRENTLY_MAPPED).setRelease(cncFileLength + lossReportBufferLength);
 
                 toDriverCommands.nextCorrelationId();
                 toDriverCommands.consumerHeartbeatTime(epochClock.time());

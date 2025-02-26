@@ -579,11 +579,11 @@ class DriverConductorTest
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
@@ -683,11 +683,11 @@ class DriverConductorTest
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS);
 
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS + 1000);
 
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= CLIENT_LIVENESS_TIMEOUT_NS * 2);
 
@@ -863,7 +863,7 @@ class DriverConductorTest
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() / 2);
 
         final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> nanoClock.nanoTime() >= imageLivenessTimeoutNs() + 1000);
 
@@ -1071,7 +1071,7 @@ class DriverConductorTest
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
@@ -1195,7 +1195,7 @@ class DriverConductorTest
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
         final AtomicCounter heartbeatCounter = clientHeartbeatCounter(spyCountersManager);
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> CLIENT_LIVENESS_TIMEOUT_NS - nanoClock.nanoTime() <= 0);
 
@@ -1220,11 +1220,11 @@ class DriverConductorTest
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS / 2) - nanoClock.nanoTime() <= 0);
 
-        heartbeatCounter.setOrdered(epochClock.time());
+        heartbeatCounter.setRelease(epochClock.time());
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS + 1000) - nanoClock.nanoTime() <= 0);
 
-        heartbeatCounter.setOrdered(0);
+        heartbeatCounter.setRelease(0);
 
         doWorkUntil(() -> (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0);
 
@@ -1431,7 +1431,7 @@ class DriverConductorTest
 
         doWorkUntil(() ->
         {
-            heartbeatCounter.setOrdered(epochClock.time());
+            heartbeatCounter.setRelease(epochClock.time());
             return (CLIENT_LIVENESS_TIMEOUT_NS * 2) - nanoClock.nanoTime() <= 0;
         });
 

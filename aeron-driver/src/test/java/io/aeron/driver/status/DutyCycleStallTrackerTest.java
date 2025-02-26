@@ -70,10 +70,10 @@ class DutyCycleStallTrackerTest
         dutyCycleStallTracker.reportMeasurement(1001);
 
         verify(maxCycleTime, times(3)).isClosed();
-        verify(maxCycleTime).proposeMaxOrdered(555L);
-        verify(maxCycleTime).proposeMaxOrdered(1000L);
-        verify(maxCycleTime).proposeMaxOrdered(1001L);
-        verify(cycleTimeThresholdExceededCount).incrementOrdered();
+        verify(maxCycleTime).proposeMaxRelease(555L);
+        verify(maxCycleTime).proposeMaxRelease(1000L);
+        verify(maxCycleTime).proposeMaxRelease(1001L);
+        verify(cycleTimeThresholdExceededCount).incrementRelease();
         verifyNoMoreInteractions(maxCycleTime, cycleTimeThresholdExceededCount);
     }
 }

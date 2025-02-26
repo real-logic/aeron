@@ -1650,7 +1650,7 @@ final class ClientConductor implements Agent
                     try
                     {
                         heartbeatTimestamp = new AtomicCounter(counterValuesBuffer, counterId);
-                        heartbeatTimestamp.setOrdered(nowMs);
+                        heartbeatTimestamp.setRelease(nowMs);
                         AeronCounters.appendToLabel(
                             countersReader.metaDataBuffer(),
                             counterId,
@@ -1674,7 +1674,7 @@ final class ClientConductor implements Agent
                     throw new AeronException("unexpected close of heartbeat timestamp counter: " + counterId);
                 }
 
-                heartbeatTimestamp.setOrdered(nowMs);
+                heartbeatTimestamp.setRelease(nowMs);
                 timeOfLastKeepAliveNs = nowNs;
             }
 

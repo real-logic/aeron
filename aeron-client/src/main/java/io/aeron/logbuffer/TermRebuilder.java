@@ -46,7 +46,7 @@ public class TermRebuilder
             termBuffer.putLong(termOffset + 16, packet.getLong(16));
             termBuffer.putLong(termOffset + 8, packet.getLong(8));
 
-            termBuffer.putLongOrdered(termOffset, packet.getLong(0));
+            termBuffer.putLongRelease(termOffset, packet.getLong(0));
         }
     }
 }

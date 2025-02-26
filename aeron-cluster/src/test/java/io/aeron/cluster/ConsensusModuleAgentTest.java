@@ -205,7 +205,7 @@ class ConsensusModuleAgentTest
         agent.doWork();
 
         verify(mockTimeConsumer).accept(clock.time());
-        verify(mockTimedOutClientCounter).incrementOrdered();
+        verify(mockTimedOutClientCounter).incrementRelease();
         verify(mockLogPublisher).appendSessionClose(
             anyInt(), any(ClusterSession.class), anyLong(), eq(timeoutMs), eq(clock.timeUnit()));
         verify(mockEgressPublisher).sendEvent(

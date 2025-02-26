@@ -600,7 +600,7 @@ public final class AeronCounters
             remainingLabelLength);
         if (writtenLength > 0)
         {
-            metaDataBuffer.putIntOrdered(
+            metaDataBuffer.putIntRelease(
                 counterMetaDataOffset + CountersReader.LABEL_OFFSET, existingLabelLength + writtenLength);
         }
 

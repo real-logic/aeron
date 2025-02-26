@@ -57,7 +57,7 @@ class TermRebuilderTest
         inOrder.verify(termBuffer).putLong(termOffset + 24, packet.getLong(24));
         inOrder.verify(termBuffer).putLong(termOffset + 16, packet.getLong(16));
         inOrder.verify(termBuffer).putLong(termOffset + 8, packet.getLong(8));
-        inOrder.verify(termBuffer).putLongOrdered(termOffset, packet.getLong(0));
+        inOrder.verify(termBuffer).putLongRelease(termOffset, packet.getLong(0));
     }
 
     @Test

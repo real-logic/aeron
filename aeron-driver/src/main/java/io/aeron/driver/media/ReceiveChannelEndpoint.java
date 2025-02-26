@@ -272,7 +272,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
             updateLocalSocketAddress(bindAddressAndPort);
         }
 
-        statusIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+        statusIndicator.setRelease(ChannelEndpointStatus.ACTIVE);
     }
 
     /**
@@ -348,7 +348,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
      */
     public void possibleTtlAsymmetryEncountered()
     {
-        possibleTtlAsymmetry.incrementOrdered();
+        possibleTtlAsymmetry.incrementRelease();
     }
 
     /**
@@ -1103,7 +1103,7 @@ public class ReceiveChannelEndpoint extends ReceiveChannelEndpointRhsPadding
         {
             LocalSocketAddressStatus.updateBindAddress(
                 localSocketAddressIndicator, bindAddressAndPort, context.countersMetaDataBuffer());
-            localSocketAddressIndicator.setOrdered(ChannelEndpointStatus.ACTIVE);
+            localSocketAddressIndicator.setRelease(ChannelEndpointStatus.ACTIVE);
         }
     }
 

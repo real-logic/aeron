@@ -666,7 +666,7 @@ class BasicArchiveTest
         final long halfPosition = recordingDescriptor.startPosition() + halfLength;
         final long tqPosition = recordingDescriptor.startPosition() + halfLength + (halfLength / 2);
 
-        boundingCounter.setOrdered(0);
+        boundingCounter.setRelease(0);
 
         final ReplayParams replayParams = new ReplayParams()
             .position(recordingDescriptor.startPosition())
@@ -682,7 +682,7 @@ class BasicArchiveTest
         try (Subscription replaySubscription = aeron.addSubscription(
             channel, REPLAY_STREAM_ID, replayImage::set, image -> {}))
         {
-            boundingCounter.setOrdered(halfPosition);
+            boundingCounter.setRelease(halfPosition);
 
             while (null == replayImage.get())
             {
@@ -707,7 +707,7 @@ class BasicArchiveTest
                 assertThat(replayImage.get().position(), Matchers.lessThanOrEqualTo(halfPosition));
             }
 
-            boundingCounter.setOrdered(tqPosition);
+            boundingCounter.setRelease(tqPosition);
 
             final Supplier<String> tqErrorMessage =
                 () -> "replayImage.position(" + replayImage.get().position() + ") < tqPosition(" + tqPosition + ")";

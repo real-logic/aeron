@@ -62,7 +62,7 @@ final class AeronClient implements DriverManagedResource
 
             if (!closedByCommand)
             {
-                clientTimeouts.incrementOrdered();
+                clientTimeouts.incrementRelease();
                 conductor.clientTimeout(clientId);
             }
 
@@ -103,12 +103,12 @@ final class AeronClient implements DriverManagedResource
 
     void timeOfLastKeepaliveMs(final long nowMs)
     {
-        heartbeatTimestamp.setOrdered(nowMs);
+        heartbeatTimestamp.setRelease(nowMs);
     }
 
     void onClosedByCommand()
     {
         closedByCommand = true;
-        heartbeatTimestamp.setOrdered(0);
+        heartbeatTimestamp.setRelease(0);
     }
 }

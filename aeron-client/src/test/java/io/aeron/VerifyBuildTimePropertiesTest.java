@@ -41,7 +41,7 @@ class VerifyBuildTimePropertiesTest
             version = version.substring(0, version.indexOf('-'));
         }
 
-        final String currentVersion = JRE.currentVersion().name();
+        final String currentVersion = JRE.currentJre().name();
         assertEquals(version, currentVersion.substring(currentVersion.indexOf('_') + 1));
     }
 }

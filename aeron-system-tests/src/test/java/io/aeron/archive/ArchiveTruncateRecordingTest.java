@@ -44,7 +44,6 @@ import org.agrona.concurrent.status.CountersReader;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.condition.JRE;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.api.extension.RegisterExtension;
 import org.junit.jupiter.api.io.TempDir;
@@ -69,9 +68,7 @@ import static io.aeron.archive.client.AeronArchive.segmentFileBasePosition;
 import static java.util.Arrays.asList;
 import static java.util.Arrays.copyOfRange;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.*;
 
 @ExtendWith({ EventLogExtension.class, InterruptingTestCallback.class })
 class ArchiveTruncateRecordingTest
@@ -88,15 +85,7 @@ class ArchiveTruncateRecordingTest
     @BeforeEach
     void before(final @TempDir Path tempDir)
     {
-        final Checksum checksum;
-        if (JRE.currentVersion().compareTo(JRE.JAVA_8) > 0)
-        {
-            checksum = Checksums.crc32c();
-        }
-        else
-        {
-            checksum = Checksums.crc32();
-        }
+        final Checksum checksum = Checksums.crc32c();
 
         final MediaDriver.Context driverCtx = new MediaDriver.Context()
             .termBufferSparseFile(true)
